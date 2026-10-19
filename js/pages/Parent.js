@@ -12,6 +12,7 @@ import { Modal, Toggle, NumberInput } from '../components/ui.js';
 import { PinPad } from '../components/PinGate.js';
 import { PhotoAvatar } from '../components/PhotoAvatar.js';
 import { PandiBank } from '../components/PandiBank.js';
+import { FamilyMembers } from '../components/FamilyMembers.js';
 import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
 import { APP_VERSION } from '../config.js';
@@ -281,12 +282,14 @@ function SettingsSection() {
       <div class="row"><span class="emoji">🐢</span><div class="grow"><div class="title">Animations réduites</div><div class="meta">Pour les écrans lents ou les enfants sensibles aux mouvements</div></div><${Toggle} on=${s.prefs.reducedMotion} onChange=${(v) => setPrefs({ reducedMotion: v })} label="Animations réduites" /></div>
     </div>
 
-    <h3 class="section-title" style="color:var(--ink);margin-top:20px">Famille et compte</h3>
+    <h3 class="section-title" style="color:var(--ink);margin-top:20px">Parents de la famille</h3>
+    <${FamilyMembers} />
+
+    <h3 class="section-title" style="color:var(--ink);margin-top:20px">Compte et données</h3>
     <div class="row-list">
       ${s.mode === 'cloud'
-        ? html`<div class="row"><span class="emoji">👨‍👩‍👧</span><div class="grow"><div class="title">Inviter l'autre parent</div><div class="meta">L'autre parent se connecte sur pandiflow.com puis choisit « Rejoindre une famille » avec ce code.</div></div><span class="invite-code">${s.family.invite_code}</span></div>
-          <div class="row"><span class="emoji">✉️</span><div class="grow"><div class="title">Connecté</div><div class="meta">${s.user?.email}</div></div><button class="p-btn" onClick=${() => actions.signOut()}>Se déconnecter</button></div>`
-        : html`<div class="row"><span class="emoji">🧪</span><div class="grow"><div class="title">Mode démo</div><div class="meta">Les données restent dans ce navigateur. Branchez Supabase (voir README) pour synchroniser les deux parents.</div></div><button class="p-btn danger" onClick=${() => confirm('Remettre la démo à zéro ?') && actions.resetDemo()}>Remettre à zéro</button></div>`}
+        ? html`<div class="row"><span class="emoji">✉️</span><div class="grow"><div class="title">Connecté</div><div class="meta">${s.user?.email}</div></div><button class="p-btn" onClick=${() => actions.signOut()}>Se déconnecter</button></div>`
+        : html`<div class="row"><span class="emoji">🧪</span><div class="grow"><div class="title">Mode démo</div><div class="meta">Les données restent dans ce navigateur et les invitations sont factices.</div></div><button class="p-btn danger" onClick=${() => confirm('Remettre la démo à zéro ?') && actions.resetDemo()}>Remettre à zéro</button></div>`}
       <div class="row"><span class="emoji">🔐</span><div class="grow"><div class="title">Code parent</div></div><button class="p-btn" onClick=${() => setChangingPin(true)}>Changer le code</button></div>
       <div class="row"><span class="emoji">💾</span><div class="grow"><div class="title">Sauvegarde</div><div class="meta">Télécharger toutes les données (fichier JSON)</div></div><button class="p-btn" onClick=${actions.exportBackup}>Télécharger</button></div>
       ${s.settings.photoConsent && html`<div class="row"><span class="emoji">📸</span><div class="grow"><div class="title">Consentement photo donné</div><div class="meta">Les photos sont analysées par Claude puis oubliées.</div></div><button class="p-btn" onClick=${() => actions.updateSettings({ photoConsent: false })}>Retirer</button></div>`}

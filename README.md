@@ -38,26 +38,37 @@ Puis ouvrir http://localhost:8080. Les tests unitaires sont sur http://localhost
 
 ## 2. Mise en ligne sur pandiflow.com
 
-### Étape A — Supabase (base de données et connexion)
+### Étape A — Supabase (déjà fait)
 
-1. Créer un compte et un **nouveau projet gratuit** sur [supabase.com](https://supabase.com). Choisir une région européenne (Paris ou Francfort).
-2. **SQL Editor** → *New query* → coller tout le contenu de [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
-3. **Authentication → Providers → Email** : laisser *Email* activé et vérifier que la longueur du code OTP est **6**.
-4. **Authentication → Email Templates → Magic Link** : remplacer le contenu par un message qui affiche le code, par exemple :
-   ```html
-   <h2>Ton code PandiFlow</h2>
-   <p>Voici ton code de connexion : <strong style="font-size:24px">{{ .Token }}</strong></p>
-   <p>Il est valable quelques minutes.</p>
-   ```
-5. **Authentication → URL Configuration** : *Site URL* = `https://pandiflow.com`.
-6. **Project Settings → API** : copier la **Project URL** et la clé **anon** (ou *publishable*), puis les coller dans [`js/config.js`](js/config.js). Ces deux valeurs sont publiques par conception : la sécurité repose sur les règles RLS du schéma.
+Le projet Supabase **pandiflow** (région Paris, référence `kyhhkhmwdostzdaksxzw`) a été créé et configuré avec l'outil en ligne de commande Supabase :
+
+- tables et règles de sécurité : [`supabase/schema.sql`](supabase/schema.sql), envoyé avec `supabase db query --linked --project-ref kyhhkhmwdostzdaksxzw --file supabase/schema.sql` ;
+- adresse du site et redirections autorisées : [`supabase/config.toml`](supabase/config.toml), envoyé avec `supabase config push --project-ref kyhhkhmwdostzdaksxzw` ;
+- URL du projet et clé publique (*publishable*) dans [`js/config.js`](js/config.js). Ces deux valeurs sont publiques par conception : la sécurité repose sur les règles RLS du schéma.
+
+### Étape A bis — Connexion des parents
+
+Chaque parent crée son compte avec **e-mail + mot de passe** (8 caractères minimum). Aucun e-mail de confirmation n'est envoyé : le service d'e-mail gratuit de Supabase n'écrit qu'aux membres de l'organisation Supabase, et l'accès à une famille est de toute façon protégé par les invitations. Le lien « Mot de passe oublié » n'arrive donc qu'aux membres de l'organisation, sauf à brancher un SMTP dans *Authentication → SMTP Settings*.
+
+**Inviter un autre parent** : *Espace parent → Réglages → Parents de la famille → Inviter un parent*. Le code a 8 caractères, il est valable 48 h et ne sert qu'une fois ; 5 invitations en cours et 6 parents au maximum par famille ; 10 essais ratés par heure au maximum. Seul le créateur de la famille peut retirer un parent. Ces règles sont dans [`supabase/migrations/20261020120000_invitations.sql`](supabase/migrations/20261020120000_invitations.sql).
+
+**Connexion avec Google (facultatif)** : le bouton « Continuer avec Google » apparaît tout seul dès que le fournisseur Google est activé dans Supabase.
+
+1. Dans la [console Google Cloud](https://console.cloud.google.com/projectcreate), créer un projet `PandiFlow` (avec un compte Google personnel).
+2. **Google Auth Platform → Get started** : nom de l'app `PandiFlow`, ton e-mail d'assistance, audience **External**, ton e-mail de contact.
+3. **Branding → Authorized domains** : ajouter `pandiflow.com` et `supabase.co`.
+4. **Clients → Create client** : type *Web application*, nom `PandiFlow`.
+   - *Authorized JavaScript origins* : `https://pandiflow.com` et `http://localhost:8080`
+   - *Authorized redirect URIs* : `https://kyhhkhmwdostzdaksxzw.supabase.co/auth/v1/callback`
+5. Copier le **Client ID** et le **Client secret**.
+6. **Audience** : cliquer sur *Publish app* (les autorisations demandées, e-mail et profil, ne demandent pas de validation par Google), ou ajouter les adresses Gmail des deux parents comme *Test users*.
+7. Dans Supabase : [Authentication → Sign In / Providers → Google](https://supabase.com/dashboard/project/kyhhkhmwdostzdaksxzw/auth/providers) → activer, coller le Client ID et le Client secret → *Save*. Le secret reste dans Supabase, jamais dans le code.
 
 ### Étape B — Photo magique (Edge Function + clé Claude)
 
-1. **Edge Functions → Deploy a new function → Via Editor**, nommer la fonction `analyze-photo`.
-2. Coller le contenu de [`supabase/functions/analyze-photo/index.ts`](supabase/functions/analyze-photo/index.ts) → **Deploy**.
-3. **Edge Functions → Secrets** : ajouter `ANTHROPIC_API_KEY` avec ta clé API Claude (créée sur [console.anthropic.com](https://console.anthropic.com)). La clé reste côté serveur : elle n'est jamais dans le navigateur ni dans le code.
-4. Si l'appel renvoie une erreur 401 alors que tu es connecté, désactiver *Enforce JWT verification* dans les réglages de la fonction : elle vérifie déjà elle-même la session du parent.
+1. La fonction `analyze-photo` est déployée avec `supabase functions deploy analyze-photo --project-ref kyhhkhmwdostzdaksxzw --use-api --no-verify-jwt` (elle vérifie elle-même la session du parent).
+2. Enregistrer la clé API Claude (créée sur [console.anthropic.com](https://console.anthropic.com)) avec le script [`tools/set-claude-key.ps1`](tools/set-claude-key.ps1) : il la demande en saisie masquée et l'envoie dans les secrets Supabase (`ANTHROPIC_API_KEY`). La clé reste côté serveur : elle n'est jamais dans le navigateur ni dans le code.
+3. Si la clé n'est rattachée à aucun espace de travail (*workspace*) de la console Anthropic, ajouter aussi le secret `ANTHROPIC_WORKSPACE_ID` (identifiant `wrkspc_…` visible dans *Settings → Workspaces*), ou créer une clé directement dans un espace de travail.
 
 Coût indicatif : quelques centimes par photo (modèle `claude-opus-5-5`). L'app limite à 5 analyses par enfant et par jour.
 
@@ -91,9 +102,10 @@ La propagation prend de quelques minutes à quelques heures. Ensuite, https://pa
 
 ### Étape E — Sur le téléphone et la télé
 
-1. Ouvrir https://pandiflow.com sur le téléphone, se connecter avec son e-mail (code à 6 chiffres), créer la famille.
+1. Ouvrir https://pandiflow.com sur le téléphone, créer son compte parent (ou **Continuer avec Google** si activé), puis créer la famille.
 2. L'installer comme une app : *Ajouter à l'écran d'accueil* (Safari) ou *Installer l'application* (Chrome).
-3. Le second parent se connecte avec son propre e-mail et choisit **Rejoindre une famille** avec le code affiché dans *Espace parent → Réglages*.
+3. Dans *Espace parent → Réglages → Parents de la famille*, créer une invitation et l'envoyer. Le second parent crée son propre compte et choisit **Rejoindre une famille** avec ce code.
+   Sur iPhone, connecte-toi dans Safari **avant** d'ajouter l'app à l'écran d'accueil : la connexion Google peut s'ouvrir hors de l'app installée.
 4. Le soir : tenir le téléphone en **paysage**, toucher ⛶ pour le plein écran, puis dupliquer l'écran sur la télé (*Smart View* / *Caster l'écran* sur Android, *Recopie de l'écran* AirPlay sur iPhone). L'écran reste allumé tant que la soirée est ouverte.
 
 ---
@@ -101,7 +113,6 @@ La propagation prend de quelques minutes à quelques heures. Ensuite, https://pa
 ## Bon à savoir
 
 - **Pause Supabase** : un projet gratuit est mis en pause après 7 jours sans aucune utilisation (vacances…). Il suffit de cliquer sur *Restore project* dans le tableau de bord ; aucune donnée n'est perdue.
-- **E-mails** : le service d'e-mail intégré à Supabase envoie peu de messages par heure, ce qui suffit pour deux parents. Pour plus, brancher un SMTP dans *Authentication → SMTP Settings*.
 - **Confidentialité** : la photo d'un enfant est envoyée une seule fois à l'API Claude d'Anthropic pour l'analyse (après consentement du parent), puis oubliée. Seuls les réglages du personnage sont enregistrés. Les données de l'API ne servent pas à entraîner les modèles par défaut.
 - **Sauvegarde** : *Espace parent → Réglages → Sauvegarde* télécharge toutes les données en JSON.
 

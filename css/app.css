@@ -545,3 +545,13 @@ h1, h2, h3, p { margin: 0; }
 @media (orientation: portrait) { .pandi-moment { flex-direction: column; text-align: center; } .pm-kid { justify-content: center; } }
 .pandi-moment .tap-hint { margin-top: calc(var(--u) * 4); font-size: calc(var(--u) * 3.6); opacity: .75; }
 .coin-inline { width: 1.5em; height: 1.5em; flex: none; }
+
+/* Bouton Google (couleurs officielles : fond blanc, logo G) */
+.btn-google { --b: #ffffff; --bd: #d6d2e6; color: #2a2350; }
+.welcome a.p-btn { text-decoration: none; }
+
+/* Invitations des parents */
+.invite-box { margin-top: calc(var(--u) * 3); padding: calc(var(--u) * 3); border-radius: calc(var(--u) * 4); background: #eef9f2; border: 2px dashed var(--green); }
+.invite-box p { margin-bottom: calc(var(--u) * 1.6); }
+.invite-box .meta { color: var(--ink-soft); font-size: calc(var(--u) * 3.3); margin-top: calc(var(--u) * 1.6); }
+.row.muted-row { background: #f8f6fe; }

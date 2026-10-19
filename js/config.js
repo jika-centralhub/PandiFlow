@@ -3,8 +3,8 @@
 // repose sur les règles RLS de la base (voir supabase/schema.sql).
 // Tant que ces deux valeurs sont vides, l'app tourne en mode démo (localStorage).
 
-export const SUPABASE_URL = '';
-export const SUPABASE_ANON_KEY = '';
+export const SUPABASE_URL = 'https://kyhhkhmwdostzdaksxzw.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable__E61F1zKiN431iU2AlKySQ_PZOsOtgi';
 
 export const APP_VERSION = '1.0.0';
 

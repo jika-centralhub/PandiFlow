@@ -122,8 +122,13 @@ Deno.serve(async (req) => {
     { onConflict: "child_id,day" },
   );
 
-  // 5. Analyse par Claude
-  const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY") });
+  // 5. Analyse par Claude. Une clé d'organisation (non rattachée à un espace de travail)
+  // a besoin de l'identifiant d'espace de travail : secret facultatif ANTHROPIC_WORKSPACE_ID.
+  const workspace = Deno.env.get("ANTHROPIC_WORKSPACE_ID");
+  const anthropic = new Anthropic({
+    apiKey: Deno.env.get("ANTHROPIC_API_KEY"),
+    ...(workspace ? { defaultHeaders: { "anthropic-workspace-id": workspace } } : {}),
+  });
   try {
     const response = await anthropic.beta.messages.create({
       model: MODEL,
@@ -151,10 +156,17 @@ Deno.serve(async (req) => {
     const { notes, ...look } = JSON.parse(text.text);
     return reply({ look, notes: typeof notes === "string" ? notes.slice(0, 200) : undefined });
   } catch (e) {
-    // Jamais l'image dans les journaux : seulement le type d'erreur
-    const err = e as { status?: number; name?: string };
-    console.error("analyze-photo: échec de l'appel à Claude", err.status ?? "", err.name ?? "");
+    // Jamais l'image dans les journaux : seulement le type d'erreur renvoyé par l'API
+    const err = e as { status?: number; name?: string; message?: string; error?: { error?: { type?: string; message?: string } } };
+    const type = err.error?.error?.type ?? err.name ?? "erreur";
+    const detail = `${err.status ?? ""} ${type}: ${(err.error?.error?.message ?? err.message ?? "").slice(0, 240)}`.trim();
+    console.error("analyze-photo: échec de l'appel à Claude", detail);
     const status = err.status === 429 || err.status === 529 ? 503 : 502;
-    return reply({ error: "La magie n'a pas marché cette fois-ci. Réessaie dans un instant." }, status);
+    const message = err.status === 401
+      ? "La clé Claude enregistrée dans Supabase est refusée. Vérifie-la."
+      : detail.includes("workspace")
+        ? "La clé Claude doit être rattachée à un espace de travail (workspace) de la console Anthropic."
+        : "La magie n'a pas marché cette fois-ci. Réessaie dans un instant.";
+    return reply({ error: message, detail }, status);
   }
 });

@@ -27,6 +27,8 @@ export async function boot() {
       loadOutbox();
       const user = await repo.getUser();
       if (!user) return setState({ status: 'auth' });
+      // Retour du lien « mot de passe oublié » : on choisit d'abord un nouveau mot de passe
+      if (repo.recovery) return setState({ status: 'recovery', user });
       return afterLogin(user);
     }
     repo = new LocalRepo();
@@ -322,13 +324,27 @@ export async function analyzePhoto(childId, imageBase64, mediaType = 'image/jpeg
 }
 
 // --- Compte et famille (cloud) ------------------------------------------------------------------
-export async function sendCode(email) {
-  await repo.sendCode(email);
+// Redirige vers Google ; au retour, boot() retrouve la session
+export async function signInWithGoogle() {
+  await repo.signInWithGoogle();
 }
 
-export async function verifyCode(email, code) {
-  const user = await repo.verifyCode(email, code);
-  await afterLogin(user);
+export const googleEnabled = () => (repo?.googleEnabled ? repo.googleEnabled() : Promise.resolve(false));
+
+export async function signUp(email, password) {
+  await afterLogin(await repo.signUp(email, password));
+}
+
+export async function signIn(email, password) {
+  await afterLogin(await repo.signIn(email, password));
+}
+
+export async function sendPasswordReset(email) {
+  await repo.sendPasswordReset(email);
+}
+
+export async function updatePassword(password) {
+  await afterLogin(await repo.updatePassword(password));
 }
 
 export async function signOut() {
@@ -351,8 +367,20 @@ export async function createFamily({ name, children }) {
 }
 
 export async function joinFamily(code) {
-  await repo.joinFamily(code.trim().toUpperCase());
+  await repo.joinFamily(code.replace(/[^a-z0-9]/gi, '').toUpperCase());
   await reload();
+}
+
+// --- Parents de la famille et invitations à usage unique ----------------------------
+export const listMembers = () => repo.listMembers(familyId());
+export const listInvites = () => repo.listInvites(familyId());
+export const createInvite = () => repo.createInvite(familyId());
+export const revokeInvite = (code) => repo.revokeInvite(code);
+
+export async function removeMember(userId) {
+  await repo.removeMember(familyId(), userId);
+  // Si c'est moi qui quitte la famille, on repart à l'écran de bienvenue
+  if (userId === getState().user?.id) setState({ status: 'setup', family: null, parentUnlockedUntil: 0 });
 }
 
 async function createDemoFamily() {

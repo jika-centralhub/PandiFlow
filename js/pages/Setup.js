@@ -59,10 +59,10 @@ export function Setup() {
             </button>
           </div>`
         : html`<div>
-            <p style="color:var(--ink);margin-bottom:12px">Demande le code d'invitation à l'autre parent : il se trouve dans Espace parent → Réglages.</p>
-            <div class="field"><input class="input code" maxLength="8" value=${code} onInput=${(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))} placeholder="CODE" /></div>
+            <p style="color:var(--ink);margin-bottom:12px">Demande une invitation à un parent de la famille : il la crée dans Espace parent → Réglages → Parents de la famille. Le code a 8 caractères, il est valable 48 h et ne sert qu'une fois.</p>
+            <div class="field"><input class="input code" maxLength="9" autocomplete="off" value=${code} onInput=${(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))} placeholder="XXXXXXXX" /></div>
             ${error && html`<p style="color:#b42536;font-weight:600">${error}</p>`}
-            <button class="btn btn-green btn-big" style="width:100%" disabled=${busy || code.length < 6} onClick=${() => run(() => actions.joinFamily(code))}>
+            <button class="btn btn-green btn-big" style="width:100%" disabled=${busy || code.length < 8} onClick=${() => run(() => actions.joinFamily(code))}>
               ${busy ? 'Connexion…' : 'Rejoindre'}
             </button>
           </div>`}
