@@ -1,0 +1,19 @@
+{
+  "name": "PandiFlow — la routine du soir",
+  "short_name": "PandiFlow",
+  "description": "La routine du soir des enfants devient un jeu : tâches, jauges, pandi et avatars.",
+  "lang": "fr",
+  "start_url": "./#/soiree",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#12143d",
+  "theme_color": "#1a1b4b",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

@@ -1,0 +1,187 @@
+/* ===== Avatar : vie du personnage et animations des accessoires ===== */
+.avatar { display: block; width: 100%; height: 100%; overflow: hidden; }
+.avatar.overflow { overflow: visible; }
+/* Seuls les éléments animés prennent leur propre boîte comme repère (les autres gardent
+   leurs attributs transform SVG intacts). */
+.av-char, .av-head, .av-eyes, .av-arm-l, .av-arm-r, .av-pet, .tw, .flutter, .wing-l, .wing-r, .flame,
+.tail, .ear-l, .ear-r, .pompom, .robot-eye, .puff, .flag, .sway, .spin-slow, .wiggle, .brossou-tilt,
+.brossou-paste, .brossou-tube, .brossou-cape, .bulle-wobble, .livre-wing-l, .livre-wing-r, .glow-pulse { transform-box: fill-box; }
+
+.avatar .av-char { transform-origin: 50% 100%; animation: av-breathe 3.6s ease-in-out infinite; }
+.avatar .av-head { transform-origin: 50% 92%; animation: av-sway 5.4s ease-in-out infinite; }
+.avatar .av-eyes { transform-origin: 50% 50%; animation: av-blink 4.8s infinite; }
+.avatar .av-arm-l, .avatar .av-arm-r { transform-origin: 50% 8%; transition: transform .4s cubic-bezier(.3, 1.5, .5, 1); }
+
+@keyframes av-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.012, 1.024); } }
+@keyframes av-sway { 0%, 100% { transform: rotate(-1.8deg); } 50% { transform: rotate(1.8deg); } }
+@keyframes av-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.08); } }
+
+/* Bras levés (note verte, célébration) */
+.avatar.pose-cheer .av-arm-l { animation: arm-cheer-l .5s ease-in-out infinite alternate; }
+.avatar.pose-cheer .av-arm-r { animation: arm-cheer-r .5s ease-in-out infinite alternate; }
+@keyframes arm-cheer-l { from { transform: rotate(125deg); } to { transform: rotate(155deg); } }
+@keyframes arm-cheer-r { from { transform: rotate(-125deg); } to { transform: rotate(-155deg); } }
+
+/* Danse de fin de soirée */
+.avatar.pose-dance .av-char { animation: av-dance 1s ease-in-out infinite; }
+.avatar.pose-dance .av-arm-l { animation: arm-wave-l 1s ease-in-out infinite; }
+.avatar.pose-dance .av-arm-r { animation: arm-wave-r 1s ease-in-out infinite; }
+@keyframes av-dance {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  25% { transform: translateY(-12px) rotate(0deg) scale(1.02, .98); }
+  50% { transform: translateY(0) rotate(5deg); }
+  75% { transform: translateY(-12px) rotate(0deg) scale(1.02, .98); }
+}
+@keyframes arm-wave-l { 0%, 100% { transform: rotate(150deg); } 50% { transform: rotate(40deg); } }
+@keyframes arm-wave-r { 0%, 100% { transform: rotate(-40deg); } 50% { transform: rotate(-150deg); } }
+
+/* Saut de joie (classe ajoutée un instant) */
+.avatar.av-jump .av-char { animation: av-jump .8s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes av-jump {
+  0% { transform: translateY(0) scale(1, 1); }
+  18% { transform: translateY(0) scale(1.1, .88); }
+  50% { transform: translateY(-30px) scale(.94, 1.08); }
+  78% { transform: translateY(0) scale(1.06, .94); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+.avatar.av-wobble .av-char { animation: av-wobble .8s ease-in-out; }
+@keyframes av-wobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
+
+/* --- Accessoires --- */
+.tw { transform-origin: center; animation: twinkle 1.8s ease-in-out infinite; }
+@keyframes twinkle { 0%, 100% { transform: scale(.35) rotate(0); opacity: .35; } 50% { transform: scale(1) rotate(45deg); opacity: 1; } }
+
+.flutter { transform-origin: 50% 0; animation: flutter 1.6s ease-in-out infinite; }
+@keyframes flutter { 0%, 100% { transform: skewX(4deg) scaleX(1); } 50% { transform: skewX(-5deg) scaleX(1.05); } }
+
+.wing-l { transform-origin: 100% 60%; animation: flap-l .7s ease-in-out infinite alternate; }
+.wing-r { transform-origin: 0% 60%; animation: flap-r .7s ease-in-out infinite alternate; }
+@keyframes flap-l { from { transform: rotate(6deg) scaleX(1); } to { transform: rotate(-10deg) scaleX(.82); } }
+@keyframes flap-r { from { transform: rotate(-6deg) scaleX(1); } to { transform: rotate(10deg) scaleX(.82); } }
+
+.flame { transform-origin: 50% 0; animation: flame .16s ease-in-out infinite alternate; }
+@keyframes flame { from { transform: scaleY(.78); opacity: .85; } to { transform: scaleY(1.18); opacity: 1; } }
+
+.avatar .av-pet { animation: pet-bob 2.4s ease-in-out infinite; }
+@keyframes pet-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.tail { transform-origin: 0 100%; animation: tail 1.1s ease-in-out infinite alternate; }
+@keyframes tail { from { transform: rotate(-10deg); } to { transform: rotate(12deg); } }
+.ear-l, .ear-r { transform-origin: 50% 100%; animation: ear 3s ease-in-out infinite; }
+.ear-r { animation-delay: .4s; }
+@keyframes ear { 0%, 88%, 100% { transform: rotate(0); } 92% { transform: rotate(-12deg); } 96% { transform: rotate(8deg); } }
+.pompom { transform-origin: 0 0; animation: pompom 2.2s ease-in-out infinite alternate; }
+@keyframes pompom { from { transform: rotate(-6deg); } to { transform: rotate(8deg); } }
+.blink-light { animation: blinklight 1.2s steps(2, jump-none) infinite; }
+@keyframes blinklight { 0% { opacity: 1; } 100% { opacity: .25; } }
+.robot-eye { transform-origin: center; animation: av-blink 3.4s infinite; }
+.puff { transform-origin: center; animation: puff 3.4s ease-out infinite; }
+@keyframes puff { 0%, 60% { opacity: 0; transform: scale(.3) translateX(0); } 70% { opacity: 1; transform: scale(1) translateX(-2px); } 100% { opacity: 0; transform: scale(1.5) translateX(-10px); } }
+.firefly { animation: firefly 3.6s ease-in-out infinite; }
+@keyframes firefly { 0%, 100% { opacity: .2; transform: translate(0, 0); } 50% { opacity: 1; transform: translate(6px, -10px); } }
+.drift { animation: drift 9s ease-in-out infinite alternate; }
+@keyframes drift { from { transform: translateX(-10px); } to { transform: translateX(14px); } }
+.flag { transform-origin: 0 50%; animation: flag 1.1s ease-in-out infinite alternate; }
+@keyframes flag { from { transform: skewY(-6deg) scaleX(.94); } to { transform: skewY(6deg) scaleX(1.04); } }
+.sway { transform-origin: 50% 100%; animation: sway 3s ease-in-out infinite alternate; }
+@keyframes sway { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+.bubble-up { animation: bubble-up 3.4s ease-in infinite; }
+@keyframes bubble-up { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-190px); opacity: 0; } }
+.swim { animation: swim 10s linear infinite; }
+@keyframes swim { from { transform: translateX(60px); } to { transform: translateX(-260px); } }
+.spin-slow { transform-origin: center; animation: spin 20s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.wave { animation: wave 3s ease-in-out infinite alternate; }
+@keyframes wave { from { transform: translateX(-12px); } to { transform: translateX(12px); } }
+.halo { animation: halo 2.6s ease-in-out infinite; }
+@keyframes halo { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.float-up { animation: float-up 4.2s ease-in infinite; }
+@keyframes float-up { 0% { transform: translateY(0) scale(.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-200px) scale(1.1); opacity: 0; } }
+.wiggle { transform-origin: center; animation: wiggle 2.2s ease-in-out infinite; }
+@keyframes wiggle { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+
+/* --- Brossou, la brosse à dents super-héros --- */
+.brossou-fly { animation: brossou-fly 12s ease-in-out infinite; }
+@keyframes brossou-fly {
+  0% { transform: translate(184px, 36px); }
+  12% { transform: translate(198px, 12px); }
+  24% { transform: translate(170px, 58px); }
+  36% { transform: translate(192px, 30px); }
+  48% { transform: translate(44px, 180px); }
+  52%, 68% { transform: translate(38px, 188px); }
+  80% { transform: translate(100px, -26px); }
+  90% { transform: translate(208px, 20px); }
+  100% { transform: translate(184px, 36px); }
+}
+.brossou-tilt { transform-origin: center; animation: brossou-tilt 12s ease-in-out infinite; }
+@keyframes brossou-tilt {
+  0% { transform: rotate(-10deg); }
+  12% { transform: rotate(10deg); }
+  24% { transform: rotate(-12deg); }
+  36% { transform: rotate(8deg); }
+  48% { transform: rotate(-40deg); }
+  52%, 70% { transform: rotate(-28deg); }
+  80% { transform: rotate(332deg); }
+  90% { transform: rotate(370deg); }
+  100% { transform: rotate(350deg); }
+}
+.brossou-paste { transform-origin: 50% 100%; animation: brossou-paste 12s ease-in-out infinite; }
+@keyframes brossou-paste {
+  0%, 54% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.25); opacity: 1; }
+  64%, 92% { transform: scale(1); opacity: 1; }
+  97%, 100% { transform: scale(0); opacity: 0; }
+}
+.brossou-tube { transform-origin: 50% 100%; animation: brossou-tube 12s ease-in-out infinite; }
+@keyframes brossou-tube { 0%, 53% { transform: scale(1, 1); } 57% { transform: scale(1.12, .72); } 63%, 100% { transform: scale(1, 1); } }
+.brossou-cape { transform-origin: 100% 0; animation: brossou-cape .3s ease-in-out infinite alternate; }
+@keyframes brossou-cape { from { transform: skewY(-8deg) scaleX(1); } to { transform: skewY(6deg) scaleX(1.12); } }
+.brossou-static .brossou-fly { animation: hover-bob 2s ease-in-out infinite; transform: none; }
+.brossou-static .brossou-tilt { animation: none; transform: rotate(-12deg); }
+.brossou-static .brossou-paste { animation: none; transform: scale(1); opacity: 1; }
+@keyframes hover-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+/* --- Bubulle, Livre, Veilleuse --- */
+.bulle-float { animation: bulle-float 11s ease-in-out infinite; }
+@keyframes bulle-float {
+  0%, 100% { transform: translate(186px, 50px); }
+  25% { transform: translate(200px, 10px); }
+  50% { transform: translate(14px, 20px); }
+  75% { transform: translate(-4px, 70px); }
+}
+.bulle-wobble { transform-origin: center; animation: bulle-wobble 1.3s ease-in-out infinite alternate; }
+@keyframes bulle-wobble { from { transform: scale(1.07, .93); } to { transform: scale(.94, 1.06); } }
+
+.livre-fly { animation: livre-fly 9s ease-in-out infinite; }
+@keyframes livre-fly {
+  0%, 100% { transform: translate(184px, 30px) rotate(-6deg); }
+  30% { transform: translate(10px, 10px) rotate(8deg); }
+  55% { transform: translate(-2px, 80px) rotate(-4deg); }
+  80% { transform: translate(196px, 80px) rotate(6deg); }
+}
+.livre-wing-l { transform-origin: 100% 50%; animation: book-flap .42s ease-in-out infinite alternate; }
+.livre-wing-r { transform-origin: 0% 50%; animation: book-flap .42s ease-in-out infinite alternate; }
+@keyframes book-flap { from { transform: scaleX(1); } to { transform: scaleX(.3); } }
+.letter-up { animation: letter-up 2.7s ease-out infinite; }
+@keyframes letter-up { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-30px); opacity: 0; } }
+
+.veilleuse-float { animation: veilleuse-float 6s ease-in-out infinite; }
+@keyframes veilleuse-float {
+  0%, 100% { transform: translate(186px, 18px); }
+  50% { transform: translate(178px, 34px); }
+}
+.glow-pulse { transform-origin: center; animation: glow-pulse 2.6s ease-in-out infinite; }
+@keyframes glow-pulse { 0%, 100% { transform: scale(.8); opacity: .6; } 50% { transform: scale(1.15); opacity: 1; } }
+.zzz { animation: zzz 3s ease-out infinite; }
+@keyframes zzz { 0% { transform: translate(0, 0); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(10px, -22px); opacity: 0; } }
+
+/* Vignettes d'objets : objets centrés, sans trajectoire de vol */
+.item-thumb .bulle-float, .item-thumb .livre-fly, .item-thumb .veilleuse-float { animation-name: hover-bob; transform: none; }
+
+/* Animations réduites : tout s'arrête, les compagnons magiques restent à leur place */
+.reduce-motion .avatar *, .reduce-motion .avatar { animation: none !important; transition: none !important; }
+.reduce-motion .brossou-fly { transform: translate(184px, 36px); }
+.reduce-motion .bulle-float { transform: translate(186px, 50px); }
+.reduce-motion .livre-fly { transform: translate(184px, 30px); }
+.reduce-motion .veilleuse-float { transform: translate(186px, 18px); }
+.reduce-motion .item-thumb g { transform: none; }
+.avatar.still * { animation-play-state: paused !important; }

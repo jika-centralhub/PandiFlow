@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>PandiFlow — galerie avatar</title>
+  <link rel="stylesheet" href="../css/avatar.css">
+  <style>
+    body { margin: 0; padding: 16px; background: #2b2368; font-family: system-ui, sans-serif; color: #fff; }
+    h2 { margin: 18px 0 8px; font-size: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .cell { background: rgba(255,255,255,.1); border-radius: 14px; padding: 6px; text-align: center; font-size: 12px; }
+    .cell .box { height: 150px; }
+    .cell.head .box { height: 100px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">
+    import { html, render } from '../js/vendor/preact-htm.js';
+    import { Avatar } from '../js/avatar/Avatar.js';
+    import { HAIR_STYLES, FACE_SHAPES, SKIN_TONES, DEFAULT_LOOK, EYE_SHAPES, GLASSES_SHAPES } from '../js/avatar/palette.js';
+    import { ITEMS, SLOTS } from '../js/avatar/items.js';
+
+    const params = new URLSearchParams(location.search);
+    const section = params.get('s') || 'base';
+    const base = { ...DEFAULT_LOOK, hairColor: 'chatain' };
+    const cell = (label, props, cls = '') => html`<div class=${'cell ' + cls}><div class="box"><${Avatar} ...${props} /></div>${label}</div>`;
+
+    const big = (props) => html`<div style="width:360px;height:430px;display:inline-block;background:rgba(255,255,255,.08);border-radius:18px;margin:6px"><${Avatar} ...${props} /></div>`;
+    const sections = {
+      big: () => html`
+        ${big({ look: { ...base, hair: 'couettes', freckles: true, missingTooth: true, eyes: 'grand', eyeColor: 'vert', outfit: 'rose' }, mode: 'full', seed: 'a' })}
+        ${big({ look: { ...base, skin: 'caramel', hair: 'boucle', hairColor: 'brun_fonce', eyes: 'rieur', dimples: true, outfit: 'turquoise' }, mode: 'full', expr: 'joy', seed: 'b' })}
+        ${big({ look: { ...base, skin: 'clair', hair: 'court', hairColor: 'blond', glasses: 'rondes', glassesColor: 'bleu', outfit: 'vert' }, mode: 'full', equipped: { magic: 'brossou', hat: 'couronne', back: 'cape' }, seed: 'c' })}`,
+      base: () => html`
+        <h2>Coiffures</h2><div class="grid">${Object.entries(HAIR_STYLES).map(([k, l]) => cell(l, { look: { ...base, hair: k }, mode: 'bust', seed: k }))}</div>
+        <h2>Visages et peaux</h2><div class="grid">${Object.keys(SKIN_TONES).map((k, i) => cell(k, { look: { ...base, skin: k, face: Object.keys(FACE_SHAPES)[i % 4], hair: Object.keys(HAIR_STYLES)[(i * 3) % 14] }, mode: 'bust', seed: k }))}</div>
+        <h2>Expressions</h2><div class="grid">${['neutral', 'happy', 'joy', 'encourage', 'focus'].map((e) => cell(e, { look: { ...base, missingTooth: true, freckles: true, dimples: true }, expr: e, mode: 'bust', seed: e }))}</div>
+        <h2>Yeux et lunettes</h2><div class="grid">${Object.keys(EYE_SHAPES).map((k) => cell(k, { look: { ...base, eyes: k, eyeColor: 'bleu' }, mode: 'head' }, 'head'))}${Object.keys(GLASSES_SHAPES).map((k) => cell(k, { look: { ...base, glasses: k, glassesColor: 'rouge' }, mode: 'head' }, 'head'))}</div>
+        <h2>Poses</h2><div class="grid">${['idle', 'cheer', 'dance'].map((p) => cell(p, { look: { ...base, hair: 'couettes' }, pose: p, mode: 'bust', expr: p === 'idle' ? 'happy' : 'joy' }))}</div>`,
+      items: () => html`${Object.entries(SLOTS).filter(([slot]) => !params.get('slots') || params.get('slots').split(',').includes(slot)).map(([slot, meta]) => html`<h2>${meta.label}</h2><div class="grid">
+        ${ITEMS.filter((i) => i.slot === slot).map((it) => cell(`${it.name} (${it.price})`, { look: { ...base, hair: slot === 'hat' ? 'afro' : 'court' }, equipped: { [slot]: it.id }, mode: 'full', seed: it.id }))}
+      </div>`)}`,
+    };
+    render(sections[section](), document.getElementById('root'));
+  </script>
+</body>
+</html>

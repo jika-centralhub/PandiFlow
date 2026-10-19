@@ -1,0 +1,128 @@
+// Grandes animations plein écran : fin de soirée et trésor de défi débloqué.
+// Elles passent l'une après l'autre grâce à une petite file d'attente.
+import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js';
+import { getState, setState, useStore } from '../lib/store.js';
+import { Avatar } from '../avatar/Avatar.js';
+import { getItem } from '../avatar/items.js';
+import { ItemThumb } from './ItemThumb.js';
+import { Coin } from './Coin.js';
+import { sfx } from '../lib/sounds.js';
+import { fireworks, coinRain, confettiBurst } from '../anim/fx.js';
+import { sleep } from '../lib/util.js';
+
+let queue = [];
+
+export function showOverlay(type, data) {
+  return new Promise((resolve) => {
+    queue.push({ type, data, resolve, key: Date.now() + Math.random() });
+    if (queue.length === 1) setState({ overlay: queue[0] });
+  });
+}
+
+function closeOverlay() {
+  const current = queue.shift();
+  current?.resolve();
+  setState({ overlay: queue[0] || null });
+}
+
+export function OverlayHost() {
+  const { overlay } = useStore();
+  if (!overlay) return null;
+  if (overlay.type === 'celebrate') return html`<${Celebration} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
+  if (overlay.type === 'reveal') return html`<${Reveal} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
+  return null;
+}
+
+function useChild(childId) {
+  return getState().children.find((c) => c.id === childId);
+}
+
+function Celebration({ childId, perfect, bonus, onClose }) {
+  const child = useChild(childId);
+  const [canClose, setCanClose] = useState(false);
+  useEffect(() => {
+    sfx.fanfare();
+    fireworks(2800);
+    if (perfect) setTimeout(() => coinRain(2400), 900);
+    const t1 = setTimeout(() => setCanClose(true), 1200);
+    const t2 = setTimeout(onClose, 9000);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
+  if (!child) return null;
+  return html`<div class="celebrate" style=${{ '--kid': child.color }} onClick=${() => canClose && onClose()}>
+    <div class="stage">
+      <div class="rays" />
+      <${Avatar} look=${child.look} equipped=${child.equipped} expr="joy" pose="dance" mode="full" seed=${child.id} class="overflow" />
+    </div>
+    <div class="text">
+      <div class="title">Bravo ${child.name} !</div>
+      <div class="subtitle">Toute ta soirée est faite. Quelle belle réussite !</div>
+      ${perfect && html`<div class="perfect-banner"><${Coin} /> Soirée parfaite ! +${bonus}</div>`}
+      <div class="tap-hint">Touche l'écran pour continuer</div>
+    </div>
+  </div>`;
+}
+
+function Chest() {
+  return html`<svg class="chest" viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="ch-wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C47A3A" /><stop offset="100%" stop-color="#7E4520" /></linearGradient>
+      <linearGradient id="ch-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFF3B0" /><stop offset="100%" stop-color="#E0A100" /></linearGradient>
+    </defs>
+    <ellipse cx="100" cy="160" rx="80" ry="8" fill="#000" opacity="0.3" />
+    <rect x="22" y="78" width="156" height="78" rx="10" fill="url(#ch-wood)" stroke="#5A2F12" stroke-width="3" />
+    <rect x="22" y="100" width="156" height="10" fill="url(#ch-gold)" />
+    <rect x="44" y="78" width="12" height="78" fill="url(#ch-gold)" /><rect x="144" y="78" width="12" height="78" fill="url(#ch-gold)" />
+    <rect x="88" y="96" width="24" height="28" rx="5" fill="url(#ch-gold)" stroke="#B8860B" stroke-width="2" />
+    <circle cx="100" cy="108" r="4" fill="#5A2F12" />
+    <g class="chest-lid">
+      <path d="M22 80 C22 40 60 26 100 26 C140 26 178 40 178 80 Z" fill="url(#ch-wood)" stroke="#5A2F12" stroke-width="3" />
+      <path d="M44 80 C44 46 56 34 56 30 L56 80 Z M144 80 L144 30 C144 34 156 46 156 80 Z" fill="url(#ch-gold)" />
+      <rect x="22" y="72" width="156" height="10" fill="url(#ch-gold)" />
+    </g>
+  </svg>`;
+}
+
+function Reveal({ childId, itemId, challengeTitle, onClose }) {
+  const child = useChild(childId);
+  const item = getItem(itemId);
+  const [phase, setPhase] = useState('drum');
+  const wrap = useRef(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      sfx.drumroll(1.6);
+      await sleep(1700);
+      if (!alive) return;
+      setPhase('open');
+      sfx.chest();
+      await sleep(400);
+      confettiBurst(wrap.current, ['#FFD23F', '#FFF3B0', '#FF7EB6', '#5EC8FF']);
+      sfx.sparkle();
+      fireworks(1600);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+  if (!child || !item) return null;
+  return html`<div class=${`reveal ${phase === 'open' ? 'open' : ''}`} style=${{ '--kid': child.color }}>
+    <div class="chest-wrap" ref=${wrap}>
+      <div class="glow" />
+      <div class=${`chest ${phase === 'drum' ? 'shake' : ''}`}><${Chest} /></div>
+      <div class="reward"><${ItemThumb} item=${item} look=${child.look} /></div>
+    </div>
+    ${phase === 'drum' && html`<div class="drum">Roulement de tambour…</div>`}
+    <div class="label">
+      <h2>Nouveau trésor pour ${child.name} !</h2>
+      <p><strong>${item.name}</strong></p>
+      <p>${challengeTitle ? `Défi réussi : ${challengeTitle}. ` : ''}${item.hint || ''}</p>
+      <div class="sheet-actions">
+        <button class="btn btn-gold btn-big" onClick=${() => { sfx.tap(); onClose(); }}>Super !</button>
+      </div>
+    </div>
+  </div>`;
+}

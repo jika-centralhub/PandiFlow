@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>PandiFlow — la routine du soir qui donne envie</title>
+  <meta name="description" content="PandiFlow transforme la routine du soir des enfants en jeu : tâches, jauges, pandi à gagner et avatars à habiller.">
+  <meta name="theme-color" content="#1a1b4b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PandiFlow">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="preload" href="assets/fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
+  <script>
+    // Filet de sécurité : si l'écran ne rafraîchit pas les images (onglet en arrière-plan,
+    // navigateur de télé économe…), les animations repassent sur un minuteur.
+    (function () {
+      var raf = window.requestAnimationFrame, caf = window.cancelAnimationFrame, dead = {};
+      if (!raf) return;
+      window.requestAnimationFrame = function (cb) {
+        var done = false, id = raf.call(window, function (t) { if (done || dead[id]) return; done = true; cb(t); });
+        setTimeout(function () { if (!done && !dead[id]) { done = true; cb(performance.now()); } delete dead[id]; }, 60);
+        return id;
+      };
+      window.cancelAnimationFrame = function (id) { dead[id] = 1; caf.call(window, id); };
+    })();
+  </script>
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/avatar.css">
+</head>
+<body>
+  <div id="sky" aria-hidden="true"></div>
+  <div id="app"></div>
+  <div id="fx-layer" aria-hidden="true"></div>
+  <noscript>PandiFlow a besoin de JavaScript pour fonctionner.</noscript>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/vendor/gsap.min.js"></script>
+  <script src="js/vendor/confetti.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
