@@ -11,6 +11,7 @@ import { ItemThumb } from '../components/ItemThumb.js';
 import { Modal, Toggle, NumberInput } from '../components/ui.js';
 import { PinPad } from '../components/PinGate.js';
 import { PhotoAvatar } from '../components/PhotoAvatar.js';
+import { PandiBank } from '../components/PandiBank.js';
 import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
 import { APP_VERSION } from '../config.js';
@@ -228,25 +229,6 @@ function ChallengesSection() {
 // --- Historique ------------------------------------------------------------------------
 const NEXT = { undefined: 'green', green: 'orange', orange: 'red', red: null };
 
-function AdjustModal({ child, onClose }) {
-  const [amount, setAmount] = useState(5);
-  const [note, setNote] = useState('');
-  const apply = (sign) => {
-    actions.manualAdjust(child.id, sign * amount, note.trim() || (sign > 0 ? 'Bonus des parents' : 'Retrait des parents'));
-    sfx.coin();
-    onClose();
-  };
-  return html`<${Modal} onClose=${onClose}>
-    <h2>Pandi de ${child.name}</h2>
-    <div class="field"><label>Combien ?</label><${NumberInput} value=${amount} onChange=${setAmount} min=${1} max=${500} /></div>
-    <div class="field"><label>Pourquoi ? (facultatif)</label><input class="input" value=${note} maxLength="40" onInput=${(e) => setNote(e.target.value)} placeholder="Ex. : a aidé à mettre la table" /></div>
-    <div class="sheet-actions">
-      <button class="p-btn danger" onClick=${() => apply(-1)}>− Retirer</button>
-      <button class="btn btn-gold" onClick=${() => apply(1)}>+ Offrir</button>
-    </div>
-  <//>`;
-}
-
 function HistorySection() {
   const s = useStore();
   const kids = activeChildren(s.children);
@@ -259,7 +241,7 @@ function HistorySection() {
     <div class="row-list" style="margin-bottom:16px">${kids.map((k) => html`<div key=${k.id} class="row" style=${{ '--kid': k.color }}>
       <div class="mini-head" style=${{ background: k.color }}><${Avatar} look=${k.look} mode="head" still=${true} /></div>
       <div class="grow"><div class="title">${k.name}</div><div class="meta">${balance(k.id, s)} pandi</div></div>
-      <button class="p-btn" onClick=${() => setAdjust(k)}>± Pandi</button>
+      <button class="p-btn" onClick=${() => setAdjust(k)}>💰 Cagnotte</button>
     </div>`)}</div>
     ${days.map((d) => html`<div key=${d} class="history-day">
       <h3>${d === today ? 'Ce soir' : formatLong(d)}</h3>
@@ -272,7 +254,7 @@ function HistorySection() {
         })}
       </div>`)}</div>
     </div>`)}
-    ${adjust && html`<${AdjustModal} child=${adjust} onClose=${() => setAdjust(null)} />`}
+    ${adjust && html`<${PandiBank} child=${adjust} onClose=${() => setAdjust(null)} />`}
   </div>`;
 }
 

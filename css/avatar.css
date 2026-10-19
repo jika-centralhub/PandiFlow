@@ -185,3 +185,7 @@
 .reduce-motion .veilleuse-float { transform: translate(186px, 18px); }
 .reduce-motion .item-thumb g { transform: none; }
 .avatar.still * { animation-play-state: paused !important; }
+
+/* Objet tenu par un costume complet (ballon, lionceau, livre…) */
+.avatar .av-prop { animation: pet-bob 2.8s ease-in-out infinite; }
+.av-prop { transform-box: fill-box; }

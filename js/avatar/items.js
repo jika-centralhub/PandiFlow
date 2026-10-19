@@ -2,8 +2,13 @@
 // Les chapeaux sont dessinés pour un haut de crâne à y = 26, puis recalés selon la coiffure.
 import { html } from '../vendor/preact-htm.js';
 import { REWARDS } from './rewards.js';
+import { COSTUMES } from './costumes.js';
+import { starPath, heartPath, grad, GOLD, sparkle, mirror } from './draw.js';
+
+export { starPath, heartPath };
 
 export const SLOTS = {
+  skin: { label: 'Costumes complets', icon: '🎭' },
   hat: { label: 'Chapeaux', icon: '🎩' },
   face: { label: 'Lunettes et masques', icon: '🕶️' },
   neck: { label: 'Autour du cou', icon: '🎀' },
@@ -14,26 +19,6 @@ export const SLOTS = {
   fx: { label: 'Effets magiques', icon: '✨' },
   magic: { label: 'Trésors des défis', icon: '🏆' },
 };
-
-// --- Petits utilitaires de dessin ---------------------------------------------------
-export function starPath(cx, cy, R, r = R * 0.45, n = 5) {
-  let d = '';
-  for (let i = 0; i < n * 2; i++) {
-    const rad = i % 2 ? r : R;
-    const a = (Math.PI / n) * i - Math.PI / 2;
-    d += `${i ? 'L' : 'M'}${(cx + rad * Math.cos(a)).toFixed(1)} ${(cy + rad * Math.sin(a)).toFixed(1)} `;
-  }
-  return d + 'Z';
-}
-export function heartPath(cx, cy, s) {
-  return `M${cx} ${cy + s * 0.9} C${cx - s * 1.5} ${cy + s * 0.05} ${cx - s * 1.05} ${cy - s * 1.05} ${cx} ${cy - s * 0.35} C${cx + s * 1.05} ${cy - s * 1.05} ${cx + s * 1.5} ${cy + s * 0.05} ${cx} ${cy + s * 0.9} Z`;
-}
-const grad = (id, stops, vertical = true) => html`<linearGradient id=${id} x1="0" y1="0" x2=${vertical ? 0 : 1} y2=${vertical ? 1 : 0}>
-  ${stops.map((c, i) => html`<stop key=${i} offset=${`${(i / (stops.length - 1)) * 100}%`} stop-color=${c} />`)}
-</linearGradient>`;
-const GOLD = ['#FFF3B0', '#FFD23F', '#E0A100'];
-const sparkle = (x, y, s = 6, cls = 'tw', delay = 0) =>
-  html`<path class=${cls} style=${{ animationDelay: `${delay}s` }} d=${`M${x} ${y - s} Q${x + s * 0.18} ${y - s * 0.18} ${x + s} ${y} Q${x + s * 0.18} ${y + s * 0.18} ${x} ${y + s} Q${x - s * 0.18} ${y + s * 0.18} ${x - s} ${y} Q${x - s * 0.18} ${y - s * 0.18} ${x} ${y - s} Z`} fill="#FFF7C2" />`;
 
 // --- Chapeaux -------------------------------------------------------------------------
 const hats = [
@@ -234,7 +219,7 @@ const backs = [
     id: 'dragon', name: 'Ailes de dragon', price: 100,
     render: ({ id }) => {
       const left = 'M72 192 C42 160 14 150 -6 156 C6 166 8 178 3 188 C14 186 22 192 24 202 C32 196 42 198 48 208 C54 200 62 198 72 202 Z';
-      const right = left.replace(/(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g, (_, x, y) => `${200 - Number(x)} ${y}`);
+      const right = mirror(left);
       return html`<g>
         <defs>${grad(`${id}-dw`, ['#9D6BFF', '#6B3FD0', '#47258F'])}</defs>
         <g class="wing-l"><path d=${left} fill=${`url(#${id}-dw)`} stroke="#341C72" stroke-width="2" stroke-linejoin="round" />
@@ -486,6 +471,7 @@ const effects = [
 const withSlot = (slot, list) => list.map((it) => ({ ...it, slot }));
 
 export const ITEMS = [
+  ...withSlot('skin', COSTUMES),
   ...withSlot('hat', hats),
   ...withSlot('face', faces),
   ...withSlot('neck', necks),

@@ -107,7 +107,9 @@ function Glasses({ shape, color }) {
 
 const TORSO = 'M50 264 C50 206 64 182 100 180 C136 182 150 206 150 264 Z';
 
-const SLOT_ORDER = ['bg', 'back', 'outfit', 'neck', 'face', 'hat', 'pet', 'fx', 'magic'];
+const SLOT_ORDER = ['bg', 'skin', 'back', 'outfit', 'neck', 'face', 'hat', 'pet', 'fx', 'magic'];
+// Un costume complet recouvre ces emplacements (ils restent équipés, mais cachés)
+export const COVERED_BY_SKIN = ['back', 'outfit', 'neck', 'face', 'hat'];
 
 /**
  * <Avatar look equipped expr mode tryOn />
@@ -133,8 +135,13 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
     const item = itemId ? getItem(itemId) : null;
     if (item && item.slot === slot) items[slot] = item;
   }
+  // Costume complet : il prend la place du haut, du chapeau, du masque, du cou et du dos
+  const costume = items.skin || null;
+  if (costume) for (const slot of COVERED_BY_SKIN) delete items[slot];
   const head = mode === 'head';
-  const shirt = items.outfit?.color || outfit;
+  const shirt = costume?.shirt || items.outfit?.color || outfit;
+  const sleeve = costume?.sleeve || shirt;
+  const showHair = !costume?.hideHair;
   const ctx = {
     id,
     look,
@@ -144,6 +151,8 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
     crown: hair.crown,
     hatScale: hair.hatScale || 1,
     child: seed,
+    hairFill: `url(#${id}-hair)`,
+    hairLine: shade(hairColor, -0.35),
   };
   const hatTransform = `translate(100 ${hair.crown}) scale(${ctx.hatScale}) translate(-100 -26)`;
 
@@ -191,29 +200,33 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
       <clipPath id=${`${id}-head`}><path d=${face.d} /></clipPath>
     </defs>
 
-    ${!head && items.bg && html`<g class="av-bg">${items.bg.render(ctx)}</g>`}
+    ${!head && mode !== 'bust' && items.bg && html`<g class="av-bg">${items.bg.render(ctx)}</g>`}
 
     <g class="av-char" style=${{ animationDelay: delay(3) }}>
       ${showBody && items.back && html`<g class="av-back">${items.back.render(ctx)}</g>`}
-      ${hair.back && html`<g class="av-hair-back">${hair.back(hairC)}</g>`}
+      ${showBody && costume?.back && html`<g class="av-back">${costume.back(ctx)}</g>`}
+      ${hair.back && showHair && html`<g class="av-hair-back">${hair.back(hairC)}</g>`}
 
       ${showBody && html`<g class="av-body">
         <rect x="88" y="148" width="24" height="36" rx="8" fill=${shade(skin, -0.1)} />
         <path d=${TORSO} fill=${`url(#${id}-shirt)`} />
         <g clip-path=${`url(#${id}-torso)`}>
-          ${items.outfit && items.outfit.render(ctx)}
+          ${costume ? costume.torso?.(ctx) : items.outfit && items.outfit.render(ctx)}
           <path d="M60 196 C80 188 120 188 140 196" stroke="#fff" stroke-width="5" opacity="0.18" fill="none" stroke-linecap="round" />
         </g>
-        <path d="M86 181 Q100 196 114 181" fill=${shade(skin, -0.06)} stroke=${shade(shirt, -0.25)} stroke-width="3" />
+        ${costume?.collar ? costume.collar(ctx) : html`<path d="M86 181 Q100 196 114 181" fill=${shade(skin, -0.06)} stroke=${shade(shirt, -0.25)} stroke-width="3" />`}
         ${items.neck && html`<g class="av-neck">${items.neck.render(ctx)}</g>`}
         <g class="av-arm av-arm-l">
-          <rect x="43" y="188" width="20" height="46" rx="10" fill=${shade(shirt, -0.08)} stroke=${shade(shirt, -0.28)} stroke-width="1.4" />
-          <circle cx="53" cy="235" r="9.5" fill=${`url(#${id}-skin)`} stroke=${shade(skin, -0.2)} stroke-width="1" />
+          <rect x="43" y="188" width="20" height="46" rx="10" fill=${shade(sleeve, -0.08)} stroke=${shade(sleeve, -0.28)} stroke-width="1.4" />
+          ${costume?.sleeves?.(ctx, 43)}
+          <circle cx="53" cy="235" r="9.5" fill=${costume?.gloves || `url(#${id}-skin)`} stroke=${shade(costume?.gloves || skin, -0.2)} stroke-width="1" />
         </g>
         <g class="av-arm av-arm-r">
-          <rect x="137" y="188" width="20" height="46" rx="10" fill=${shade(shirt, -0.08)} stroke=${shade(shirt, -0.28)} stroke-width="1.4" />
-          <circle cx="147" cy="235" r="9.5" fill=${`url(#${id}-skin)`} stroke=${shade(skin, -0.2)} stroke-width="1" />
+          <rect x="137" y="188" width="20" height="46" rx="10" fill=${shade(sleeve, -0.08)} stroke=${shade(sleeve, -0.28)} stroke-width="1.4" />
+          ${costume?.sleeves?.(ctx, 137)}
+          <circle cx="147" cy="235" r="9.5" fill=${costume?.gloves || `url(#${id}-skin)`} stroke=${shade(costume?.gloves || skin, -0.2)} stroke-width="1" />
         </g>
+        ${costume?.over && html`<g class="av-costume-over">${costume.over(ctx)}</g>`}
       </g>`}
 
       <g class="av-head" style=${{ animationDelay: delay(7) }}>
@@ -251,13 +264,18 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
           </g>
         </g>
 
-        <g class="av-hair-front">${hair.front(hairC)}</g>
-        ${!funFace && html`<${Glasses} shape=${look.glasses} color=${GLASSES_COLORS[look.glassesColor].color} />`}
+        ${costume?.face && html`<g class="av-costume-face">${costume.face(ctx)}</g>`}
+        ${showHair && html`<g class="av-hair-front">${hair.front(hairC)}</g>`}
+        ${costume?.faceTop && html`<g class="av-costume-face-top">${costume.faceTop(ctx)}</g>`}
+        ${!funFace && !costume?.hidesGlasses && html`<${Glasses} shape=${look.glasses} color=${GLASSES_COLORS[look.glassesColor].color} />`}
         ${funFace && html`<g class="av-face-item">${funFace.render(ctx)}</g>`}
         ${items.hat && html`<g class="av-hat" transform=${items.hat.free ? '' : hatTransform}>${items.hat.render(ctx)}</g>`}
+        ${costume?.hat && html`<g class="av-hat" transform=${hatTransform}>${costume.hat(ctx)}</g>`}
+        ${costume?.headFree && html`<g class="av-hat">${costume.headFree(ctx)}</g>`}
       </g>
 
       ${showBody && items.pet && html`<g class="av-pet" style=${{ animationDelay: delay(5) }}>${items.pet.render(ctx)}</g>`}
+      ${showBody && costume?.prop && html`<g class="av-prop" style=${{ animationDelay: delay(9) }}>${costume.prop(ctx)}</g>`}
     </g>
     ${showBody && items.fx && html`<g class="av-fx">${items.fx.render(ctx)}</g>`}
     ${showBody && items.magic && html`<g class="av-magic">${items.magic.render(ctx)}</g>`}

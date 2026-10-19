@@ -14,6 +14,8 @@ Pensé pour les 5 à 10 ans : grosses tuiles avec émojis, couleurs vives, sons,
 | 🧒 **Avatar** | Personnage dessiné (14 coiffures, 10 teintes de peau, yeux, lunettes, taches de rousseur, dent de lait…), qui cligne des yeux, respire et réagit aux notes. |
 | 📸 **Photo magique** | Une photo de l'enfant est analysée par Claude, qui règle l'avatar pour qu'il lui ressemble. La photo n'est jamais conservée. |
 | 🛍️ **Boutique** | 40 objets : chapeaux, lunettes, capes et ailes, pyjamas, compagnons animés, décors, effets magiques. |
+| 🎭 **Costumes complets** | 25 tenues qui habillent tout le personnage : pompier, police, médecin, super-héros, tortues ninja (4 couleurs), maillots de foot (PSG, OM, OL, France, Real Madrid, Barça, Brésil — couleurs des équipes, sans logo officiel), rabbin (chapeau, barbe, péot, tsitsit), dompteur de lions, dresseur de dragons, astronaute, chef, chevalier, capitaine pirate, magicien, prince et princesse. |
+| 💰 **Cagnotte** | En touchant le compteur de pandi (code parent), on offre ou retire des pandi hors des routines, avec une raison. Pandi la mascotte saute de joie ou pleure sous son petit nuage. Un retrait ne fait jamais passer la cagnotte sous zéro. |
 | 🏆 **Défis** | Défis cumulatifs (les soirs ratés ne remettent pas à zéro) avec 4 trésors exclusifs animés. |
 | 🔐 **Espace parent** | Code PIN, gestion des enfants, des tâches (jours actifs), des défis et du barème, historique corrigeable, ajustement des pandi, sauvegarde. |
 | ☁️ **Synchronisation** | Supabase : les deux parents partagent la même famille, chacun sur son téléphone. Les notes données hors connexion partent dès le retour du réseau. |

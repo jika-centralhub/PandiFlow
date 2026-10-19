@@ -270,9 +270,15 @@ export function deleteChallenge(id) {
 }
 
 // --- Pandi ---------------------------------------------------------------------------------
-export function manualAdjust(childId, amount, note) {
-  if (!amount) return;
-  put('ledger', [{ id: uid(), family_id: familyId(), child_id: childId, kind: 'manual', amount, evening_date: null, note: note || 'Ajustement', created_at: new Date().toISOString() }]);
+// Ajout (amount > 0) ou retrait (amount < 0) de pandi hors des routines.
+// Renvoie { applied, before, after } : le retrait est plafonné au solde.
+export function adjustPandi(childId, amount, note) {
+  const res = domain.applyAdjust(getState(), { familyId: familyId(), childId, amount, note, id: uid() });
+  if (res.applied) {
+    setState({ ledger: res.ledger });
+    commit(res.ops);
+  }
+  return { applied: res.applied, before: res.before, after: res.after };
 }
 
 // --- Réglages de la famille ------------------------------------------------------------------

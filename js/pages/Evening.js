@@ -8,6 +8,8 @@ import { Avatar } from '../avatar/Avatar.js';
 import { PandiCounter, Gauge, Modal } from '../components/ui.js';
 import { Coin } from '../components/Coin.js';
 import { showOverlay } from '../components/Overlays.js';
+import { PandiBank } from '../components/PandiBank.js';
+import { useParentAction } from '../components/PinGate.js';
 import { flyCoins, burst, floatText, replay } from '../anim/fx.js';
 import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
@@ -81,6 +83,8 @@ export function Evening() {
   const [open, setOpen] = useState(null); // { childId, taskId }
   const [moods, setMoods] = useState({});
   const [held, setHeld] = useState({}); // solde affiché gelé pendant le vol des pièces
+  const [bankFor, setBankFor] = useState(null);
+  const [asParent, parentGate] = useParentAction();
   const tiles = useRef({});
   const counters = useRef({});
   const heads = useRef({});
@@ -176,7 +180,9 @@ export function Evening() {
             <div class="kid-info">
               <div class="kid-name-row">
                 <span class="kid-name">${child.name}</span>
-                <${PandiCounter} value=${bal} counterRef=${{ set current(n) { counters.current[child.id] = n; } }} />
+                <button class="counter-btn" aria-label=${`Cagnotte de ${child.name}`} onClick=${() => { sfx.tap(); asParent(() => setBankFor(child.id)); }}>
+                  <${PandiCounter} value=${bal} counterRef=${{ set current(n) { counters.current[child.id] = n; } }} />
+                </button>
               </div>
               <${Gauge} segments=${prog.segments} complete=${prog.complete} />
             </div>
@@ -195,6 +201,8 @@ export function Evening() {
         </section>`;
       })}
     </div>
+    ${bankFor && kids.some((k) => k.id === bankFor) && html`<${PandiBank} child=${kids.find((k) => k.id === bankFor)} onClose=${() => setBankFor(null)} />`}
+    ${parentGate}
     ${openChild && openTask && html`<${RatingSheet}
       child=${openChild}
       task=${openTask}

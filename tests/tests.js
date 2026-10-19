@@ -177,6 +177,22 @@ test('objets exclusifs non achetables', () => {
   ok(d.applyPurchase(s, { familyId: 'f', childId: 'c1', item: { id: 'brossou', price: 0, exclusive: true }, id: 'x' }).error);
 });
 
+// --- Cagnotte hors routines ------------------------------------------------------------------------
+test('cagnotte : ajout de pandi', () => {
+  const s = { ...fixture(), ledger: [{ child_id: 'c1', amount: 4 }] };
+  const r = d.applyAdjust(s, { familyId: 'f', childId: 'c1', amount: 5, note: 'Aide', id: 'a' });
+  eq([r.applied, r.before, r.after], [5, 4, 9]);
+  eq(d.balance('c1', { ...s, ledger: r.ledger }), 9);
+  eq(r.ledger.at(-1).kind, 'manual');
+});
+test('cagnotte : un retrait ne passe jamais sous zéro', () => {
+  const s = { ...fixture(), ledger: [{ child_id: 'c1', amount: 3 }] };
+  const r = d.applyAdjust(s, { familyId: 'f', childId: 'c1', amount: -10, id: 'b' });
+  eq([r.applied, r.after], [-3, 0]);
+  const empty = d.applyAdjust({ ...s, ledger: r.ledger }, { familyId: 'f', childId: 'c1', amount: -2, id: 'c' });
+  eq([empty.applied, empty.ops.length], [0, 0]);
+});
+
 // --- Avatar ------------------------------------------------------------------------------------
 test('look : valeurs inconnues remplacées par défaut', () => {
   const look = normalizeLook({ hair: 'crete-iroquoise', skin: 'miel', freckles: 'oui', eyeColor: 'vert', extra: 1 });

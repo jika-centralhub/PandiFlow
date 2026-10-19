@@ -58,7 +58,27 @@ export async function flyCoins(fromEl, toEl, count, onEach) {
       ),
     );
   }
-  await Promise.all(jobs);
+  // Filet de sécurité : si l'écran s'endort pendant le vol, on n'attend pas indéfiniment
+  await Promise.race([Promise.all(jobs), sleep(2500 + n * 100)]);
+}
+
+// Pièces qui s'échappent d'un compteur et tombent (retrait de pandi)
+export function dropCoins(fromEl, count) {
+  if (!fromEl || count <= 0 || prefersReducedMotion() || !gsap()) return;
+  const from = centerOf(fromEl);
+  const n = Math.min(count, 10);
+  for (let i = 0; i < n; i++) {
+    const coin = document.createElement('div');
+    coin.className = 'fly-coin';
+    coin.innerHTML = COIN_SVG;
+    layer().appendChild(coin);
+    const dx = rand(-120, 120);
+    gsap()
+      .timeline({ delay: i * 0.08, onComplete: () => coin.remove() })
+      .set(coin, { x: from.x, y: from.y, scale: 0.9, opacity: 1 })
+      .to(coin, { y: from.y - rand(40, 90), x: from.x + dx * 0.4, rotation: rand(-90, 90), duration: 0.3, ease: 'power2.out' })
+      .to(coin, { y: innerHeight + 60, x: from.x + dx, rotation: `+=${rand(180, 540)}`, opacity: 0.3, duration: rand(0.9, 1.3), ease: 'power2.in' });
+  }
 }
 
 // Explosion d'étoiles / d'émojis autour d'un élément

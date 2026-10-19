@@ -3,7 +3,7 @@ import { html, useRef, useState } from '../vendor/preact-htm.js';
 import { useStore } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import { balance, isOwned, challengesForChild } from '../domain.js';
-import { Avatar } from '../avatar/Avatar.js';
+import { Avatar, COVERED_BY_SKIN } from '../avatar/Avatar.js';
 import { ITEMS, SLOTS, shopItems, getItem } from '../avatar/items.js';
 import { ItemThumb } from '../components/ItemThumb.js';
 import { PandiCounter, Modal } from '../components/ui.js';
@@ -11,6 +11,8 @@ import { Coin } from '../components/Coin.js';
 import { LookEditor } from '../components/LookEditor.js';
 import { PinGate } from '../components/PinGate.js';
 import { PhotoAvatar } from '../components/PhotoAvatar.js';
+import { PandiBank } from '../components/PandiBank.js';
+import { useParentAction } from '../components/PinGate.js';
 import { burst, confettiBurst, flyCoins, replay } from '../anim/fx.js';
 import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
@@ -22,12 +24,13 @@ const TABS = [
   { id: 'defis', label: 'Défis', icon: '🏆' },
 ];
 
-const SLOT_ORDER = ['hat', 'face', 'back', 'neck', 'outfit', 'pet', 'bg', 'fx', 'magic'];
+const SLOT_ORDER = ['skin', 'hat', 'face', 'back', 'neck', 'outfit', 'pet', 'bg', 'fx', 'magic'];
 
-function ItemCard({ item, index, state, price, onClick }) {
+function ItemCard({ item, index, state, price, look, note, onClick }) {
   return html`<button class=${`item-card ${state}`} style=${{ '--i': index }} onClick=${onClick}>
     ${state === 'equipped' && html`<span class="tag">Porté</span>`}
-    <div class="thumb"><${ItemThumb} item=${item} /></div>
+    ${note && html`<span class="tag muted">${note}</span>`}
+    <div class="thumb"><${ItemThumb} item=${item} look=${look} /></div>
     <div class="name">${item.short || item.name}</div>
     ${price != null && html`<div class="price"><${Coin} />${price}</div>`}
   </button>`;
@@ -35,6 +38,7 @@ function ItemCard({ item, index, state, price, onClick }) {
 
 function Inventory({ child, owned, onEquip }) {
   const mine = ITEMS.filter((i) => owned.has(i.id));
+  const costumeOn = Boolean(child.equipped?.skin);
   if (!mine.length) {
     return html`<div style="text-align:center;padding:24px;font-size:calc(var(--u)*4.2)">
       Tu n'as pas encore d'objets.<br />Gagne des pandi ce soir et file à la boutique ! 🛍️
@@ -47,7 +51,11 @@ function Inventory({ child, owned, onEquip }) {
     if (!list.length) return null;
     return html`<div key=${slot}>
       <h3 class="section-title">${SLOTS[slot].icon} ${SLOTS[slot].label}</h3>
-      <div class="item-grid">${list.map((it) => html`<${ItemCard} key=${it.id} item=${it} index=${i++} state=${child.equipped?.[slot] === it.id ? 'equipped' : ''} onClick=${() => onEquip(it)} />`)}</div>
+      <div class="item-grid">${list.map((it) => {
+        const worn = child.equipped?.[slot] === it.id;
+        const hidden = worn && costumeOn && COVERED_BY_SKIN.includes(slot);
+        return html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${worn ? 'equipped' : ''} note=${hidden ? 'Sous le costume' : null} onClick=${() => onEquip(it)} />`;
+      })}</div>
     </div>`;
   })}</div>`;
 }
@@ -59,7 +67,7 @@ function Shop({ child, owned, bal, onPick }) {
     if (!list.length) return null;
     return html`<div key=${slot}>
       <h3 class="section-title">${SLOTS[slot].icon} ${SLOTS[slot].label}</h3>
-      <div class="item-grid">${list.map((it) => html`<${ItemCard} key=${it.id} item=${it} index=${i++} state=${bal < it.price ? 'locked' : ''} price=${it.price} onClick=${() => onPick(it)} />`)}</div>
+      <div class="item-grid">${list.map((it) => html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${bal < it.price ? 'locked' : ''} price=${it.price} onClick=${() => onPick(it)} />`)}</div>
     </div>`;
   })}</div>`;
 }
@@ -90,7 +98,7 @@ function BuyModal({ child, item, bal, onBuy, onClose }) {
       </div>
       <div style="flex:1;min-width:calc(var(--u)*50)">
         <h2>${item.name}</h2>
-        <p style="font-size:calc(var(--u)*4.4);display:flex;align-items:center;gap:8px;color:#8a5a00;font-weight:700"><${Coin} class="coin" style="width:32px" /> ${item.price} pandi</p>
+        <p style="font-size:calc(var(--u)*4.4);display:flex;align-items:center;gap:8px;color:#8a5a00;font-weight:700"><${Coin} class="coin coin-inline" /> ${item.price} pandi</p>
         <p style="color:var(--ink-soft);margin-top:8px;font-size:calc(var(--u)*3.8)">${missing > 0 ? `Encore ${missing} pandi à gagner. Tu peux y arriver !` : 'Tu peux te l’offrir !'}</p>
         <div class="sheet-actions" style="justify-content:flex-start">
           <button class="btn btn-ghost" style="color:var(--ink)" onClick=${onClose}>Pas maintenant</button>
@@ -107,6 +115,8 @@ export function ChildPage({ childId, tab = 'look' }) {
   const [buying, setBuying] = useState(null);
   const [gate, setGate] = useState(false);
   const [photo, setPhoto] = useState(false);
+  const [bank, setBank] = useState(false);
+  const [asParent, parentGate] = useParentAction();
   const stage = useRef(null);
   const counter = useRef(null);
 
@@ -152,7 +162,9 @@ export function ChildPage({ childId, tab = 'look' }) {
       <button class="btn btn-ghost btn-small" onClick=${() => navigate('soiree')}>← Soirée</button>
       <div class="page-title">Le coin de ${child.name}</div>
       <div class="spacer" />
-      <${PandiCounter} value=${bal} big=${true} counterRef=${counter} />
+      <button class="counter-btn" aria-label="Cagnotte" onClick=${() => { sfx.tap(); asParent(() => setBank(true)); }}>
+        <${PandiCounter} value=${bal} big=${true} counterRef=${counter} />
+      </button>
     </header>
     <div class="child-body">
       <div class="child-stage" ref=${stage}>
@@ -176,5 +188,7 @@ export function ChildPage({ childId, tab = 'look' }) {
     ${buying && html`<${BuyModal} child=${child} item=${buying} bal=${bal} onBuy=${() => buy(buying)} onClose=${() => setBuying(null)} />`}
     ${gate && html`<${PinGate} onSuccess=${() => { setGate(false); setPhoto(true); }} onCancel=${() => setGate(false)} />`}
     ${photo && html`<${PhotoAvatar} child=${child} onClose=${() => setPhoto(false)} />`}
+    ${bank && html`<${PandiBank} child=${child} onClose=${() => setBank(false)} />`}
+    ${parentGate}
   </div>`;
 }

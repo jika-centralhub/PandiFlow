@@ -71,3 +71,21 @@ export function PinPad({ onSuccess }) {
 export function PinGate({ onSuccess, onCancel }) {
   return html`<${Modal} onClose=${onCancel} style="width:auto"><${PinPad} onSuccess=${onSuccess} /><//>`;
 }
+
+// Lance une action réservée aux parents : demande le code si l'espace parent est verrouillé.
+// Renvoie [run, gate] : run(fn) déclenche l'action, gate est la fenêtre du code à afficher.
+export function useParentAction() {
+  const [pending, setPending] = useState(null);
+  const run = (fn) => (actions.isParentUnlocked() ? fn() : setPending({ fn }));
+  const gate =
+    pending &&
+    html`<${PinGate}
+      onSuccess=${() => {
+        const { fn } = pending;
+        setPending(null);
+        fn();
+      }}
+      onCancel=${() => setPending(null)}
+    />`;
+  return [run, gate];
+}

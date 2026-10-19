@@ -224,6 +224,26 @@ export function applyRating(state, { familyId, childId, taskId, date, color, now
   };
 }
 
+// Ajout ou retrait de pandi par un parent, hors des routines.
+// Un retrait ne peut pas faire passer la cagnotte sous zéro.
+export function applyAdjust(state, { familyId, childId, amount, note, id, now = new Date().toISOString() }) {
+  const before = balance(childId, state);
+  const value = Math.round(Number(amount) || 0);
+  const applied = value < 0 ? -Math.min(-value, Math.max(0, before)) : value;
+  if (!applied) return { applied: 0, before, after: before, ledger: state.ledger, ops: [] };
+  const row = {
+    id,
+    family_id: familyId,
+    child_id: childId,
+    kind: 'manual',
+    amount: applied,
+    evening_date: null,
+    note: note || (applied > 0 ? 'Bonus des parents' : 'Retrait des parents'),
+    created_at: now,
+  };
+  return { applied, before, after: before + applied, ledger: [...state.ledger, row], ops: [{ op: 'put', table: 'ledger', rows: [row] }] };
+}
+
 // Achat en boutique : vérifie le solde et renvoie les écritures.
 export function applyPurchase(state, { familyId, childId, item, now = new Date().toISOString(), id }) {
   if (!item || item.exclusive) return { error: 'Cet objet ne se trouve pas en boutique.' };

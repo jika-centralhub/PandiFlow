@@ -1,6 +1,7 @@
 // Vignette d'un objet seul (boutique, affaires, défis).
 import { html, useMemo } from '../vendor/preact-htm.js';
 import { DEFAULT_LOOK, SKIN_TONES, OUTFIT_COLORS } from '../avatar/palette.js';
+import { Avatar } from '../avatar/Avatar.js';
 import { shade } from '../lib/util.js';
 
 let n = 0;
@@ -20,6 +21,8 @@ const BOX = {
 export function ItemThumb({ item, look = DEFAULT_LOOK }) {
   const id = useMemo(() => `th${++n}`, []);
   if (!item) return null;
+  // Un costume complet se montre porté par l'enfant
+  if (item.slot === 'skin') return html`<${Avatar} look=${look} equipped=${{ skin: item.id }} mode="bust" seed=${item.id} />`;
   const ctx = {
     id,
     look,

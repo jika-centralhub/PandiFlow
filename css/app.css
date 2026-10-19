@@ -496,3 +496,52 @@ h1, h2, h3, p { margin: 0; }
   .photo-result { width: calc(var(--u) * 40); height: calc(var(--u) * 46); }
   .photo-flow { gap: calc(var(--u) * 2); }
 }
+.item-card .tag.muted { background: #8a83b5; left: auto; right: calc(var(--u) * 1.4); z-index: 1; }
+.item-card .thumb .avatar { width: 100%; height: 100%; }
+
+/* ===== Cagnotte (pandi offerts ou retirés hors des routines) ===== */
+.counter-btn { border-radius: 999px; transition: transform .15s cubic-bezier(.3, 1.6, .5, 1); flex: none; }
+.counter-btn:active { transform: scale(.9); }
+.bank-head { display: flex; align-items: center; justify-content: space-between; gap: calc(var(--u) * 3); flex-wrap: wrap; padding-right: calc(var(--u) * 10); }
+.bank-head h2 { margin: 0; }
+.bank-modes { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 2); margin: calc(var(--u) * 3) 0; }
+.bank-mode { padding: calc(var(--u) * 3); border-radius: calc(var(--u) * 4); font-weight: 700; font-size: calc(var(--u) * 4.2); background: #f3effd; color: var(--ink); transition: all .2s; }
+.bank-mode.on.add { background: linear-gradient(180deg, #6ff0a3, var(--green)); color: #fff; box-shadow: 0 calc(var(--u) * 1) 0 var(--green-d); }
+.bank-mode.on.remove { background: linear-gradient(180deg, #ffb3b9, var(--red)); color: #fff; box-shadow: 0 calc(var(--u) * 1) 0 var(--red-d); }
+.bank-history { margin-top: calc(var(--u) * 4); border-top: 2px solid #ece8fb; padding-top: calc(var(--u) * 3); }
+.bank-history h3 { font-size: calc(var(--u) * 3.8); margin-bottom: calc(var(--u) * 1.6); color: var(--ink-soft); }
+.bank-line { display: flex; align-items: center; gap: calc(var(--u) * 2.4); padding: calc(var(--u) * 1.2) 0; font-size: calc(var(--u) * 3.6); }
+.bank-line strong { min-width: 4ch; font-size: calc(var(--u) * 4.2); }
+.bank-line strong.plus { color: var(--green-d); }
+.bank-line strong.minus { color: var(--red-d); }
+.bank-line span { flex: 1; }
+.bank-line em { color: var(--ink-soft); font-style: normal; font-size: calc(var(--u) * 3.2); }
+
+.pandi-moment { position: fixed; inset: 0; z-index: 52; display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 6); padding: calc(var(--u) * 4); backdrop-filter: blur(8px); animation: fade-in .3s ease; }
+.pandi-moment.happy { background: radial-gradient(circle at 30% 50%, rgba(255, 214, 102, .97), rgba(255, 126, 182, .95) 42%, rgba(70, 36, 130, .98) 85%); }
+.pandi-moment.sad { background: radial-gradient(circle at 30% 50%, rgba(132, 150, 196, .97), rgba(40, 46, 92, .98) 70%); }
+.pm-pandi { position: relative; flex: none; width: calc(var(--u) * 52); height: calc(var(--u) * 52); animation: stage-in .7s cubic-bezier(.3, 1.5, .5, 1); }
+.pm-pandi .mascot { width: 100%; height: 100%; overflow: visible; }
+.pandi-happy { transform-origin: 50% 100%; animation: pandi-jump .75s cubic-bezier(.3, 1.4, .5, 1) infinite; }
+@keyframes pandi-jump { 0%, 100% { transform: translateY(0) scale(1.05, .95); } 45% { transform: translateY(-14%) scale(.96, 1.05); } }
+.pandi-wave-l { animation: pandi-wave-l 1.1s ease-in-out infinite alternate; }
+@keyframes pandi-wave-l { from { transform: rotate(12deg); } to { transform: rotate(-18deg); } }
+.pandi-sad { transform-origin: 50% 100%; animation: pandi-sad 2.8s ease-in-out infinite; }
+@keyframes pandi-sad { 0%, 100% { transform: rotate(-3deg) scale(1, .97); } 50% { transform: rotate(3deg) scale(1.02, .93); } }
+.pandi-tear { transform-box: fill-box; animation: tear 1.7s ease-in infinite; }
+@keyframes tear { 0% { transform: translateY(0) scale(.5); opacity: 0; } 20% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(46px) scale(.9); opacity: 0; } }
+.pm-cloud { position: absolute; left: 12%; top: -22%; width: 76%; z-index: 1; animation: cloud-bob 3s ease-in-out infinite; }
+@keyframes cloud-bob { 50% { transform: translateX(6%); } }
+.rain-drop { animation: rain 1s linear infinite; }
+@keyframes rain { from { transform: translateY(0); opacity: 1; } to { transform: translateY(30px); opacity: 0; } }
+.pm-hearts span { position: absolute; bottom: 20%; font-size: calc(var(--u) * 7); animation: float-heart 2.4s ease-in infinite; }
+@keyframes float-heart { 0% { transform: translateY(0) scale(.5); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-260%) scale(1.2) rotate(20deg); opacity: 0; } }
+.pm-text { max-width: calc(var(--u) * 92); }
+.pm-kid { display: flex; align-items: center; gap: calc(var(--u) * 3); margin-bottom: calc(var(--u) * 3); }
+.pm-kid .kid-avatar { width: calc(var(--u) * 18); height: calc(var(--u) * 18); }
+.pm-text h2 { font-size: calc(var(--u) * 9); line-height: 1.05; text-shadow: 0 calc(var(--u) * 1) 0 rgba(0, 0, 0, .25); animation: title-in .8s cubic-bezier(.3, 1.6, .5, 1) .2s both; }
+.pm-note { font-size: calc(var(--u) * 5); margin-top: calc(var(--u) * 2); font-weight: 600; }
+.pm-sub { font-size: calc(var(--u) * 4.4); margin-top: calc(var(--u) * 2); opacity: .92; }
+@media (orientation: portrait) { .pandi-moment { flex-direction: column; text-align: center; } .pm-kid { justify-content: center; } }
+.pandi-moment .tap-hint { margin-top: calc(var(--u) * 4); font-size: calc(var(--u) * 3.6); opacity: .75; }
+.coin-inline { width: 1.5em; height: 1.5em; flex: none; }
