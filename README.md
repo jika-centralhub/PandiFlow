@@ -72,16 +72,11 @@ Chaque parent crée son compte avec **e-mail + mot de passe** (8 caractères min
 
 Coût indicatif : quelques centimes par photo (modèle `claude-opus-5-5`). L'app limite à 5 analyses par enfant et par jour.
 
-### Étape C — GitHub Pages
+### Étape C — GitHub Pages (déjà fait)
 
-1. Créer un dépôt vide `pandiflow` sur GitHub.
-2. Pousser le code :
-   ```bash
-   git remote add origin https://github.com/<ton-compte>/pandiflow.git
-   git push -u origin main
-   ```
-3. **Settings → Pages** : *Source* = *Deploy from a branch*, branche `main`, dossier `/ (root)`.
-4. *Custom domain* = `pandiflow.com` (le fichier `CNAME` est déjà dans le dépôt), puis cocher **Enforce HTTPS** quand GitHub le propose.
+Le code est sur [github.com/jika-psia/PandiFlow](https://github.com/jika-psia/PandiFlow) (dépôt public, commits signés avec l'adresse privée GitHub). GitHub Pages publie la branche `main` (dossier racine) avec le domaine `pandiflow.com` (fichier `CNAME`). Chaque `git push` sur `main` met le site à jour en moins d'une minute.
+
+Une fois le DNS en place (étape D) et le certificat émis par GitHub, activer *Enforce HTTPS* dans *Settings → Pages*.
 
 ### Étape D — DNS chez Hostinger
 
@@ -96,7 +91,7 @@ Dans **Hostinger → Domaines → pandiflow.com → DNS / Nameservers** :
 | A | @ | 185.199.109.153 |
 | A | @ | 185.199.110.153 |
 | A | @ | 185.199.111.153 |
-| CNAME | www | `<ton-compte>.github.io` |
+| CNAME | www | `jika-psia.github.io` |
 
 La propagation prend de quelques minutes à quelques heures. Ensuite, https://pandiflow.com affiche l'app.
 
