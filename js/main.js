@@ -26,7 +26,7 @@ function Router() {
   if (s.status === 'recovery') return html`<${NewPassword} />`;
   if (s.status === 'setup') return html`<${Setup} />`;
 
-  if (page === 'enfant' && id) return html`<${ChildPage} key=${id} childId=${id} tab=${route.query.onglet} />`;
+  if (page === 'enfant' && id) return html`<${ChildPage} key=${id} childId=${id} tab=${route.query.onglet} rayon=${route.query.rayon} />`;
   if (page === 'parent') return html`<${ParentPage} section=${id} />`;
   return html`<${Evening} />`;
 }

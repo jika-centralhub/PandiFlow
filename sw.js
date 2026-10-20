@@ -14,6 +14,7 @@ const SHELL = [
   './css/calm.css',
   './css/team.css',
   './css/garage.css',
+  './css/shop.css',
   './assets/fonts/fredoka.woff2',
   './assets/icons/icon.svg',
   './assets/icons/icon-192.png',

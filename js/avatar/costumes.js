@@ -783,3 +783,12 @@ export const COSTUMES = [
   princesse,
   prince,
 ];
+
+// Familles de costumes, pour ranger le rayon de la boutique
+export const COSTUME_GROUPS = [
+  { id: 'heros', label: 'Super-héros', icon: '🦸', ids: ['superheros', ...HEROES.map((h) => h.id)] },
+  { id: 'foot', label: 'Maillots de foot', icon: '⚽', ids: KITS.map((k) => k.id) },
+  { id: 'metiers', label: 'Métiers', icon: '🧑‍🚒', ids: ['pompier', 'police', 'medecin', 'chef', 'astronaute_combi', 'rabbin'] },
+  { id: 'aventure', label: 'Contes et aventures', icon: '🏰', ids: ['chevalier', 'capitaine', 'magicien', 'princesse', 'prince', 'dompteur', 'dresseur_dragons'] },
+  { id: 'tortues', label: 'Tortues ninja', icon: '🐢', ids: COSTUMES.filter((c) => c.id.startsWith('tortue_')).map((c) => c.id) },
+];

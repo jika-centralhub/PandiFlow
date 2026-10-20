@@ -5,6 +5,7 @@ import * as actions from '../lib/actions.js';
 import { balance, isOwned, challengesForChild, activeChildren } from '../domain.js';
 import { Avatar, COVERED_BY_SKIN } from '../avatar/Avatar.js';
 import { ITEMS, SLOTS, shopItems, getItem } from '../avatar/items.js';
+import { COSTUME_GROUPS } from '../avatar/costumes.js';
 import { ItemThumb } from '../components/ItemThumb.js';
 import { PandiCounter, Modal, ColorPicker } from '../components/ui.js';
 import { Coin } from '../components/Coin.js';
@@ -39,7 +40,49 @@ function ItemCard({ item, index, state, price, look, note, onClick }) {
   </button>`;
 }
 
-function Inventory({ child, owned, onEquip }) {
+// Rayons de la boutique et des affaires : une carte par type d'objet, avec sa couleur
+const RAYON_COLORS = {
+  skin: '#FF7EB6', hat: '#FFB84D', face: '#5EC8FF', back: '#9B7BFF', neck: '#FF8A5C', outfit: '#48E0A4', pet: '#C98A5B',
+  bg: '#4D9BFF', fx: '#F06BD8', vehicle: '#E2363F', flag: '#3DD6D0', gear: '#A8E05F', yard: '#2FCF74', magic: '#FFD23F',
+};
+
+function RayonCard({ slot, list, index, look, bal = null, onOpen }) {
+  const prices = list.map((it) => it.price).filter((p) => p > 0);
+  const min = prices.length ? Math.min(...prices) : null;
+  const affordable = bal == null ? 0 : list.filter((it) => it.price <= bal).length;
+  const preview = list.slice(0, slot === 'skin' ? 2 : 3);
+  return html`<button class="rayon-card" style=${{ '--c': RAYON_COLORS[slot] || '#9B7BFF', '--i': index }} onClick=${() => { sfx.tap(); onOpen(slot); }}>
+    <span class="rc-ico">${SLOTS[slot].icon}</span>
+    <span class="rc-label">${SLOTS[slot].label}</span>
+    <span class="rc-meta">${list.length} objet${list.length > 1 ? 's' : ''}${bal != null && min != null ? html` · dès ${min} <${Coin} />` : ''}</span>
+    <span class="rc-thumbs">${preview.map((it) => html`<span key=${it.id} class="rc-thumb"><${ItemThumb} item=${it} look=${look} /></span>`)}</span>
+    ${affordable > 0 && html`<span class="rc-badge">${affordable} pour toi !</span>`}
+  </button>`;
+}
+
+function RayonHead({ slot, onBack, extra = null }) {
+  return html`<div class="rayon-head" style=${{ '--c': RAYON_COLORS[slot] || '#9B7BFF' }}>
+    <button class="rh-back" aria-label="Tous les rayons" onClick=${() => { sfx.tap(); onBack(); }}>←</button>
+    <h3><span class="rh-ico">${SLOTS[slot].icon}</span>${SLOTS[slot].label}</h3>
+    ${extra}
+  </div>`;
+}
+
+// Les costumes sont rangés par famille (super-héros, maillots, métiers…)
+function grouped(slot, list) {
+  if (slot !== 'skin') return [{ id: 'all', label: null, items: list }];
+  const left = new Set(list.map((it) => it.id));
+  const groups = COSTUME_GROUPS.map((g) => {
+    const items = list.filter((it) => g.ids.includes(it.id));
+    items.forEach((it) => left.delete(it.id));
+    return { ...g, items };
+  }).filter((g) => g.items.length);
+  const rest = list.filter((it) => left.has(it.id));
+  if (rest.length) groups.push({ id: 'autres', label: 'Autres', icon: '✨', items: rest });
+  return groups;
+}
+
+function Inventory({ child, owned, rayon, onRayon, onEquip }) {
   const mine = ITEMS.filter((i) => owned.has(i.id));
   const costumeOn = Boolean(child.equipped?.skin);
   if (!mine.length) {
@@ -48,31 +91,42 @@ function Inventory({ child, owned, onEquip }) {
       <div class="sheet-actions"><button class="btn btn-gold" onClick=${() => navigate(`enfant/${child.id}?onglet=boutique`)}>Voir la boutique</button></div>
     </div>`;
   }
+  const slots = SLOT_ORDER.filter((slot) => mine.some((it) => it.slot === slot));
+  if (!rayon || !slots.includes(rayon)) {
+    return html`<div class="rayons">${slots.map((slot, i) => html`<${RayonCard} key=${slot} slot=${slot} index=${i} look=${child.look} list=${mine.filter((it) => it.slot === slot)} onOpen=${onRayon} />`)}</div>`;
+  }
   let i = 0;
-  return html`<div>${SLOT_ORDER.map((slot) => {
-    const list = mine.filter((it) => it.slot === slot);
-    if (!list.length) return null;
-    return html`<div key=${slot}>
-      <h3 class="section-title">${SLOTS[slot].icon} ${SLOTS[slot].label}</h3>
-      <div class="item-grid">${list.map((it) => {
-        const worn = child.equipped?.[slot] === it.id;
-        const hidden = worn && costumeOn && COVERED_BY_SKIN.includes(slot);
+  return html`<div>
+    <${RayonHead} slot=${rayon} onBack=${() => onRayon(null)} />
+    ${grouped(rayon, mine.filter((it) => it.slot === rayon)).map((g) => html`<div key=${g.id}>
+      ${g.label && html`<h3 class="section-title">${g.icon} ${g.label}</h3>`}
+      <div class="item-grid">${g.items.map((it) => {
+        const worn = child.equipped?.[rayon] === it.id;
+        const hidden = worn && costumeOn && COVERED_BY_SKIN.includes(rayon);
         return html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${worn ? 'equipped' : ''} note=${hidden ? 'Sous le costume' : null} onClick=${() => onEquip(it)} />`;
       })}</div>
-    </div>`;
-  })}</div>`;
+    </div>`)}
+  </div>`;
 }
 
-function Shop({ child, owned, bal, onPick }) {
+function Shop({ child, owned, bal, rayon, onRayon, onPick }) {
+  const [affordableOnly, setAffordableOnly] = useState(false);
+  const bySlot = (slot) => shopItems().filter((it) => it.slot === slot && !owned.has(it.id)).sort((a, b) => a.price - b.price);
+  const slots = SLOT_ORDER.filter((slot) => slot !== 'magic' && bySlot(slot).length);
+  if (!slots.length) return html`<p style="padding:20px;text-align:center">Tu as déjà tout acheté. Bravo, champion ! 🏆</p>`;
+  if (!rayon || !slots.includes(rayon)) {
+    return html`<div class="rayons">${slots.map((slot, i) => html`<${RayonCard} key=${slot} slot=${slot} index=${i} look=${child.look} bal=${bal} list=${bySlot(slot)} onOpen=${onRayon} />`)}</div>`;
+  }
+  const list = bySlot(rayon).filter((it) => !affordableOnly || it.price <= bal);
   let i = 0;
-  return html`<div>${SLOT_ORDER.filter((s) => s !== 'magic').map((slot) => {
-    const list = shopItems().filter((it) => it.slot === slot && !owned.has(it.id)).sort((a, b) => a.price - b.price);
-    if (!list.length) return null;
-    return html`<div key=${slot}>
-      <h3 class="section-title">${SLOTS[slot].icon} ${SLOTS[slot].label}</h3>
-      <div class="item-grid">${list.map((it) => html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${bal < it.price ? 'locked' : ''} price=${it.price} onClick=${() => onPick(it)} />`)}</div>
-    </div>`;
-  })}</div>`;
+  return html`<div>
+    <${RayonHead} slot=${rayon} onBack=${() => onRayon(null)} extra=${html`<button class=${`chip rh-filter ${affordableOnly ? 'on' : ''}`} onClick=${() => { sfx.tap(); setAffordableOnly(!affordableOnly); }}>💰 À ma portée</button>`} />
+    ${!list.length && html`<p class="hint" style="padding:12px;text-align:center">Rien à ta portée ici pour l'instant : encore quelques pandi à gagner ! 💪</p>`}
+    ${grouped(rayon, list).map((g) => html`<div key=${g.id}>
+      ${g.label && html`<h3 class="section-title">${g.icon} ${g.label}</h3>`}
+      <div class="item-grid">${g.items.map((it) => html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${bal < it.price ? 'locked' : ''} price=${it.price} onClick=${() => onPick(it)} />`)}</div>
+    </div>`)}
+  </div>`;
 }
 
 function Challenges({ child, state }) {
@@ -114,7 +168,7 @@ function BuyModal({ child, item, bal, onBuy, onClose }) {
   <//>`;
 }
 
-export function ChildPage({ childId, tab = 'look' }) {
+export function ChildPage({ childId, tab = 'look', rayon = null }) {
   const s = useStore();
   const child = s.children.find((c) => c.id === childId);
   const [buying, setBuying] = useState(null);
@@ -134,7 +188,8 @@ export function ChildPage({ childId, tab = 'look' }) {
   const tabs = activeChildren(s.children).length > 1 ? TABS : TABS.filter((t) => t.id !== 'equipe');
   const current = tabs.some((t) => t.id === tab) ? tab : 'look';
   const garage = hasGarage(child.equipped);
-  const toShop = () => navigate(`enfant/${child.id}?onglet=boutique`);
+  const toShop = () => navigate(`enfant/${child.id}?onglet=boutique&rayon=vehicle`);
+  const openRayon = (slot) => navigate(`enfant/${child.id}?onglet=${current}${slot ? `&rayon=${slot}` : ''}`, { replace: true });
   const celebrateStage = () => {
     replay(stage.current?.querySelector('.avatar'), 'av-jump', 900);
     burst(stage.current, { count: 16, chars: ['✨', '⭐', '💖'] });
@@ -190,13 +245,13 @@ export function ChildPage({ childId, tab = 'look' }) {
             <span class="tab-ico">${t.icon}</span>${t.label}
           </button>`)}
         </nav>
-        <div class="tab-content" key=${current}>
+        <div class="tab-content" key=${`${current}-${rayon || ''}`}>
           ${current === 'look' && html`<div>
             <div class="look-group"><h3>Ma couleur</h3><${ColorPicker} value=${child.color} onChange=${(color) => actions.saveChild({ ...child, color })} /></div>
             <${LookEditor} look=${child.look} onChange=${(look) => actions.saveLook(child.id, look)} onPhoto=${() => (actions.isParentUnlocked() ? setPhoto(true) : setGate(true))} />
           </div>`}
-          ${current === 'affaires' && html`<${Inventory} child=${child} owned=${owned} onEquip=${equipToggle} />`}
-          ${current === 'boutique' && html`<${Shop} child=${child} owned=${owned} bal=${bal} onPick=${(it) => { sfx.tap(); setBuying(it); }} />`}
+          ${current === 'affaires' && html`<${Inventory} child=${child} owned=${owned} rayon=${rayon} onRayon=${openRayon} onEquip=${equipToggle} />`}
+          ${current === 'boutique' && html`<${Shop} child=${child} owned=${owned} bal=${bal} rayon=${rayon} onRayon=${openRayon} onPick=${(it) => { sfx.tap(); setBuying(it); }} />`}
           ${current === 'defis' && html`<${Challenges} child=${child} state=${s} />`}
           ${current === 'equipe' && html`<${TeamPanel} me=${child} />`}
         </div>
