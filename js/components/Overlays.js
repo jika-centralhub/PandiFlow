@@ -33,6 +33,7 @@ export function OverlayHost() {
   if (overlay.type === 'celebrate') return html`<${Celebration} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
   if (overlay.type === 'reveal') return html`<${Reveal} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
   if (overlay.type === 'pandi') return html`<${PandiMoment} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
+  if (overlay.type === 'team') return html`<${TeamMoment} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
   return null;
 }
 
@@ -86,6 +87,53 @@ function PandiMoment({ childId, amount, note, before, onClose }) {
       ${note && html`<p class="pm-note">${note}</p>`}
       <p class="pm-sub">${happy ? 'Pandi est super fier de toi ! 🎉' : 'Pandi est un peu triste… On se rattrape vite ?'}</p>
       ${canClose && html`<p class="tap-hint">Touche l'écran pour continuer</p>`}
+    </div>
+  </div>`;
+}
+
+// Les grands moments d'équipe : défi de la semaine, trésor, coup de main, cadeau, achat commun, « tape là »
+const TEAM_TEXT = {
+  week: (names, d) => ({ title: 'Défi d’équipe réussi !', sub: `Bravo ${names} ! ${d.bonus ? `+${d.bonus} pandi chacun` : ''}${d.item ? ` et ${d.item.name.toLowerCase()} pour tous` : ''}`, emoji: '🏆' }),
+  treasure: (names, d) => ({ title: 'Le trésor de la fratrie est ouvert !', sub: `Récompense pour ${names} : ${d.reward}`, emoji: '💎' }),
+  help: (names, d, kids) => ({ title: 'Bravo pour l’entraide !', sub: `${kids[0]?.name} a aidé ${kids[1]?.name} : +${d.amount} pandi pour les deux`, emoji: '🙌' }),
+  gift: (names, d, kids) => ({ title: `${kids[0]?.name} offre ${d.amount} pandi à ${kids[1]?.name} !`, sub: 'Quel beau cadeau 💝', emoji: '🎁' }),
+  pot: (names, d) => ({ title: 'Achat de la cagnotte commune !', sub: `${d.item?.name} pour toute l’équipe`, emoji: '🏦' }),
+  highfive: (names) => ({ title: 'Toute l’équipe a fini !', sub: `Tape là, ${names} ! 🙌`, emoji: '🙌' }),
+};
+
+function TeamMoment({ kind, kids: ids = [], onClose, ...data }) {
+  const all = getState().children;
+  const kids = ids.map((id) => all.find((c) => c.id === id)).filter(Boolean);
+  const item = data.itemId ? getItem(data.itemId) : null;
+  const names = kids.map((k) => k.name).join(', ').replace(/, ([^,]*)$/, ' et $1');
+  const text = (TEAM_TEXT[kind] || TEAM_TEXT.highfive)(names, { ...data, item }, kids);
+  const [canClose, setCanClose] = useState(false);
+  const center = useRef(null);
+  useEffect(() => {
+    if (kind === 'week' || kind === 'highfive') sfx.fanfare();
+    else if (kind === 'treasure' || kind === 'pot') sfx.chest();
+    else sfx.happy();
+    if (kind === 'week' || kind === 'treasure') fireworks(2600);
+    if (kind === 'week') setTimeout(() => coinRain(2000), 800);
+    setTimeout(() => confettiBurst(center.current), 400);
+    const t1 = setTimeout(() => setCanClose(true), 1200);
+    const t2 = setTimeout(onClose, 9000);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
+  return html`<div class=${`team-moment tm-${kind}`} onClick=${() => canClose && onClose()}>
+    <div class="tm-stage">
+      ${kids.map((k, i) => html`<div key=${k.id} class="tm-kid" style=${{ '--kid': k.color, '--i': i }}>
+        <${Avatar} look=${k.look} equipped=${k.equipped} expr="joy" pose=${i % 2 ? 'cheer' : 'dance'} mode="full" seed=${k.id} class="overflow" />
+      </div>`)}
+      <div class="tm-center" ref=${center}>${item ? html`<div class="tm-item"><${ItemThumb} item=${item} look=${kids[0]?.look} /></div>` : html`<span class="tm-emoji">${text.emoji}</span>`}</div>
+    </div>
+    <div class="tm-text">
+      <div class="title">${text.title}</div>
+      <div class="subtitle">${text.sub}</div>
+      ${canClose && html`<div class="tap-hint">Touche l'écran pour continuer</div>`}
     </div>
   </div>`;
 }

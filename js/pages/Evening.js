@@ -5,7 +5,7 @@ import { useStore, setPrefs, getState } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import * as timers from '../lib/timers.js';
 import { timerKey } from '../lib/countdown.js';
-import { activeChildren, tasksForChild, routineProgress, balance, findRating, pointsFor, COLOR_META, ROUTINES } from '../domain.js';
+import { activeChildren, tasksForChild, routineProgress, balance, findRating, pointsFor, COLOR_META, ROUTINES, BEHAVIOR, findBehavior, behaviorLevel } from '../domain.js';
 import { routineDate, currentRoutine, addDays, formatLong } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { PandiCounter, Gauge, Modal } from '../components/ui.js';
@@ -16,6 +16,7 @@ import { useParentAction } from '../components/PinGate.js';
 import { TimerRing, TimerPicker, TimerStage, TimerResult, timerView, useClock } from '../components/Timer.js';
 import { DepartureBar } from '../components/Departure.js';
 import { CalmCorner } from '../components/CalmCorner.js';
+import { TeamPill, TeamSheet } from '../components/Team.js';
 import { flyCoins, burst, floatText, replay } from '../anim/fx.js';
 import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
@@ -81,9 +82,48 @@ function TaskCard({ task, index, total, d, rating, timer, canTime, cardRef, onCl
   </div>`;
 }
 
+// Dernière carte de la soirée : le comportement (😇 +5, 🙂 +2, 😕 0)
+const BEHAVIOR_CARD = '__comportement';
+const BEHAVIOR_CLASS = { super: 'gold', bien: 'green', non: 'red' };
+
+function BehaviorCard({ index, total, d, level, points, cardRef, onClick }) {
+  const ad = Math.abs(d);
+  const cls = ['cr-card', 'behavior', level ? BEHAVIOR_CLASS[level] : '', d === 0 ? 'center' : '', ad > 2 ? 'far' : ''].filter(Boolean).join(' ');
+  return html`<div class=${cls} role="button" tabIndex=${d === 0 ? 0 : -1} aria-label=${`Comportement${level ? ` : ${BEHAVIOR[level].label}` : ''}`}
+    style=${{ '--d': d, '--ad': Math.min(ad, 3), zIndex: 10 - ad }} ref=${cardRef} onClick=${onClick}
+    onKeyDown=${(e) => (e.key === 'Enter' || e.key === ' ') && onClick(e)}>
+    <span class="cr-step">${index + 1} / ${total}</span>
+    <div class="cr-emoji-wrap"><span class="cr-emoji">${level ? BEHAVIOR[level].face : '😇'}</span></div>
+    <div class="cr-title">Comportement</div>
+    ${level
+      ? html`<div class="cr-status">${BEHAVIOR[level].label}${points ? ` · +${points}` : ''}</div>`
+      : d === 0 && html`<div class="cr-hint">Comment s'est passée la soirée ?</div>`}
+    ${level && html`<span class="tile-badge" key=${level}>${BEHAVIOR[level].face}</span>`}
+  </div>`;
+}
+
+function BehaviorSheet({ child, current, settings, onPick, onClose }) {
+  const pts = settings.behaviorPoints;
+  const choices = [['super', 'gold', pts.super], ['bien', 'green', pts.bien], ['non', 'red', 0]];
+  return html`<${Modal} onClose=${onClose} class="rate-sheet" style=${{ '--kid': child.color }}>
+    <div class="rate-avatar"><${Avatar} look=${child.look} equipped=${child.equipped} expr="happy" mode="full" seed=${child.id} /></div>
+    <div>
+      <div class="rate-title"><span class="big-emoji">😇</span> Comportement</div>
+      <p class="rate-sub">Comment s'est passée la soirée de ${child.name} ?</p>
+      <div class="rate-choices">
+        ${choices.map(([level, cls, p]) => html`<button key=${level} class=${`rate-choice ${cls} ${current === level ? 'current' : ''}`} onClick=${() => onPick(level)}>
+          <span class="face">${BEHAVIOR[level].face}</span>${BEHAVIOR[level].label}
+          <span class="pts">${p > 0 ? `+${p} pandi` : 'On fera mieux demain'}</span>
+        </button>`)}
+      </div>
+      ${current && html`<button class="rate-clear" onClick=${() => onPick(null)}>Effacer</button>`}
+    </div>
+  <//>`;
+}
+
 // Le carrousel d'un enfant : la tâche du moment au centre, les voisines inclinées sur les côtés.
 // On balaie, on touche une carte voisine, une flèche ou une pastille pour se déplacer.
-function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFor, cards, onOpen, onTimer }) {
+function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFor, cards, onOpen, onTimer, behavior, onBehavior }) {
   const s = useStore();
   const start = useRef(null);
   const swiped = useRef(false);
@@ -96,11 +136,13 @@ function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFo
       dots.current.scrollTo({ left: dot.offsetLeft - dots.current.clientWidth / 2 + dot.offsetWidth / 2, behavior: 'smooth' });
     }
   }, [focus, list.length]);
+  const ids = [...list.map((t) => t.id), ...(behavior ? [BEHAVIOR_CARD] : [])];
+  const total = ids.length;
   const go = (i) => {
-    const j = Math.max(0, Math.min(list.length - 1, i));
+    const j = Math.max(0, Math.min(total - 1, i));
     if (j === focus) return;
     sfx.whoosh();
-    onFocus(list[j].id);
+    onFocus(ids[j]);
   };
   function down(e) {
     start.current = { x: e.clientX, y: e.clientY };
@@ -125,7 +167,7 @@ function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFo
           key=${task.id}
           task=${task}
           index=${i}
-          total=${list.length}
+          total=${total}
           d=${i - focus}
           rating=${findRating(s.ratings, child.id, task.id, date)}
           timer=${timerFor(child.id, task.id)}
@@ -139,8 +181,22 @@ function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFo
           }}
         />`;
       })}
+      ${behavior && html`<${BehaviorCard}
+        key=${BEHAVIOR_CARD}
+        index=${list.length}
+        total=${total}
+        d=${list.length - focus}
+        level=${behavior.level}
+        points=${behavior.points}
+        cardRef=${(n) => (cards.current[`${child.id}:${BEHAVIOR_CARD}`] = n)}
+        onClick=${() => {
+          if (swiped.current) return;
+          if (list.length !== focus) return go(list.length);
+          onBehavior();
+        }}
+      />`}
       <button class="cr-arrow prev" aria-label="Tâche précédente" disabled=${focus <= 0} onClick=${() => go(focus - 1)}>‹</button>
-      <button class="cr-arrow next" aria-label="Tâche suivante" disabled=${focus >= list.length - 1} onClick=${() => go(focus + 1)}>›</button>
+      <button class="cr-arrow next" aria-label="Tâche suivante" disabled=${focus >= total - 1} onClick=${() => go(focus + 1)}>›</button>
     </div>
     <div class="cr-dots" ref=${dots} role="tablist" aria-label=${`Tâches de ${child.name}`}>
       ${list.map((task, i) => {
@@ -149,6 +205,8 @@ function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFo
         return html`<button key=${task.id} role="tab" aria-selected=${i === focus} aria-label=${task.title}
           class=${`cr-dot ${r?.color || ''} ${i === focus ? 'on' : ''} ${t ? 'timing' : ''}`} onClick=${() => go(i)}>${task.emoji}</button>`;
       })}
+      ${behavior && html`<button key=${BEHAVIOR_CARD} role="tab" aria-selected=${focus === list.length} aria-label="Comportement"
+        class=${`cr-dot ${behavior.level ? BEHAVIOR_CLASS[behavior.level] : ''} ${focus === list.length ? 'on' : ''}`} onClick=${() => go(list.length)}>${behavior.level ? BEHAVIOR[behavior.level].face : '😇'}</button>`}
     </div>
   </div>`;
 }
@@ -205,6 +263,8 @@ export function Evening() {
   const [picker, setPicker] = useState(null); // { childId, taskId }
   const [stageKey, setStageKey] = useState(null);
   const [calm, setCalm] = useState(false);
+  const [team, setTeam] = useState(false);
+  const [behaviorFor, setBehaviorFor] = useState(null);
   const [moods, setMoods] = useState({});
   const [held, setHeld] = useState({}); // solde affiché gelé pendant le vol des pièces
   const [bankFor, setBankFor] = useState(null);
@@ -265,11 +325,45 @@ export function Evening() {
     if (stageKey && !stageTimer) setStageKey(null);
   }, [stageKey, stageTimer]);
 
-  function focusIndex(child, list) {
+  function focusIndex(child, list, withBehavior) {
+    if (withBehavior && focus[child.id] === BEHAVIOR_CARD) return list.length;
     const i = list.findIndex((t) => t.id === focus[child.id]);
     if (i >= 0) return i;
     const first = list.findIndex((t) => !findRating(s.ratings, child.id, t.id, date));
-    return first >= 0 ? first : Math.max(0, list.length - 1);
+    if (first >= 0) return first;
+    if (withBehavior) return list.length;
+    return Math.max(0, list.length - 1);
+  }
+
+  async function pickBehavior(child, level) {
+    setBehaviorFor(null);
+    const before = balance(child.id, s);
+    const res = actions.setBehavior(child.id, date, level);
+    const card = cards.current[`${child.id}:${BEHAVIOR_CARD}`];
+    const head = heads.current[child.id];
+    if (!level) return sfx.pop();
+    if (level === 'super') {
+      sfx.happy();
+      replay(card, 'pop', 700);
+      burst(card, { count: 16, chars: ['😇', '⭐', '✨'] });
+      replay(head?.querySelector('.avatar'), 'av-jump', 900);
+      setMood(child.id, 'joy', 2800);
+    } else if (level === 'bien') {
+      sfx.green();
+      replay(card, 'pop', 700);
+      burst(card, { count: 8, chars: ['🙂', '✨'] });
+      setMood(child.id, 'happy', 2400);
+    } else {
+      sfx.red();
+      replay(card, 'deflate', 800);
+      setMood(child.id, 'focus', 2400);
+    }
+    if (res.delta > 0) {
+      setHeld((h) => ({ ...h, [child.id]: before }));
+      floatText(card, `+${res.delta}`);
+      await flyCoins(card, counters.current[child.id], Math.min(10, res.delta));
+      setHeld((h) => ({ ...h, [child.id]: undefined }));
+    }
   }
 
   function setMood(childId, expr, ms) {
@@ -332,10 +426,13 @@ export function Evening() {
       const st = getState();
       const list = tasksForChild(child.id, date, st, routine);
       const from = list.findIndex((t) => t.id === task.id);
+      const after = list.slice(from + 1).find((t) => !findRating(st.ratings, child.id, t.id, date));
       const next = nextOpen(list, from, (t) => findRating(st.ratings, child.id, t.id, date));
-      if (next >= 0) {
+      const wantBehavior = routine === 'soir' && !findBehavior(st.ledger, child.id, date);
+      const target = after ? after.id : wantBehavior ? BEHAVIOR_CARD : next >= 0 ? list[next].id : null;
+      if (target) {
         sfx.whoosh();
-        setFocus((f) => ({ ...f, [child.id]: list[next].id }));
+        setFocus((f) => ({ ...f, [child.id]: target }));
       }
     }, 950);
 
@@ -352,6 +449,13 @@ export function Evening() {
     for (const c of res.unlocked) {
       await showOverlay('reveal', { childId: child.id, itemId: c.reward_item, challengeTitle: c.title });
     }
+    // Toute l'équipe a fini sa routine : « tape là ! »
+    const st = getState();
+    if (res.becameComplete && kids.length > 1 && kids.every((k) => routineProgress(k.id, date, st, routine).complete)) {
+      await showOverlay('team', { kind: 'highfive', kids: kids.map((k) => k.id) });
+    }
+    if (res.team) await showOverlay('team', { kind: 'week', kids: res.team.kids, itemId: res.team.item, bonus: res.team.bonus });
+    if (res.treasure) await showOverlay('team', { kind: 'treasure', kids: kids.map((k) => k.id), reward: res.treasure });
   }
 
   const openChild = open && kids.find((k) => k.id === open.childId);
@@ -369,12 +473,17 @@ export function Evening() {
   return html`<div class=${`evening routine-${routine} page-enter`}>
     <${TopBar} date=${date} setDate=${setDate} routine=${routine} setRoutine=${setRoutine} onCalm=${() => setCalm(true)} />
     ${date !== today && html`<div class="past-banner">Tu modifies ${routine === 'matin' ? 'le matin' : 'la soirée'} du ${formatLong(date)}</div>`}
-    ${routine === 'matin' && date === today && html`<${DepartureBar} date=${date} />`}
+    <div class="strip">
+      ${routine === 'matin' && date === today && html`<${DepartureBar} date=${date} />`}
+      ${kids.length > 1 && html`<${TeamPill} onOpen=${() => setTeam(true)} />`}
+    </div>
     <div class="columns" style=${{ '--n': Math.max(1, kids.length) }}>
       ${kids.length === 0 && html`<div class="empty-col">Ajoute un enfant dans l'espace parent ⚙️ pour commencer !</div>`}
       ${kids.map((child) => {
         const prog = routineProgress(child.id, date, s, routine);
         const list = tasksForChild(child.id, date, s, routine);
+        const behaviorRow = routine === 'soir' && list.length ? findBehavior(s.ledger, child.id, date) : null;
+        const behavior = routine === 'soir' && list.length ? { level: behaviorLevel(behaviorRow), points: behaviorRow?.amount || 0 } : null;
         const bal = held[child.id] ?? balance(child.id, s);
         return html`<section key=${child.id} class=${`kid-col ${prog.complete ? 'done' : ''}`} style=${{ '--kid': child.color }}>
           <div class="kid-head">
@@ -396,7 +505,9 @@ export function Evening() {
             list=${list}
             routine=${routine}
             date=${date}
-            focus=${focusIndex(child, list)}
+            focus=${focusIndex(child, list, Boolean(behavior))}
+            behavior=${behavior}
+            onBehavior=${() => { sfx.tap(); setBehaviorFor(child.id); }}
             onFocus=${(taskId) => setFocus((f) => ({ ...f, [child.id]: taskId }))}
             canTime=${canTime}
             timerFor=${timerFor}
@@ -439,5 +550,13 @@ export function Evening() {
       onClose=${closeRating}
     />`}
     ${calm && html`<${CalmCorner} kids=${kids} onClose=${() => setCalm(false)} />`}
+    ${team && html`<${TeamSheet} onClose=${() => setTeam(false)} />`}
+    ${behaviorFor && kids.some((k) => k.id === behaviorFor) && html`<${BehaviorSheet}
+      child=${kids.find((k) => k.id === behaviorFor)}
+      current=${behaviorLevel(findBehavior(s.ledger, behaviorFor, date))}
+      settings=${s.settings}
+      onPick=${(level) => pickBehavior(kids.find((k) => k.id === behaviorFor), level)}
+      onClose=${() => setBehaviorFor(null)}
+    />`}
   </div>`;
 }

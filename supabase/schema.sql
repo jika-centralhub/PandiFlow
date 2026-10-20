@@ -81,7 +81,7 @@ create table if not exists public.ledger (
   id text primary key,
   family_id uuid not null references public.families (id) on delete cascade,
   child_id uuid not null,
-  kind text not null check (kind in ('perfect', 'purchase', 'manual', 'challenge')),
+  kind text not null check (kind in ('perfect', 'purchase', 'manual', 'challenge', 'behavior', 'team', 'help', 'gift', 'pot', 'potbuy')),
   amount int not null,
   evening_date date,
   note text,
@@ -94,7 +94,7 @@ create table if not exists public.owned_items (
   family_id uuid not null references public.families (id) on delete cascade,
   child_id uuid not null,
   item_id text not null,
-  source text not null default 'shop' check (source in ('shop', 'challenge', 'gift')),
+  source text not null default 'shop' check (source in ('shop', 'challenge', 'gift', 'pot', 'team')),
   created_at timestamptz not null default now(),
   primary key (child_id, item_id),
   foreign key (child_id, family_id) references public.children (id, family_id) on delete cascade

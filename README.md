@@ -18,9 +18,12 @@ Pensé pour les 5 à 10 ans : grosses tuiles avec émojis, couleurs vives, sons,
 | 🧒 **Avatar** | Personnage dessiné (14 coiffures, 10 teintes de peau, yeux, lunettes, taches de rousseur, dent de lait…), qui cligne des yeux, respire et réagit aux notes. |
 | 📸 **Photo magique** | Une photo de l'enfant est analysée par Claude, qui règle l'avatar pour qu'il lui ressemble. La photo n'est jamais conservée. |
 | 🛍️ **Boutique** | 40 objets : chapeaux, lunettes, capes et ailes, pyjamas, compagnons animés, décors, effets magiques. |
-| 🎭 **Costumes complets** | 25 tenues qui habillent tout le personnage : pompier, police, médecin, super-héros, tortues ninja (4 couleurs), maillots de foot (PSG, OM, OL, France, Real Madrid, Barça, Brésil — couleurs des équipes, sans logo officiel), rabbin (chapeau, barbe, péot, tsitsit), dompteur de lions, dresseur de dragons, astronaute, chef, chevalier, capitaine pirate, magicien, prince et princesse. |
+| 🎭 **Costumes complets** | 38 tenues qui habillent tout le personnage : pompier, police, médecin, super-héros, 12 héros Marvel et DC (Spider-Man, Iron Man, Captain America, Hulk, Thor, Black Panther, Captain Marvel, Batman, Superman, Wonder Woman, Flash, Aquaman — emblèmes dessinés maison, pas les logos officiels), tortues ninja (4 couleurs), maillots de foot (PSG, OM, OL, France, Israël, Real Madrid, Barça, Brésil — couleurs des équipes, sans logo officiel ; PSG, France et Israël à 500 pandi), rabbin (chapeau, barbe, péot, tsitsit), dompteur de lions, dresseur de dragons, astronaute, chef, chevalier, capitaine pirate, magicien, prince et princesse. |
 | 💰 **Cagnotte** | En touchant le compteur de pandi (code parent), on offre ou retire des pandi hors des routines, avec une raison. Pandi la mascotte saute de joie ou pleure sous son petit nuage. Un retrait ne fait jamais passer la cagnotte sous zéro. |
 | 🏆 **Défis** | Défis cumulatifs (les soirs ratés ne remettent pas à zéro) avec 4 trésors exclusifs animés. |
+| 🚗 **Garage** | À côté de l'avatar, une petite scène animée : 18 véhicules et montures (vélo, kart, voiture de course, de police, camion de pompiers, moto, tracteur, voilier, avion, hélicoptère, fusée, soucoupe, poney, licorne, dragon…), 18 drapeaux sur un mât (France, Israël, Espagne, Italie, Portugal, Belgique, Allemagne, Royaume-Uni, États-Unis, Brésil, Japon, Maroc, Algérie, Tunisie, pirate, arc-en-ciel, damier, PandiFlow) et 10 accessoires (ballons, skate, trophée, guitare, cerf-volant, robot, télescope, batterie…). |
+| 😇 **Comportement** | Dernière carte du carrousel du soir : super comportement +5, bon comportement +2, à revoir 0 (montants réglables, corrigeable dans l'historique). |
+| 🤝 **Équipe** | Défi d'équipe de la semaine (80 % de vert tous ensemble, matin et soir → pandi + cadeau « duo » pour chacun : médaille, talkies-walkies, capes jumelles, tandem, casquette), « tape là » quand toute l'équipe a fini, trésor de la fratrie (chaque vert remplit une jauge commune → récompense en vrai choisie par les parents), cagnotte commune (on y met des pandi pour acheter ensemble une cabane, un trampoline, une piscine, une tente, un château gonflable ou le bus de la fratrie, validé par un parent), cadeaux de pandi entre enfants et coup de main (+2 pour celui qui aide et celui qui est aidé). |
 | 🎨 **Couleur** | Chaque enfant choisit la couleur de sa colonne (16 couleurs ou nuancier libre) dans « Mon look », ou le parent dans l'espace parent. |
 | 🔐 **Espace parent** | Code PIN, gestion des enfants, des tâches du matin et du soir (jours actifs, ordre du carrousel), des défis et du barème, heure du départ à l'école, historique corrigeable, ajustement des pandi, sauvegarde. |
 | ☁️ **Synchronisation** | Supabase : les deux parents partagent la même famille, chacun sur son téléphone. Les notes données hors connexion partent dès le retour du réseau. |
@@ -48,7 +51,7 @@ Puis ouvrir http://localhost:8080. Les tests unitaires sont sur http://localhost
 Le projet Supabase **pandiflow** (région Paris, référence `kyhhkhmwdostzdaksxzw`) a été créé et configuré avec l'outil en ligne de commande Supabase :
 
 - tables et règles de sécurité : [`supabase/schema.sql`](supabase/schema.sql), envoyé avec `supabase db query --linked --project-ref kyhhkhmwdostzdaksxzw --file supabase/schema.sql` ;
-- évolutions envoyées de la même façon depuis [`supabase/migrations/`](supabase/migrations/) : invitations des parents, puis routine du matin (colonne `routine` des tâches, appliquée le 21/10/2026) ;
+- évolutions envoyées de la même façon depuis [`supabase/migrations/`](supabase/migrations/) : invitations des parents, routine du matin (colonne `routine` des tâches), puis comportement et équipe (nouveaux types d'écritures de la cagnotte) ;
 - adresse du site et redirections autorisées : [`supabase/config.toml`](supabase/config.toml), envoyé avec `supabase config push --project-ref kyhhkhmwdostzdaksxzw` ;
 - URL du projet et clé publique (*publishable*) dans [`js/config.js`](js/config.js). Ces deux valeurs sont publiques par conception : la sécurité repose sur les règles RLS du schéma.
 
@@ -132,7 +135,7 @@ js/lib/actions.js                          actions de l'app + file d'attente d'�
 js/lib/countdown.js, timers.js             minuteur : calculs purs / sonnerie, bips et musique
 js/lib/emotions.js                         émotions et techniques du coin calme
 js/lib/localRepo.js, supabaseRepo.js       stockage démo (localStorage) / cloud (Supabase)
-js/avatar/                                 personnage SVG, coiffures, objets, trésors animés
+js/avatar/                                 personnage SVG, coiffures, objets, costumes, garage, trésors animés
 css/routine.css, css/calm.css              carrousel, minuteur, départ, ciel du matin / coin calme
 js/anim/                                   ciel du soir, pièces volantes, confettis
 js/components/, js/pages/                  interface

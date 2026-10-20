@@ -2,7 +2,7 @@
 import { html, useRef, useState } from '../vendor/preact-htm.js';
 import { useStore } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { balance, isOwned, challengesForChild } from '../domain.js';
+import { balance, isOwned, challengesForChild, activeChildren } from '../domain.js';
 import { Avatar, COVERED_BY_SKIN } from '../avatar/Avatar.js';
 import { ITEMS, SLOTS, shopItems, getItem } from '../avatar/items.js';
 import { ItemThumb } from '../components/ItemThumb.js';
@@ -14,6 +14,8 @@ import { PhotoAvatar } from '../components/PhotoAvatar.js';
 import { PandiBank } from '../components/PandiBank.js';
 import { useParentAction } from '../components/PinGate.js';
 import { burst, confettiBurst, flyCoins, replay } from '../anim/fx.js';
+import { Garage, hasGarage } from '../components/Garage.js';
+import { TeamPanel } from '../components/Team.js';
 import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
 
@@ -22,9 +24,10 @@ const TABS = [
   { id: 'affaires', label: 'Mes affaires', icon: '🎒' },
   { id: 'boutique', label: 'Boutique', icon: '🛍️' },
   { id: 'defis', label: 'Défis', icon: '🏆' },
+  { id: 'equipe', label: 'Équipe', icon: '🤝' },
 ];
 
-const SLOT_ORDER = ['skin', 'hat', 'face', 'back', 'neck', 'outfit', 'pet', 'bg', 'fx', 'magic'];
+const SLOT_ORDER = ['skin', 'hat', 'face', 'back', 'neck', 'outfit', 'pet', 'bg', 'fx', 'vehicle', 'flag', 'gear', 'yard', 'magic'];
 
 function ItemCard({ item, index, state, price, look, note, onClick }) {
   return html`<button class=${`item-card ${state}`} style=${{ '--i': index }} onClick=${onClick}>
@@ -93,9 +96,11 @@ function BuyModal({ child, item, bal, onBuy, onClose }) {
   const missing = item.price - bal;
   return html`<${Modal} onClose=${onClose} style=${{ '--kid': child.color, width: 'min(100%, calc(var(--u) * 130))' }}>
     <div style="display:flex;gap:calc(var(--u)*5);align-items:center;flex-wrap:wrap;justify-content:center">
-      <div style="width:calc(var(--u)*44);height:calc(var(--u)*52);border-radius:calc(var(--u)*6);overflow:hidden;background:radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--kid), #fff 40%), var(--kid))">
-        <${Avatar} look=${child.look} equipped=${child.equipped} tryOn=${{ slot: item.slot, itemId: item.id }} expr="joy" mode="full" seed=${child.id} />
-      </div>
+      ${item.garage
+        ? html`<div class="buy-scene"><${Avatar} look=${child.look} equipped=${child.equipped} expr="joy" mode="bust" seed=${child.id} /><${Garage} equipped=${child.equipped} tryOn=${{ slot: item.slot, itemId: item.id }} /></div>`
+        : html`<div style="width:calc(var(--u)*44);height:calc(var(--u)*52);border-radius:calc(var(--u)*6);overflow:hidden;background:radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--kid), #fff 40%), var(--kid))">
+            <${Avatar} look=${child.look} equipped=${child.equipped} tryOn=${{ slot: item.slot, itemId: item.id }} expr="joy" mode="full" seed=${child.id} />
+          </div>`}
       <div style="flex:1;min-width:calc(var(--u)*50)">
         <h2>${item.name}</h2>
         <p style="font-size:calc(var(--u)*4.4);display:flex;align-items:center;gap:8px;color:#8a5a00;font-weight:700"><${Coin} class="coin coin-inline" /> ${item.price} pandi</p>
@@ -126,7 +131,9 @@ export function ChildPage({ childId, tab = 'look' }) {
 
   const owned = new Set(s.owned.filter((o) => o.child_id === child.id).map((o) => o.item_id));
   const bal = balance(child.id, s);
-  const current = TABS.some((t) => t.id === tab) ? tab : 'look';
+  const tabs = activeChildren(s.children).length > 1 ? TABS : TABS.filter((t) => t.id !== 'equipe');
+  const current = tabs.some((t) => t.id === tab) ? tab : 'look';
+  const garage = hasGarage(child.equipped);
   const celebrateStage = () => {
     replay(stage.current?.querySelector('.avatar'), 'av-jump', 900);
     burst(stage.current, { count: 16, chars: ['✨', '⭐', '💖'] });
@@ -166,14 +173,15 @@ export function ChildPage({ childId, tab = 'look' }) {
         <${PandiCounter} value=${bal} big=${true} counterRef=${counter} />
       </button>
     </header>
-    <div class="child-body">
-      <div class="child-stage" ref=${stage}>
+    <div class=${`child-body ${garage ? 'has-garage' : ''}`}>
+      <div class=${`child-stage ${garage ? 'has-garage' : ''}`} ref=${stage}>
         <div class="stage-floor" />
         <${Avatar} look=${child.look} equipped=${child.equipped} expr="happy" mode="full" seed=${child.id} class="overflow" />
+        <${Garage} equipped=${child.equipped} />
       </div>
       <div class="child-panel">
         <nav class="tabs">
-          ${TABS.map((t) => html`<button key=${t.id} class=${`tab ${current === t.id ? 'on' : ''}`} onClick=${() => { sfx.tap(); navigate(`enfant/${child.id}?onglet=${t.id}`, { replace: true }); }}>
+          ${tabs.map((t) => html`<button key=${t.id} class=${`tab ${current === t.id ? 'on' : ''}`} onClick=${() => { sfx.tap(); navigate(`enfant/${child.id}?onglet=${t.id}`, { replace: true }); }}>
             <span class="tab-ico">${t.icon}</span>${t.label}
           </button>`)}
         </nav>
@@ -185,6 +193,7 @@ export function ChildPage({ childId, tab = 'look' }) {
           ${current === 'affaires' && html`<${Inventory} child=${child} owned=${owned} onEquip=${equipToggle} />`}
           ${current === 'boutique' && html`<${Shop} child=${child} owned=${owned} bal=${bal} onPick=${(it) => { sfx.tap(); setBuying(it); }} />`}
           ${current === 'defis' && html`<${Challenges} child=${child} state=${s} />`}
+          ${current === 'equipe' && html`<${TeamPanel} me=${child} />`}
         </div>
       </div>
     </div>

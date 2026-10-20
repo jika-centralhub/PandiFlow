@@ -193,3 +193,22 @@
 /* Lasso doré de Wonder Woman : il brille doucement */
 .glow-lasso { animation: glow-lasso 2.4s ease-in-out infinite; }
 @keyframes glow-lasso { 50% { filter: drop-shadow(0 0 4px #FFE680); } }
+
+/* ===== Garage : véhicules, drapeaux, accessoires et jardin à côté de l'avatar ===== */
+.garage { display: block; width: 100%; height: 100%; overflow: visible; }
+.garage .ga-item { animation: ga-in .6s cubic-bezier(.3, 1.5, .5, 1) both; }
+.garage .wheel, .garage .propeller, .garage .rotor, .garage .spin-fast, .garage .ball-bounce,
+.garage-thumb .wheel, .garage-thumb .propeller, .garage-thumb .rotor, .garage-thumb .spin-fast, .garage-thumb .ball-bounce { transform-box: fill-box; transform-origin: center; }
+.wheel { animation: spin 2.4s linear infinite; }
+.veh-bob { animation: veh-bob 2.2s ease-in-out infinite; }
+.veh-hover { animation: veh-hover 3s ease-in-out infinite; }
+.propeller { animation: prop .12s linear infinite alternate; }
+.rotor { animation: rotor .16s linear infinite alternate; }
+.spin-fast { animation: spin .5s linear infinite; }
+.ball-bounce { transform-origin: 50% 100% !important; animation: ball-bounce 1.6s cubic-bezier(.3, 0, .6, 1) infinite; }
+@keyframes ga-in { from { transform: translateY(12px) scale(.9); opacity: 0; } }
+@keyframes veh-bob { 50% { transform: translateY(-1.5px); } }
+@keyframes veh-hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes prop { from { transform: scaleY(1); } to { transform: scaleY(.2); } }
+@keyframes rotor { from { transform: scaleX(1); } to { transform: scaleX(.3); } }
+@keyframes ball-bounce { 0%, 100% { transform: translateY(0) scale(1.06, .94); } 40%, 60% { transform: translateY(-14px) scale(.97, 1.03); } }

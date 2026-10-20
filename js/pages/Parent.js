@@ -2,7 +2,7 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { useStore, setPrefs } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { activeChildren, tasksForChild, findRating, balance, challengesForChild, COLOR_META, ROUTINES, routineOf } from '../domain.js';
+import { activeChildren, tasksForChild, findRating, balance, challengesForChild, COLOR_META, ROUTINES, routineOf, BEHAVIOR, findBehavior, behaviorLevel } from '../domain.js';
 import { eveningDate, addDays, formatLong, WEEKDAYS_SHORT, currentRoutine } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { CHILD_COLORS } from '../avatar/palette.js';
@@ -238,6 +238,8 @@ function ChallengesSection() {
 
 // --- Historique ------------------------------------------------------------------------
 const NEXT = { undefined: 'green', green: 'orange', orange: 'red', red: null };
+const NEXT_BEHAVIOR = { null: 'super', super: 'bien', bien: 'non', non: null };
+const BEHAVIOR_DOT = { super: 'gold', bien: 'green', non: 'red' };
 
 function HistorySection() {
   const s = useStore();
@@ -264,7 +266,11 @@ function HistorySection() {
             const r = findRating(s.ratings, k.id, t.id, d);
             return html`<button key=${t.id} class=${`dot-btn ${r?.color || ''}`} title=${`${t.title}${r ? ` : ${COLOR_META[r.color].label}` : ''}`}
               onClick=${() => { sfx.tap(); actions.rate(k.id, t.id, d, NEXT[r?.color]); }}>${t.emoji}</button>`;
-          })}</span>`;
+          })}${routine === 'soir' && (() => {
+            const level = behaviorLevel(findBehavior(s.ledger, k.id, d));
+            return html`<button class=${`dot-btn ${level ? BEHAVIOR_DOT[level] : ''}`} title=${`Comportement${level ? ` : ${BEHAVIOR[level].label}` : ''}`}
+              onClick=${() => { sfx.tap(); actions.setBehavior(k.id, d, NEXT_BEHAVIOR[level]); }}>${level ? BEHAVIOR[level].face : '😇'}</button>`;
+          })()}</span>`;
         })}
       </div>`)}</div>
     </div>`)}
@@ -288,6 +294,20 @@ function SettingsSection() {
       <div class="row"><span class="emoji">⭐</span><div class="grow"><div class="title">Bonus soirée ou matinée parfaite</div><div class="meta">Quand toutes les tâches de la routine sont vertes</div></div><${NumberInput} value=${s.settings.perfectBonus} onChange=${(v) => actions.updateSettings({ perfectBonus: v })} max=${50} /></div>
     </div>
     <p class="hint" style="margin-top:8px">Un nouveau barème s'applique aux prochaines notes : les pandi déjà gagnés ne changent pas.</p>
+
+    <h3 class="section-title" style="color:var(--ink);margin-top:20px">Comportement de fin de soirée</h3>
+    <div class="row-list">
+      <div class="row"><span class="emoji">😇</span><div class="grow"><div class="title">Super comportement</div><div class="meta">Dernière carte du carrousel, le soir</div></div><${NumberInput} value=${s.settings.behaviorPoints.super} onChange=${(v) => actions.updateSettings({ behaviorPoints: { ...s.settings.behaviorPoints, super: v } })} max=${20} /></div>
+      <div class="row"><span class="emoji">🙂</span><div class="grow"><div class="title">Bon comportement</div></div><${NumberInput} value=${s.settings.behaviorPoints.bien} onChange=${(v) => actions.updateSettings({ behaviorPoints: { ...s.settings.behaviorPoints, bien: v } })} max=${20} /></div>
+    </div>
+
+    <h3 class="section-title" style="color:var(--ink);margin-top:20px">Équipe</h3>
+    <div class="row-list">
+      <div class="row"><span class="emoji">🤝</span><div class="grow"><div class="title">Défi d'équipe : % de vert à réunir</div><div class="meta">Sur la semaine, tous les enfants ensemble, matin et soir</div></div><${NumberInput} value=${s.settings.team.threshold} onChange=${(v) => actions.updateSettings({ team: { ...s.settings.team, threshold: v } })} min=${50} max=${100} step=${5} /></div>
+      <div class="row"><span class="emoji">🎁</span><div class="grow"><div class="title">Bonus du défi d'équipe</div><div class="meta">Pandi pour chaque enfant, en plus du cadeau duo</div></div><${NumberInput} value=${s.settings.team.bonus} onChange=${(v) => actions.updateSettings({ team: { ...s.settings.team, bonus: v } })} max=${50} /></div>
+      <div class="row"><span class="emoji">🙌</span><div class="grow"><div class="title">Coup de main</div><div class="meta">Pandi pour celui qui aide et celui qui est aidé</div></div><${NumberInput} value=${s.settings.helpBonus} onChange=${(v) => actions.updateSettings({ helpBonus: v })} max=${20} /></div>
+    </div>
+    <p class="hint" style="margin-top:8px">Le trésor de la fratrie et la cagnotte commune se règlent depuis le bouton 🤝 de l'écran de la soirée.</p>
 
     <h3 class="section-title" style="color:var(--ink);margin-top:20px">Routine du matin</h3>
     <div class="row-list">

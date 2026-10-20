@@ -3,6 +3,7 @@
 import { html } from '../vendor/preact-htm.js';
 import { REWARDS } from './rewards.js';
 import { COSTUMES } from './costumes.js';
+import { GARAGE_ITEMS, GARAGE_SLOTS } from './garage.js';
 import { starPath, heartPath, grad, GOLD, sparkle, mirror } from './draw.js';
 
 export { starPath, heartPath };
@@ -17,8 +18,43 @@ export const SLOTS = {
   pet: { label: 'Compagnons', icon: '🐾' },
   bg: { label: 'Décors', icon: '🏞️' },
   fx: { label: 'Effets magiques', icon: '✨' },
+  ...GARAGE_SLOTS,
   magic: { label: 'Trésors des défis', icon: '🏆' },
 };
+
+// --- Cadeaux du défi d'équipe (à porter) ---------------------------------------------------
+const teamWear = [
+  {
+    id: 'medaille_equipe', name: 'Médaille de l’équipe', slot: 'neck',
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-tm`, GOLD)}</defs>
+      <path d="M84 182 L100 204 L116 182" stroke="#9B6CF0" stroke-width="7" fill="none" stroke-linejoin="round" />
+      <path d="M88 182 L100 200 L112 182" stroke="#FF7EB6" stroke-width="2.4" fill="none" stroke-linejoin="round" />
+      <circle cx="100" cy="213" r="13" fill=${`url(#${id}-tm)`} stroke="#B8860B" stroke-width="2" />
+      <path d=${heartPath(100, 213, 6.4)} fill="#FF7EB6" stroke="#fff" stroke-width="1.2" />
+      ${sparkle(118, 204, 4, 'tw', 0.4)}
+    </g>`,
+  },
+  {
+    id: 'capes_jumelles', name: 'Capes jumelles', slot: 'back',
+    render: ({ id }) => html`<g class="flutter">
+      <defs>${grad(`${id}-cj`, ['#C59BFF', '#9B6CF0', '#6A40C8'])}</defs>
+      <path d="M56 184 C30 206 12 236 2 262 C60 270 140 270 198 262 C188 236 170 206 144 184 Z" fill=${`url(#${id}-cj)`} stroke="#4B2A9A" stroke-width="2" />
+      ${[[40, 240], [100, 254], [160, 240], [70, 222], [130, 222]].map(([x, y]) => html`<path key=${x} d=${heartPath(x, y, 6)} fill="#FF9EC7" opacity="0.9" />`)}
+    </g>`,
+  },
+  {
+    id: 'casquette_equipe', name: 'Casquette de l’équipe', slot: 'hat',
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-tc`, ['#C59BFF', '#9B6CF0', '#6A40C8'])}</defs>
+      <path d="M40 64 C38 28 66 12 100 12 C134 12 162 28 160 64 Z" fill=${`url(#${id}-tc)`} stroke="#4B2A9A" stroke-width="2" />
+      <path d="M100 13 L100 62" stroke="rgba(0,0,0,.14)" stroke-width="2" />
+      <path d=${heartPath(100, 40, 10)} fill="#FF7EB6" stroke="#fff" stroke-width="1.6" />
+      <path d="M46 60 C70 54 130 54 154 60 C162 66 162 72 154 76 C130 70 70 70 46 76 C38 72 38 66 46 60 Z" fill="#FF7EB6" stroke="#D94A8A" stroke-width="1.6" />
+      <circle cx="100" cy="13" r="5" fill="#FF9EC7" />
+    </g>`,
+  },
+].map((it) => ({ ...it, price: 0, exclusive: true, team: true }));
 
 // --- Chapeaux -------------------------------------------------------------------------
 const hats = [
@@ -480,10 +516,14 @@ export const ITEMS = [
   ...withSlot('pet', pets),
   ...withSlot('bg', backgrounds),
   ...withSlot('fx', effects),
+  ...teamWear,
+  ...GARAGE_ITEMS,
   ...REWARDS.map((r) => ({ ...r, slot: 'magic', exclusive: true, price: 0 })),
 ];
 
 const BY_ID = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
 export const getItem = (id) => BY_ID[id] || null;
 export const shopItems = () => ITEMS.filter((i) => !i.exclusive);
-export const rewardItems = () => ITEMS.filter((i) => i.exclusive);
+export const rewardItems = () => ITEMS.filter((i) => i.exclusive && !i.pot);
+export const potItems = () => ITEMS.filter((i) => i.pot);
+export const isGarageSlot = (slot) => slot in GARAGE_SLOTS;

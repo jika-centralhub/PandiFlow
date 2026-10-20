@@ -7,6 +7,7 @@ import * as domain from '../domain.js';
 import { STATE_KEYS, sameKey, matches } from './tables.js';
 import { buildFamilySeed, buildMorningSeed, makeChild, DEMO_CHILDREN } from './seed.js';
 import { uid, sleep } from './util.js';
+import { toISODate } from './dates.js';
 import { hashPin, checkPin } from './pin.js';
 import { getItem } from '../avatar/items.js';
 import { normalizeLook, randomLook } from '../avatar/palette.js';
@@ -174,6 +175,7 @@ const familyId = () => getState().family.id;
 // --- Notes de la soirée -----------------------------------------------------------
 export function rate(childId, taskId, date, color) {
   const s = getState();
+  const treasureBefore = domain.treasureProgress(s);
   const { ratings, ledger, owned, ops, result } = domain.applyRating(s, {
     familyId: familyId(),
     childId,
@@ -183,7 +185,72 @@ export function rate(childId, taskId, date, color) {
   });
   setState({ ratings, ledger, owned });
   commit(ops);
+  // Trésor de la fratrie : on note le jour où la jauge commune est pleine
+  const treasureAfter = domain.treasureProgress(getState());
+  if (!treasureBefore.reached && treasureAfter.reached && !treasureAfter.done) {
+    updateSettings({ treasure: { ...getState().settings.treasure, done: date } });
+    result.treasure = treasureAfter.reward;
+  }
   return result;
+}
+
+// --- Comportement de fin de soirée ----------------------------------------------------
+export function setBehavior(childId, date, level) {
+  const s = getState();
+  const res = domain.applyBehavior(s, { familyId: familyId(), childId, date, level });
+  setState({ ledger: res.ledger });
+  commit(res.ops);
+  return res;
+}
+
+// --- Équipe ------------------------------------------------------------------------------
+export function giveHelp(helperId, helpedId) {
+  const s = getState();
+  const helper = s.children.find((c) => c.id === helperId);
+  const helped = s.children.find((c) => c.id === helpedId);
+  if (!helper || !helped) return { amount: 0 };
+  const res = domain.applyHelp(s, { familyId: familyId(), helper, helped, ids: [uid(), uid()] });
+  setState({ ledger: res.ledger });
+  commit(res.ops);
+  return res;
+}
+
+export function giveGift(fromId, toId, amount) {
+  const s = getState();
+  const from = s.children.find((c) => c.id === fromId);
+  const to = s.children.find((c) => c.id === toId);
+  const res = domain.applyGift(s, { familyId: familyId(), from, to, amount, ids: [uid(), uid()] });
+  if (res.amount) {
+    setState({ ledger: res.ledger });
+    commit(res.ops);
+  }
+  return res;
+}
+
+export function potDeposit(childId, amount) {
+  const s = getState();
+  const child = s.children.find((c) => c.id === childId);
+  const res = domain.applyPotDeposit(s, { familyId: familyId(), child, amount, id: uid() });
+  if (res.amount) {
+    setState({ ledger: res.ledger });
+    commit(res.ops);
+  }
+  return res;
+}
+
+export function potBuy(buyerId, itemId) {
+  const s = getState();
+  const buyer = s.children.find((c) => c.id === buyerId) || domain.activeChildren(s.children)[0];
+  const res = domain.applyPotPurchase(s, { familyId: familyId(), buyer, item: getItem(itemId), id: uid() });
+  if (res.error) return res;
+  setState({ ledger: res.ledger, owned: res.owned });
+  commit(res.ops);
+  return { ok: true };
+}
+
+// Nouveau trésor de la fratrie (après en avoir ouvert un, ou pour changer de récompense)
+export function newTreasure({ goal, reward }) {
+  updateSettings({ treasure: { goal, reward, start: toISODate(new Date()), done: null } });
 }
 
 // --- Boutique et avatar ------------------------------------------------------------

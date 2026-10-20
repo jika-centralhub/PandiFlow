@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title>PandiFlow — galerie avatar</title>
   <link rel="stylesheet" href="../css/avatar.css">
+  <style>.item-thumb { width: 100%; height: 100%; }</style>
   <style>
     body { margin: 0; padding: 16px; background: #2b2368; font-family: system-ui, sans-serif; color: #fff; }
     h2 { margin: 18px 0 8px; font-size: 16px; }
@@ -20,6 +21,8 @@
     import { Avatar } from '../js/avatar/Avatar.js';
     import { HAIR_STYLES, FACE_SHAPES, SKIN_TONES, DEFAULT_LOOK, EYE_SHAPES, GLASSES_SHAPES } from '../js/avatar/palette.js';
     import { ITEMS, SLOTS } from '../js/avatar/items.js';
+    import { ItemThumb } from '../js/components/ItemThumb.js';
+    import { Garage } from '../js/components/Garage.js';
 
     const params = new URLSearchParams(location.search);
     const section = params.get('s') || 'base';
@@ -27,7 +30,14 @@
     const cell = (label, props, cls = '') => html`<div class=${'cell ' + cls}><div class="box"><${Avatar} ...${props} /></div>${label}</div>`;
 
     const big = (props) => html`<div style="width:360px;height:430px;display:inline-block;background:rgba(255,255,255,.08);border-radius:18px;margin:6px"><${Avatar} ...${props} /></div>`;
+    // ?s=garage : scènes complètes (jardin + drapeau + véhicule + accessoire)
+    const scene = (equipped) => html`<div style="width:360px;height:300px;display:inline-block;background:rgba(255,255,255,.08);border-radius:18px;margin:6px"><${Garage} equipped=${equipped} /></div>`;
     const sections = {
+      garage: () => html`
+        ${scene({ yard: 'cabane', flag: 'drapeau_france', vehicle: 'voiture_course', gear: 'ballon_foot' })}
+        ${scene({ yard: 'chateau_gonflable', flag: 'drapeau_israel', vehicle: 'licorne', gear: 'trophee' })}
+        ${scene({ yard: 'tente', flag: 'drapeau_pirate', vehicle: 'fusee', gear: 'robot' })}
+        ${scene({ yard: 'piscine', flag: 'drapeau_bresil', vehicle: 'tandem', gear: 'talkie' })}`,
       big: () => html`
         ${big({ look: { ...base, hair: 'couettes', freckles: true, missingTooth: true, eyes: 'grand', eyeColor: 'vert', outfit: 'rose' }, mode: 'full', seed: 'a' })}
         ${big({ look: { ...base, skin: 'caramel', hair: 'boucle', hairColor: 'brun_fonce', eyes: 'rieur', dimples: true, outfit: 'turquoise' }, mode: 'full', expr: 'joy', seed: 'b' })}
@@ -39,7 +49,9 @@
         <h2>Yeux et lunettes</h2><div class="grid">${Object.keys(EYE_SHAPES).map((k) => cell(k, { look: { ...base, eyes: k, eyeColor: 'bleu' }, mode: 'head' }, 'head'))}${Object.keys(GLASSES_SHAPES).map((k) => cell(k, { look: { ...base, glasses: k, glassesColor: 'rouge' }, mode: 'head' }, 'head'))}</div>
         <h2>Poses</h2><div class="grid">${['idle', 'cheer', 'dance'].map((p) => cell(p, { look: { ...base, hair: 'couettes' }, pose: p, mode: 'bust', expr: p === 'idle' ? 'happy' : 'joy' }))}</div>`,
       items: () => html`${Object.entries(SLOTS).filter(([slot]) => !params.get('slots') || params.get('slots').split(',').includes(slot)).map(([slot, meta]) => html`<h2>${meta.label}</h2><div class="grid">
-        ${ITEMS.filter((i) => i.slot === slot).map((it) => cell(`${it.name} (${it.price})`, { look: { ...base, hair: slot === 'hat' ? 'afro' : 'court' }, equipped: { [slot]: it.id }, mode: 'full', seed: it.id }))}
+        ${ITEMS.filter((i) => i.slot === slot).map((it) => it.garage
+          ? html`<div class="cell"><div class="box"><${ItemThumb} item=${it} /></div>${it.name} (${it.price})</div>`
+          : cell(`${it.name} (${it.price})`, { look: { ...base, hair: slot === 'hat' ? 'afro' : 'court' }, equipped: { [slot]: it.id }, mode: 'full', seed: it.id }))}
       </div>`)}`,
     };
     render(sections[section](), document.getElementById('root'));

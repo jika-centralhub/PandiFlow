@@ -2,7 +2,7 @@
 // Elles prennent l'état (ou une partie) et renvoient des valeurs calculées,
 // ce qui les rend testables (tests/index.html) et identiques en démo et en cloud.
 
-import { weekday } from './lib/dates.js';
+import { weekday, addDays } from './lib/dates.js';
 
 export const COLORS = ['green', 'orange', 'red'];
 
@@ -21,6 +21,12 @@ export const DEFAULT_SETTINGS = {
   departure: '08:15',
   departureDays: [1, 2, 3, 4, 5],
   morningSeeded: false,
+  // Comportement de fin de soirée (carte du carrousel)
+  behaviorPoints: { super: 5, bien: 2 },
+  // Équipe : défi de la semaine, coup de main, trésor de la fratrie
+  team: { threshold: 80, bonus: 10 },
+  helpBonus: 2,
+  treasure: { goal: 60, reward: 'Une sortie au cinéma 🎬', start: null, done: null },
 };
 
 // Deux routines : le soir et le matin avant l'école. Même barème, même cagnotte, mêmes défis.
@@ -37,6 +43,9 @@ export function mergeSettings(settings) {
     ...DEFAULT_SETTINGS,
     ...s,
     points: { ...DEFAULT_SETTINGS.points, ...(s.points || {}) },
+    behaviorPoints: { ...DEFAULT_SETTINGS.behaviorPoints, ...(s.behaviorPoints || {}) },
+    team: { ...DEFAULT_SETTINGS.team, ...(s.team || {}) },
+    treasure: { ...DEFAULT_SETTINGS.treasure, ...(s.treasure || {}) },
   };
 }
 
@@ -95,10 +104,11 @@ export function routineProgress(childId, date, state, routine = 'soir') {
 
 export const eveningProgress = (childId, date, state) => routineProgress(childId, date, state, 'soir');
 
+// Les achats faits avec la cagnotte commune (potbuy) ne touchent pas la cagnotte de l'enfant.
 export function balance(childId, { ratings, ledger }) {
   let sum = 0;
   for (const r of ratings) if (r.child_id === childId) sum += Number(r.points) || 0;
-  for (const l of ledger) if (l.child_id === childId) sum += Number(l.amount) || 0;
+  for (const l of ledger) if (l.child_id === childId && l.kind !== 'potbuy') sum += Number(l.amount) || 0;
   return sum;
 }
 
@@ -221,6 +231,18 @@ export function applyRating(state, { familyId, childId, taskId, date, color, now
     }
   }
 
+  // Défi d'équipe de la semaine : accordé une seule fois, quand l'objectif est atteint
+  let team = null;
+  const week = teamWeek({ ...next, ledger, owned }, date);
+  if (week.done && !teamGranted(ledger, week.start)) {
+    const grant = teamRewardRows({ ...next, ledger, owned }, { familyId, week, now });
+    ledger = [...ledger, ...grant.ledgerRows];
+    owned = [...owned, ...grant.ownedRows];
+    if (grant.ledgerRows.length) ops.push({ op: 'put', table: 'ledger', rows: grant.ledgerRows });
+    if (grant.ownedRows.length) ops.push({ op: 'put', table: 'owned_items', rows: grant.ownedRows });
+    team = { item: grant.item, bonus: grant.bonus, kids: week.kids.map((k) => k.id) };
+  }
+
   const finalState = { ...next, ledger, owned };
   return {
     ratings,
@@ -228,6 +250,7 @@ export function applyRating(state, { familyId, childId, taskId, date, color, now
     owned,
     ops,
     result: {
+      team,
       delta: balance(childId, finalState) - balanceBefore,
       before,
       after,
@@ -275,5 +298,152 @@ export function applyPurchase(state, { familyId, childId, item, now = new Date()
       { op: 'put', table: 'ledger', rows: [ledgerRow] },
       { op: 'put', table: 'owned_items', rows: [ownedRow] },
     ],
+  };
+}
+
+// --- Comportement de fin de soirée --------------------------------------------------------------
+export const BEHAVIOR = {
+  super: { label: 'Super comportement', face: '😇' },
+  bien: { label: 'Bon comportement', face: '🙂' },
+  non: { label: 'Comportement à revoir', face: '😕' },
+};
+export const behaviorId = (childId, date) => `behavior-${childId}-${date}`;
+export const findBehavior = (ledger, childId, date) => ledger.find((l) => l.id === behaviorId(childId, date)) || null;
+export function behaviorLevel(row) {
+  if (!row) return null;
+  return Object.keys(BEHAVIOR).find((k) => BEHAVIOR[k].label === row.note) || (row.amount > 0 ? 'bien' : 'non');
+}
+
+// level : 'super' | 'bien' | 'non' | null (effacer). Une seule note de comportement par soirée.
+export function applyBehavior(state, { familyId, childId, date, level, now = new Date().toISOString() }) {
+  const settings = mergeSettings(state.settings);
+  const id = behaviorId(childId, date);
+  const before = balance(childId, state);
+  let ledger = state.ledger.filter((l) => l.id !== id);
+  const ops = [];
+  if (level) {
+    const amount = level === 'super' ? Number(settings.behaviorPoints.super) || 0 : level === 'bien' ? Number(settings.behaviorPoints.bien) || 0 : 0;
+    const row = { id, family_id: familyId, child_id: childId, kind: 'behavior', amount, evening_date: date, note: BEHAVIOR[level].label, created_at: now };
+    ledger = [...ledger, row];
+    ops.push({ op: 'put', table: 'ledger', rows: [row] });
+  } else {
+    ops.push({ op: 'del', table: 'ledger', match: { id } });
+  }
+  return { ledger, ops, delta: balance(childId, { ...state, ledger }) - before };
+}
+
+// --- Équipe : défi de la semaine ---------------------------------------------------------------------
+// Cadeaux « duo » du défi d'équipe, donnés dans cet ordre (puis seulement des pandi)
+export const TEAM_REWARDS = ['medaille_equipe', 'talkie', 'capes_jumelles', 'tandem', 'casquette_equipe'];
+
+// La semaine va du lundi au dimanche
+export function weekStart(date) {
+  return addDays(date, -((weekday(date) + 6) % 7));
+}
+
+// Tous les enfants, matin et soir, sur toute la semaine : on compte les verts sur le total prévu.
+export function teamWeek(state, date) {
+  const settings = mergeSettings(state.settings);
+  const kids = activeChildren(state.children);
+  const start = weekStart(date);
+  let total = 0;
+  let greens = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(start, i);
+    for (const k of kids) {
+      for (const routine of ['matin', 'soir']) {
+        for (const t of tasksForChild(k.id, d, state, routine)) {
+          total++;
+          if (findRating(state.ratings, k.id, t.id, d)?.color === 'green') greens++;
+        }
+      }
+    }
+  }
+  const goal = Math.ceil((total * Math.min(100, Math.max(1, Number(settings.team.threshold) || 80))) / 100);
+  return { start, end: addDays(start, 6), total, greens, goal, ratio: goal ? Math.min(1, greens / goal) : 0, done: kids.length > 1 && total > 0 && greens >= goal, kids };
+}
+
+export const teamRewardId = (weekStartDate, childId) => `team-${weekStartDate}-${childId}`;
+export const teamGranted = (ledger, weekStartDate) => ledger.some((l) => l.kind === 'team' && l.id.startsWith(`team-${weekStartDate}-`));
+
+function teamRewardRows(state, { familyId, week, now }) {
+  const settings = mergeSettings(state.settings);
+  const bonus = Math.max(0, Number(settings.team.bonus) || 0);
+  const item = TEAM_REWARDS.find((id) => week.kids.some((k) => !isOwned(k.id, id, state.owned))) || null;
+  const ledgerRows = week.kids.map((k) => ({ id: teamRewardId(week.start, k.id), family_id: familyId, child_id: k.id, kind: 'team', amount: bonus, evening_date: null, note: 'Défi d’équipe réussi', created_at: now }));
+  const ownedRows = item ? week.kids.filter((k) => !isOwned(k.id, item, state.owned)).map((k) => ({ family_id: familyId, child_id: k.id, item_id: item, source: 'team', created_at: now })) : [];
+  return { item, bonus, ledgerRows, ownedRows };
+}
+
+// --- Équipe : trésor de la fratrie --------------------------------------------------------------------
+// Une grande jauge que chaque note verte (de n'importe quel enfant) remplit.
+export function treasureProgress(state) {
+  const t = mergeSettings(state.settings).treasure;
+  const kids = new Set(activeChildren(state.children).map((c) => c.id));
+  let count = 0;
+  for (const r of state.ratings) if (r.color === 'green' && kids.has(r.child_id) && (!t.start || r.evening_date >= t.start)) count++;
+  const goal = Math.max(1, Number(t.goal) || 1);
+  return { ...t, goal, count: Math.min(count, goal), reached: count >= goal };
+}
+
+// --- Équipe : coup de main ----------------------------------------------------------------------------
+export function applyHelp(state, { familyId, helper, helped, ids, now = new Date().toISOString() }) {
+  const amount = Math.max(0, Number(mergeSettings(state.settings).helpBonus) || 0);
+  if (!amount || helper.id === helped.id) return { ledger: state.ledger, ops: [], amount: 0 };
+  const rows = [
+    { id: ids[0], family_id: familyId, child_id: helper.id, kind: 'help', amount, evening_date: null, note: `A aidé ${helped.name}`, created_at: now },
+    { id: ids[1], family_id: familyId, child_id: helped.id, kind: 'help', amount, evening_date: null, note: `Aidé par ${helper.name}`, created_at: now },
+  ];
+  return { ledger: [...state.ledger, ...rows], ops: [{ op: 'put', table: 'ledger', rows }], amount };
+}
+
+// --- Équipe : cadeaux entre enfants -------------------------------------------------------------------
+export function applyGift(state, { familyId, from, to, amount, ids, now = new Date().toISOString() }) {
+  const value = Math.min(Math.max(0, Math.round(Number(amount) || 0)), Math.max(0, balance(from.id, state)));
+  if (!value || from.id === to.id) return { error: 'Il n’y a rien à offrir.', ledger: state.ledger, ops: [], amount: 0 };
+  const rows = [
+    { id: ids[0], family_id: familyId, child_id: from.id, kind: 'gift', amount: -value, evening_date: null, note: `Cadeau pour ${to.name}`, created_at: now },
+    { id: ids[1], family_id: familyId, child_id: to.id, kind: 'gift', amount: value, evening_date: null, note: `Cadeau de ${from.name}`, created_at: now },
+  ];
+  return { ledger: [...state.ledger, ...rows], ops: [{ op: 'put', table: 'ledger', rows }], amount: value };
+}
+
+// --- Équipe : cagnotte commune -----------------------------------------------------------------------
+// On y met des pandi (kind 'pot', montant négatif pour l'enfant) ; on y achète des objets partagés
+// (kind 'potbuy', ignoré dans la cagnotte de l'enfant) que tous les enfants reçoivent.
+export function potBalance({ ledger }) {
+  let sum = 0;
+  for (const l of ledger) {
+    if (l.kind === 'pot') sum -= Number(l.amount) || 0;
+    else if (l.kind === 'potbuy') sum -= Number(l.amount) || 0;
+  }
+  return sum;
+}
+
+export function potContributions({ ledger, children }) {
+  const by = {};
+  for (const l of ledger) if (l.kind === 'pot') by[l.child_id] = (by[l.child_id] || 0) - (Number(l.amount) || 0);
+  return activeChildren(children).map((c) => ({ child: c, amount: by[c.id] || 0 }));
+}
+
+export function applyPotDeposit(state, { familyId, child, amount, id, now = new Date().toISOString() }) {
+  const value = Math.min(Math.max(0, Math.round(Number(amount) || 0)), Math.max(0, balance(child.id, state)));
+  if (!value) return { error: 'Il n’y a pas assez de pandi.', ledger: state.ledger, ops: [], amount: 0 };
+  const row = { id, family_id: familyId, child_id: child.id, kind: 'pot', amount: -value, evening_date: null, note: 'Cagnotte commune', created_at: now };
+  return { ledger: [...state.ledger, row], ops: [{ op: 'put', table: 'ledger', rows: [row] }], amount: value };
+}
+
+export function applyPotPurchase(state, { familyId, buyer, item, id, now = new Date().toISOString() }) {
+  const kids = activeChildren(state.children);
+  if (!item || !item.pot) return { error: 'Cet objet ne s’achète pas avec la cagnotte commune.' };
+  if (kids.every((k) => isOwned(k.id, item.id, state.owned))) return { error: 'Vous l’avez déjà !' };
+  const pot = potBalance(state);
+  if (pot < item.price) return { error: `Il manque encore ${item.price - pot} pandi dans la cagnotte commune.` };
+  const ledgerRow = { id, family_id: familyId, child_id: buyer.id, kind: 'potbuy', amount: item.price, evening_date: null, note: item.name, created_at: now };
+  const ownedRows = kids.filter((k) => !isOwned(k.id, item.id, state.owned)).map((k) => ({ family_id: familyId, child_id: k.id, item_id: item.id, source: 'pot', created_at: now }));
+  return {
+    ledger: [...state.ledger, ledgerRow],
+    owned: [...state.owned, ...ownedRows],
+    ops: [{ op: 'put', table: 'ledger', rows: [ledgerRow] }, { op: 'put', table: 'owned_items', rows: ownedRows }],
   };
 }

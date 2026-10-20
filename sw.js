@@ -12,6 +12,7 @@ const SHELL = [
   './css/avatar.css',
   './css/routine.css',
   './css/calm.css',
+  './css/team.css',
   './assets/fonts/fredoka.woff2',
   './assets/icons/icon.svg',
   './assets/icons/icon-192.png',

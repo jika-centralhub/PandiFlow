@@ -324,6 +324,70 @@ if (globalThis.crypto?.subtle) {
   });
 }
 
+// --- Comportement et équipe ------------------------------------------------------------------------------
+test('comportement : +5, corrigé en +2, puis effacé', () => {
+  let s = fixture();
+  let r = d.applyBehavior(s, { familyId: 'f', childId: 'c1', date: TUESDAY, level: 'super' });
+  s = { ...s, ledger: r.ledger };
+  eq([d.balance('c1', s), r.delta, d.behaviorLevel(d.findBehavior(s.ledger, 'c1', TUESDAY))], [5, 5, 'super']);
+  r = d.applyBehavior(s, { familyId: 'f', childId: 'c1', date: TUESDAY, level: 'bien' });
+  s = { ...s, ledger: r.ledger };
+  eq([d.balance('c1', s), s.ledger.length], [2, 1], 'une seule note par soirée');
+  r = d.applyBehavior(s, { familyId: 'f', childId: 'c1', date: TUESDAY, level: null });
+  eq(d.balance('c1', { ...s, ledger: r.ledger }), 0);
+});
+test('défi d’équipe : 80 % de vert sur la semaine, cadeau pour les deux une seule fois', () => {
+  // Semaine du lundi 19 : Léa a 15 tâches (t1, t2 chaque soir + t3 le lundi), Sacha 7 (t2) -> objectif 18 verts
+  let s = fixture();
+  const w0 = d.teamWeek(s, TUESDAY);
+  eq([w0.start, w0.total, w0.goal, w0.done], [MONDAY, 22, 18, false]);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(MONDAY, i));
+  const list = [];
+  for (const day of days) list.push(['c1', 't1', day, 'green'], ['c1', 't2', day, 'green']);
+  for (const day of days.slice(0, 4)) list.push(['c2', 't2', day, 'green']);
+  let last = null;
+  for (const [childId, taskId, date, color] of list) {
+    const r = d.applyRating(s, { familyId: 'f', childId, taskId, date, color });
+    s = { ...s, ratings: r.ratings, ledger: r.ledger, owned: r.owned };
+    if (r.result.team) last = r.result.team;
+  }
+  ok(last, 'défi d’équipe gagné');
+  eq(last.item, d.TEAM_REWARDS[0]);
+  ok(d.isOwned('c1', last.item, s.owned) && d.isOwned('c2', last.item, s.owned), 'cadeau pour les deux');
+  eq(s.ledger.filter((l) => l.kind === 'team').length, 2);
+  const again = d.applyRating(s, { familyId: 'f', childId: 'c2', taskId: 't2', date: addDays(MONDAY, 5), color: 'green' });
+  eq(again.result.team, null, 'pas deux fois la même semaine');
+});
+test('trésor de la fratrie : tous les verts comptent, depuis le début choisi', () => {
+  const { state } = rateAll(fixture(), [['c1', 't1', MONDAY, 'green'], ['c2', 't2', TUESDAY, 'green'], ['c1', 't2', TUESDAY, 'red']]);
+  eq(d.treasureProgress(state).count, 2);
+  const later = { ...state, settings: d.mergeSettings({ treasure: { goal: 2, start: TUESDAY } }) };
+  eq([d.treasureProgress(later).count, d.treasureProgress(later).reached], [1, false]);
+});
+test('coup de main et cadeaux entre enfants', () => {
+  let s = { ...fixture(), ledger: [{ id: 'l0', child_id: 'c1', kind: 'manual', amount: 10 }] };
+  const h = d.applyHelp(s, { familyId: 'f', helper: { id: 'c1', name: 'Léa' }, helped: { id: 'c2', name: 'Sacha' }, ids: ['h1', 'h2'] });
+  s = { ...s, ledger: h.ledger };
+  eq([d.balance('c1', s), d.balance('c2', s)], [12, 2]);
+  const g = d.applyGift(s, { familyId: 'f', from: { id: 'c2', name: 'Sacha' }, to: { id: 'c1', name: 'Léa' }, amount: 50, ids: ['g1', 'g2'] });
+  eq(g.amount, 2, 'on n’offre pas plus que sa cagnotte');
+  s = { ...s, ledger: g.ledger };
+  eq([d.balance('c1', s), d.balance('c2', s)], [14, 0]);
+});
+test('cagnotte commune : on dépose, puis on achète un objet pour tous', () => {
+  let s = { ...fixture(), ledger: [{ id: 'a', child_id: 'c1', kind: 'manual', amount: 100 }, { id: 'b', child_id: 'c2', kind: 'manual', amount: 50 }] };
+  for (const [child, amount, id] of [['c1', 80, 'p1'], ['c2', 70, 'p2']]) {
+    const r = d.applyPotDeposit(s, { familyId: 'f', child: { id: child }, amount, id });
+    s = { ...s, ledger: r.ledger };
+  }
+  eq([d.potBalance(s), d.balance('c1', s), d.balance('c2', s)], [130, 20, 0], 'Sacha ne dépose que ce qu’il a');
+  const item = { id: 'cabane', name: 'Cabane', price: 120, pot: true };
+  eq(d.applyPotPurchase(s, { familyId: 'f', buyer: { id: 'c1' }, item: { ...item, price: 200 }, id: 'x' }).error !== undefined, true);
+  const r = d.applyPotPurchase(s, { familyId: 'f', buyer: { id: 'c1' }, item, id: 'x' });
+  s = { ...s, ledger: r.ledger, owned: r.owned };
+  eq([d.potBalance(s), d.balance('c1', s), d.isOwned('c1', 'cabane', s.owned), d.isOwned('c2', 'cabane', s.owned)], [10, 20, true, true]);
+});
+
 // --- Relais http -> https ------------------------------------------------------------------------------
 await import('../js/relais.js');
 const R = window.PandiRelais;
