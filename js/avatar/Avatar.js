@@ -208,6 +208,7 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
     outfit,
     crown: pic ? pic.crown : hair.crown,
     hatScale: pic ? pic.hatScale : hair.hatScale || 1,
+    in3d: Boolean(pic),
     child: seed,
     hairFill: `url(#${id}-hair)`,
     hairLine: shade(hairColor, -0.35),
@@ -263,6 +264,11 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
       ${showBody && html`<${BodyDefs} id=${id} />`}
       <clipPath id=${`${id}-head`}><path d=${face.d} /></clipPath>
       ${pic && html`<${PortraitDefs} id=${id} pic=${pic} keyed=${pImg.keyed} />`}
+      ${pic && costume?.tint3d && html`<filter id=${`${id}-tint`} color-interpolation-filters="sRGB">
+        <feFlood flood-color=${costume.tint3d} result="c" />
+        <feComposite in="c" in2="SourceAlpha" operator="in" result="m" />
+        <feBlend in="SourceGraphic" in2="m" mode="multiply" />
+      </filter>`}
     </defs>
 
     ${!head && mode !== 'bust' && items.bg && html`<g class="av-bg">${items.bg.render(ctx)}</g>`}
@@ -270,8 +276,10 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
     <g class="av-char" style=${{ animationDelay: delay(3) }}>
       ${!pic && hair.back && showHair && html`<g class="av-hair-back">${hair.back(hairC)}</g>`}
       ${pic && html`<g class="av-head" style=${{ animationDelay: delay(7) }}>
-        <image class="av-portrait" href=${pImg.url} x=${pic.x} y=${pic.y} width=${pic.size} height=${pic.size}
-          clip-path=${pImg.keyed ? `url(#${id}-pclip)` : undefined} mask=${pImg.keyed ? undefined : `url(#${id}-pmask)`} />
+        <g filter=${costume?.tint3d ? `url(#${id}-tint)` : undefined}>
+          <image class="av-portrait" href=${pImg.url} x=${pic.x} y=${pic.y} width=${pic.size} height=${pic.size}
+            clip-path=${pImg.keyed ? `url(#${id}-pclip)` : undefined} mask=${pImg.keyed ? undefined : `url(#${id}-pmask)`} />
+        </g>
       </g>`}
 
       ${showBody && items.back && html`<g class="av-back">${items.back.render(ctx)}</g>`}
@@ -317,7 +325,7 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
 
         `}
 
-        ${costume?.face && html`<g class="av-costume-face" transform=${faceTransform}>${costume.face(ctx)}</g>`}
+        ${costume?.face && !(pic && costume.tint3d) && html`<g class="av-costume-face" transform=${faceTransform}>${costume.face(ctx)}</g>`}
         ${!pic && showHair && html`<g class="av-hair-front">${hair.front(hairC)}</g>`}
         ${costume?.faceTop && html`<g class="av-costume-face-top" transform=${faceTransform}>${costume.faceTop(ctx)}</g>`}
         ${!pic && !funFace && !costume?.hidesGlasses && html`<${Glasses} shape=${look.glasses} color=${GLASSES_COLORS[look.glassesColor].color} />`}

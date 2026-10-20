@@ -146,6 +146,7 @@ js/lib/countdown.js, timers.js             minuteur : calculs purs / sonnerie, b
 js/lib/emotions.js                         émotions et techniques du coin calme
 js/lib/localRepo.js, supabaseRepo.js       stockage démo (localStorage) / cloud (Supabase)
 js/avatar/                                 personnage SVG, coiffures, objets, costumes, garage, trésors animés
+js/avatar/body.js                          haut du corps (mains sur les hanches) : bras articulés, mains à 5 doigts, lumière
 css/routine.css, css/calm.css              carrousel, minuteur, départ, ciel du matin / coin calme
 js/anim/                                   ciel du soir, pièces volantes, confettis
 js/components/, js/pages/                  interface

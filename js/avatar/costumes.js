@@ -474,7 +474,12 @@ const princesse = {
     <circle cx="100" cy="230" r="4" fill="#B490FF" stroke="#fff" stroke-width="1" />
   </g>`,
   collar: () => html`<g>${[86, 91, 96, 100, 104, 109, 114].map((x, i) => html`<circle key=${x} cx=${x} cy=${184 + [0, 3.5, 6, 6.5, 6, 3.5, 0][i]} r="2" fill="#FFF8F0" stroke="#E5D3B8" stroke-width="0.6" />`)}</g>`,
-  sleeves: (_c, x) => html`<ellipse cx=${x + 10} cy="192" rx="14" ry="10" fill="#FFB6DA" stroke="#F27CB8" stroke-width="1.4" />`,
+  // Manches bouffantes posées sur les épaules (épaules du corps vers (61, 195) et (139, 195))
+  over: () => html`<g>${[[60, 194, -35], [140, 194, 35]].map(([cx, cy, a]) => html`<g key=${cx} transform=${`rotate(${a} ${cx} ${cy})`}>
+    <ellipse cx=${cx} cy=${cy} rx="12.5" ry="9.5" fill="#FFB6DA" stroke="#F27CB8" stroke-width="1.2" />
+    <path d=${`M${cx - 6} ${cy - 7.5} Q${cx - 3.5} ${cy} ${cx - 6} ${cy + 7.5} M${cx} ${cy - 9.3} L${cx} ${cy + 9.3} M${cx + 6} ${cy - 7.5} Q${cx + 3.5} ${cy} ${cx + 6} ${cy + 7.5}`} stroke="#F27CB8" stroke-width="1" fill="none" opacity="0.7" />
+    <ellipse cx=${cx - 3} cy=${cy - 3.5} rx="5" ry="3" fill="#fff" opacity="0.35" />
+  </g>`)}</g>`,
   hat: ({ id }) => html`<g>
     <defs>${grad(`${id}-tia`, ['#FFFFFF', '#E3E7F0', '#B9C3D3'])}</defs>
     <path d="M64 58 L70 40 L82 50 L100 28 L118 50 L130 40 L136 58 Z" fill=${`url(#${id}-tia)`} stroke="#9AA6BA" stroke-width="1.6" stroke-linejoin="round" />
@@ -598,11 +603,13 @@ const captainAmerica = {
 
 const hulk = {
   id: 'hulk', name: 'Hulk', price: 300, shirt: '#5BB33B', sleeve: '#5BB33B', gloves: '#4E9E32',
+  // Sur le visage 3D : peau teintée en vert (le relief reste), à la place du visage dessiné
+  tint3d: '#A2EC7E',
   torso: () => html`<g>
     <path d="M64 202 Q82 214 98 204 M102 204 Q118 214 136 202 M90 222 L110 222 M90 232 L110 232" stroke="#3E8A2A" stroke-width="2.6" fill="none" stroke-linecap="round" />
     <path d="M40 240 L52 234 L60 246 L70 234 L80 248 L92 236 L102 248 L114 236 L124 248 L134 234 L146 246 L160 236 L160 270 L40 270 Z" fill="#6A3D9A" stroke="#4B2A70" stroke-width="1.6" stroke-linejoin="round" />
   </g>`,
-  collar: () => html`<g><rect x="88" y="150" width="24" height="34" rx="8" fill="#5BB33B" /><path d="M86 181 Q100 194 114 181" fill="#5BB33B" stroke="#3E8A2A" stroke-width="2" /></g>`,
+  collar: ({ in3d }) => html`<g>${!in3d && html`<rect x="88" y="150" width="24" height="34" rx="8" fill="#5BB33B" />`}<path d="M86 181 Q100 194 114 181" fill="#5BB33B" stroke="#3E8A2A" stroke-width="2" /></g>`,
   sleeves: (_c, x) => html`<path d=${`M${x} 188 L${x + 20} 188 L${x + 20} 198 L${x + 15} 193 L${x + 10} 200 L${x + 5} 193 L${x} 199 Z`} fill="#6A3D9A" />`,
   face: ({ id }) => html`<g>
     <rect x="20" y="20" width="160" height="160" fill="#7BD35A" clip-path=${`url(#${id}-head)`} style="mix-blend-mode:multiply" />
