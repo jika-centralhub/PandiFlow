@@ -207,11 +207,11 @@ function turtle(color, colorName) {
 }
 
 // --- Maillots de foot -------------------------------------------------------------------------
-function kit({ id, name, shirt, sleeve = shirt, collar, trim, number, pattern = null }) {
+function kit({ id, name, shirt, sleeve = shirt, collar, trim, number, pattern = null, price = 100 }) {
   return {
     id,
     name,
-    price: 100,
+    price,
     shirt,
     sleeve,
     torso: () => html`<g>
@@ -232,7 +232,7 @@ const stripes = (colors, width = 15) => {
 
 const KITS = [
   kit({
-    id: 'maillot_psg', name: 'Maillot PSG', shirt: '#0B1E4B', collar: '#D6202E', trim: '#D6202E', number: '#FFFFFF',
+    id: 'maillot_psg', name: 'Maillot PSG', price: 500, shirt: '#0B1E4B', collar: '#D6202E', trim: '#D6202E', number: '#FFFFFF',
     pattern: html`<g><rect x="84" y="170" width="32" height="100" fill="#FFFFFF" /><rect x="88" y="170" width="24" height="100" fill="#D6202E" /></g>`,
   }),
   kit({ id: 'maillot_om', name: 'Maillot OM', shirt: '#FFFFFF', collar: '#2FAEE0', trim: '#2FAEE0', number: '#2FAEE0' }),
@@ -241,12 +241,21 @@ const KITS = [
     pattern: html`<g><path d="M40 212 L160 198 L160 206 L40 220 Z" fill="#D6202E" /><path d="M40 220 L160 206 L160 212 L40 226 Z" fill="#1E3A8A" /></g>`,
   }),
   kit({
-    id: 'maillot_france', name: 'Maillot de France', shirt: '#1C2D6B', collar: '#FFFFFF', trim: '#E0434B', number: '#FFFFFF',
+    id: 'maillot_france', name: 'Maillot de France', price: 500, shirt: '#1C2D6B', collar: '#FFFFFF', trim: '#E0434B', number: '#FFFFFF',
     pattern: html`<g><rect x="64" y="196" width="5" height="9" fill="#2B4BB0" /><rect x="69" y="196" width="5" height="9" fill="#FFFFFF" /><rect x="74" y="196" width="5" height="9" fill="#E0434B" /></g>`,
   }),
   kit({ id: 'maillot_real', name: 'Maillot Real Madrid', shirt: '#FFFFFF', collar: '#B7932F', trim: '#3A2A6B', number: '#B7932F' }),
   kit({ id: 'maillot_barca', name: 'Maillot FC Barcelone', shirt: '#A50044', sleeve: '#A50044', collar: '#FFD23F', trim: '#004D98', number: '#FFD23F', pattern: stripes(['#A50044', '#004D98']) }),
   kit({ id: 'maillot_bresil', name: 'Maillot du Brésil', shirt: '#FFDC02', collar: '#009C3B', trim: '#009C3B', number: '#0A3C8C' }),
+  kit({
+    id: 'maillot_israel', name: "Maillot d'Israël", price: 500, shirt: '#FFFFFF', collar: '#0038B8', trim: '#0038B8', number: '#0038B8',
+    pattern: html`<g>
+      <path d="M40 180 L160 180 L160 190 L40 190 Z" fill="#0038B8" />
+      <rect x="62" y="196" width="18" height="13" rx="1.5" fill="#FFFFFF" stroke="#C9D3E8" stroke-width="0.8" />
+      <rect x="62" y="197.5" width="18" height="1.8" fill="#0038B8" /><rect x="62" y="205.7" width="18" height="1.8" fill="#0038B8" />
+      <path d="M71 199.6 L73.4 203.8 L68.6 203.8 Z M71 205.2 L68.6 201 L73.4 201 Z" fill="none" stroke="#0038B8" stroke-width="0.7" stroke-linejoin="round" />
+    </g>`,
+  }),
 ];
 
 // --- Rabbin --------------------------------------------------------------------------------------
@@ -491,11 +500,273 @@ const prince = {
   </g>`,
 };
 
+// --- Super-héros Marvel et DC ------------------------------------------------------------------
+// Reconnaissables à leurs couleurs et à leurs formes ; emblèmes simplifiés dessinés maison
+// (pas les logos officiels), comme pour les maillots.
+const HEAD_MASK = 'M100 32 C142 32 172 62 172 102 C172 142 140 170 100 170 C60 170 28 142 28 102 C28 62 58 32 100 32 Z';
+const headMask = (fill, stroke) => html`<path d=${HEAD_MASK} fill=${fill} stroke=${stroke} stroke-width="2.4" />`;
+
+// Toile d'araignée : rayons + anneaux légèrement creusés
+function webRing(cx, cy, r, n) {
+  let d = '';
+  for (let i = 0; i <= n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r;
+    if (!i) d += `M${x.toFixed(1)} ${y.toFixed(1)}`;
+    else {
+      const m = ((i - 0.5) / n) * Math.PI * 2;
+      d += ` Q${(cx + Math.cos(m) * r * 0.86).toFixed(1)} ${(cy + Math.sin(m) * r * 0.86).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`;
+    }
+  }
+  return d;
+}
+const web = (cx, cy, stroke, rings, spokes = 12, reach = 90) => html`<g stroke=${stroke} stroke-width="1.2" fill="none" opacity="0.85">
+  ${Array.from({ length: spokes }, (_, i) => {
+    const a = (i / spokes) * Math.PI * 2;
+    return html`<path key=${`s${i}`} d=${`M${cx} ${cy} L${(cx + Math.cos(a) * reach).toFixed(1)} ${(cy + Math.sin(a) * reach).toFixed(1)}`} />`;
+  })}
+  ${rings.map((r) => html`<path key=${`r${r}`} d=${webRing(cx, cy, r, spokes)} />`)}
+</g>`;
+
+// Chauve-souris générique (pas l'emblème officiel)
+const BAT = 'M-50 -6 C-40 -10 -26 -14 -14 -12 C-10 -16 -8 -20 -6 -22 L-3 -14 L3 -14 L6 -22 C8 -20 10 -16 14 -12 C26 -14 40 -10 50 -6 C44 -2 42 4 44 10 C36 4 28 6 24 12 C18 6 10 8 6 14 L0 20 L-6 14 C-10 8 -18 6 -24 12 C-28 6 -36 4 -44 10 C-42 4 -44 -2 -50 -6 Z';
+const bat = (cx, cy, w, fill) => html`<path d=${BAT} transform=${`translate(${cx} ${cy}) scale(${w / 100})`} fill=${fill} />`;
+const bolt = (fill = '#F2C230', stroke = '#C99A12') => html`<path d="M104 197 L92 212 L100 212 L95 225 L110 208 L102 208 Z" fill=${fill} stroke=${stroke} stroke-width="1" stroke-linejoin="round" />`;
+const belt = (fill, y = 246, h = 7, buckle = null) => html`<g><rect x="40" y=${y} width="120" height=${h} fill=${fill} />${buckle && html`<rect x="93" y=${y - 2} width="14" height=${h + 4} rx="2" fill=${buckle} />`}</g>`;
+const plainCollar = (fill, stroke) => () => html`<path d="M86 181 Q100 194 114 181" fill=${fill} stroke=${stroke} stroke-width="3" />`;
+
+const spiderman = {
+  id: 'spiderman', name: 'Spider-Man', price: 300, shirt: '#D62B2B', sleeve: '#2253B5', gloves: '#D62B2B', hideHair: true, hidesGlasses: true,
+  torso: () => html`<g>
+    <path d="M40 196 C56 206 64 232 62 270 L40 270 Z" fill="#2253B5" /><path d=${mirror('M40 196 C56 206 64 232 62 270 L40 270 Z')} fill="#2253B5" />
+    ${web(100, 206, '#7A1414', [12, 24, 38, 54])}
+    <g fill="#1B1B22"><ellipse cx="100" cy="210" rx="4.5" ry="8" /><circle cx="100" cy="199" r="3.4" />
+      <path d="M97 205 L86 196 L84 188 M97 209 L84 206 L80 200 M97 213 L84 216 L80 224 M97 216 L88 226 L86 234 M103 205 L114 196 L116 188 M103 209 L116 206 L120 200 M103 213 L116 216 L120 224 M103 216 L112 226 L114 234" stroke="#1B1B22" stroke-width="1.8" fill="none" stroke-linecap="round" /></g>
+  </g>`,
+  collar: plainCollar('#D62B2B', '#9E1C1C'),
+  sleeves: (_c, x) => html`<g><rect x=${x} y="188" width="20" height="22" rx="9" fill="#D62B2B" /><path d=${`M${x + 4} 192 L${x + 16} 206 M${x + 16} 192 L${x + 4} 206 M${x} 199 L${x + 20} 199`} stroke="#7A1414" stroke-width="1" /></g>`,
+  face: ({ id }) => html`<g>
+    <defs><clipPath id=${`${id}-spm`}><path d=${HEAD_MASK} /></clipPath></defs>
+    ${headMask('#D62B2B', '#9E1C1C')}
+    <g clip-path=${`url(#${id}-spm)`}>${web(100, 112, '#7A1414', [18, 34, 50, 66], 14, 110)}</g>
+    <g class="robot-eye"><path d="M56 104 C56 84 76 78 94 96 C90 114 70 120 56 104 Z" fill="#FFFFFF" stroke="#1B1B22" stroke-width="5" stroke-linejoin="round" />
+      <path d=${mirror('M56 104 C56 84 76 78 94 96 C90 114 70 120 56 104 Z')} fill="#FFFFFF" stroke="#1B1B22" stroke-width="5" stroke-linejoin="round" /></g>
+  </g>`,
+};
+
+const ironman = {
+  id: 'ironman', name: 'Iron Man', price: 300, shirt: '#B3202A', sleeve: '#B3202A', gloves: '#E3B341', hideHair: true, hidesGlasses: true,
+  torso: () => html`<g>
+    <path d="M58 200 C76 192 124 192 142 200" stroke="#7E1119" stroke-width="2.4" fill="none" />
+    <path d="M82 226 L118 226 L114 258 L86 258 Z" fill="#E3B341" stroke="#B8860B" stroke-width="1.6" />
+    <path d="M84 236 L116 236 M85 247 L115 247 M100 226 L100 258" stroke="#B8860B" stroke-width="1.4" />
+    <circle cx="100" cy="207" r="12" fill="#4A5160" stroke="#2B2F3A" stroke-width="2" />
+    <circle class="glow-pulse" cx="100" cy="207" r="9" fill="#BFF4FF" />
+    <circle cx="100" cy="207" r="5" fill="#FFFFFF" />
+  </g>`,
+  collar: () => html`<path d="M84 181 Q100 193 116 181" fill="#E3B341" stroke="#B8860B" stroke-width="2.4" />`,
+  sleeves: cuff('#E3B341', 220, 9),
+  face: ({ id }) => html`<g>
+    <defs>${grad(`${id}-im`, ['#FFE38A', '#E3B341', '#B8860B'])}</defs>
+    ${headMask('#B3202A', '#7E1119')}
+    <path d="M62 84 C62 68 80 62 100 62 C120 62 138 68 138 84 L136 130 C130 148 116 158 100 158 C84 158 70 148 64 130 Z" fill=${`url(#${id}-im)`} stroke="#B8860B" stroke-width="2" />
+    <g class="robot-eye"><path d="M68 100 L92 104 L90 111 L70 107 Z" fill="#DFFBFF" stroke="#7FE7FF" stroke-width="1.5" /><path d=${mirror('M68 100 L92 104 L90 111 L70 107 Z')} fill="#DFFBFF" stroke="#7FE7FF" stroke-width="1.5" /></g>
+    <path d="M84 140 L116 140 M76 124 L82 140 M124 124 L118 140" stroke="#B8860B" stroke-width="2" stroke-linecap="round" />
+  </g>`,
+};
+
+const captainAmerica = {
+  id: 'captain_america', name: 'Captain America', price: 300, shirt: '#1F3E8C', sleeve: '#1F3E8C', gloves: '#C8102E',
+  torso: () => html`<g>
+    ${[64, 76, 88, 100, 112, 124, 136].map((x, i) => html`<rect key=${x} x=${x - 6} y="228" width="12" height="42" fill=${i % 2 ? '#FFFFFF' : '#C8102E'} />`)}
+    <path d=${starPath(100, 208, 17)} fill="#FFFFFF" stroke="#C9D3E8" stroke-width="1.4" />
+    ${belt('#6B4A2B', 244, 6, '#8E6A3F')}
+  </g>`,
+  collar: plainCollar('#1F3E8C', '#14295E'),
+  hat: () => html`<g>
+    <path d="M44 64 C44 26 70 10 100 10 C130 10 156 26 156 64 C140 56 120 52 100 52 C80 52 60 56 44 64 Z" fill="#1F3E8C" stroke="#14295E" stroke-width="2" />
+    <path d="M44 56 L26 42 L32 56 L22 58 L38 66 Z" fill="#FFFFFF" stroke="#C9D3E8" stroke-width="1.4" stroke-linejoin="round" />
+    <path d=${mirror('M44 56 L26 42 L32 56 L22 58 L38 66 Z')} fill="#FFFFFF" stroke="#C9D3E8" stroke-width="1.4" stroke-linejoin="round" />
+    <path d="M70 22 C80 16 90 14 100 14" stroke="#fff" stroke-width="4" opacity="0.25" fill="none" stroke-linecap="round" />
+  </g>`,
+  prop: () => html`<g transform="translate(18 222)">
+    <circle r="19" fill="#C8102E" stroke="#8E0B20" stroke-width="1.6" /><circle r="14.5" fill="#FFFFFF" /><circle r="10.5" fill="#C8102E" /><circle r="7" fill="#1F3E8C" />
+    <path d=${starPath(0, 0, 6)} fill="#FFFFFF" />
+  </g>`,
+};
+
+const hulk = {
+  id: 'hulk', name: 'Hulk', price: 300, shirt: '#5BB33B', sleeve: '#5BB33B', gloves: '#4E9E32',
+  torso: () => html`<g>
+    <path d="M64 202 Q82 214 98 204 M102 204 Q118 214 136 202 M90 222 L110 222 M90 232 L110 232" stroke="#3E8A2A" stroke-width="2.6" fill="none" stroke-linecap="round" />
+    <path d="M40 240 L52 234 L60 246 L70 234 L80 248 L92 236 L102 248 L114 236 L124 248 L134 234 L146 246 L160 236 L160 270 L40 270 Z" fill="#6A3D9A" stroke="#4B2A70" stroke-width="1.6" stroke-linejoin="round" />
+  </g>`,
+  collar: () => html`<g><rect x="88" y="150" width="24" height="34" rx="8" fill="#5BB33B" /><path d="M86 181 Q100 194 114 181" fill="#5BB33B" stroke="#3E8A2A" stroke-width="2" /></g>`,
+  sleeves: (_c, x) => html`<path d=${`M${x} 188 L${x + 20} 188 L${x + 20} 198 L${x + 15} 193 L${x + 10} 200 L${x + 5} 193 L${x} 199 Z`} fill="#6A3D9A" />`,
+  face: ({ id }) => html`<g>
+    <rect x="20" y="20" width="160" height="160" fill="#7BD35A" clip-path=${`url(#${id}-head)`} style="mix-blend-mode:multiply" />
+    <circle cx="42" cy="110" r="12" fill="#7BD35A" style="mix-blend-mode:multiply" /><circle cx="158" cy="110" r="12" fill="#7BD35A" style="mix-blend-mode:multiply" />
+    <path d="M64 84 L90 94 M136 84 L110 94" stroke="#2F5E1F" stroke-width="6" stroke-linecap="round" />
+  </g>`,
+};
+
+const thor = {
+  id: 'thor', name: 'Thor', price: 300, shirt: '#2B2F3A', sleeve: '#3A3F4D', gloves: '#2B2F3A',
+  back: ({ id }) => capeBack(id, ['#E2363F', '#B71C2A', '#8A1420']),
+  torso: ({ id }) => html`<g>
+    <defs>${grad(`${id}-th`, SILVER)}</defs>
+    <path d="M100 186 L100 262" stroke="#1E2129" stroke-width="2" />
+    ${[[82, 204], [118, 204], [82, 222], [118, 222], [82, 240], [118, 240]].map(([x, y]) => html`<circle key=${`${x}-${y}`} cx=${x} cy=${y} r="6.5" fill=${`url(#${id}-th)`} stroke="#6B7486" stroke-width="1.2" />`)}
+    ${belt('#1E2129', 250, 6)}
+  </g>`,
+  collar: () => html`<g><path d="M86 181 Q100 194 114 181" fill="#3A3F4D" stroke="#1E2129" stroke-width="3" />
+    <circle cx="76" cy="187" r="5.5" fill="#D4DAE4" stroke="#6B7486" stroke-width="1.2" /><circle cx="124" cy="187" r="5.5" fill="#D4DAE4" stroke="#6B7486" stroke-width="1.2" /></g>`,
+  hat: ({ id }) => html`<g>
+    <defs>${grad(`${id}-thh`, SILVER)}</defs>
+    <path d="M50 58 C50 26 72 12 100 12 C128 12 150 26 150 58 Z" fill=${`url(#${id}-thh)`} stroke="#6B7486" stroke-width="2" />
+    <rect x="46" y="52" width="108" height="9" rx="4.5" fill="#B7C1D2" stroke="#6B7486" stroke-width="1.6" />
+    <path d="M52 48 C40 38 30 22 34 6 C42 16 46 20 52 28 C46 16 46 8 50 0 C56 12 58 24 58 38 Z" fill="#FFFFFF" stroke="#9AA6BA" stroke-width="1.4" stroke-linejoin="round" />
+    <path d=${mirror('M52 48 C40 38 30 22 34 6 C42 16 46 20 52 28 C46 16 46 8 50 0 C56 12 58 24 58 38 Z')} fill="#FFFFFF" stroke="#9AA6BA" stroke-width="1.4" stroke-linejoin="round" />
+  </g>`,
+  prop: () => html`<g transform="translate(18 214) rotate(-20)">
+    <rect x="-3" y="0" width="6" height="28" rx="2" fill="#7A4A26" />
+    <path d="M-3 8 L3 11 M-3 14 L3 17 M-3 20 L3 23" stroke="#4E2E16" stroke-width="1.2" />
+    <rect x="-15" y="-15" width="30" height="17" rx="3" fill="#9AA6BA" stroke="#5C6678" stroke-width="1.8" />
+    <path d="M-12 -11 L12 -11" stroke="#D4DAE4" stroke-width="2" stroke-linecap="round" />
+    <path class="tw" d="M16 -22 L10 -12 L15 -12 L9 -2" stroke="#7FE7FF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+  </g>`,
+};
+
+const blackPanther = {
+  id: 'black_panther', name: 'Black Panther', price: 300, shirt: '#1B1B22', sleeve: '#1B1B22', gloves: '#1B1B22', hideHair: true, hidesGlasses: true,
+  torso: () => html`<g fill="none" stroke-linejoin="round">
+    <path d="M64 184 L100 214 L136 184 M74 184 L100 206 L126 184" stroke="#C9C6E8" stroke-width="2" />
+    <path d="M84 194 L88 200 L92 194 M108 194 L112 200 L116 194" stroke="#C9C6E8" stroke-width="1.6" />
+    <path d="M70 226 Q100 236 130 226 M74 242 Q100 250 126 242" stroke="#9B7BFF" stroke-width="1.6" opacity="0.7" />
+  </g>`,
+  collar: () => html`<path d="M84 181 Q100 194 116 181" fill="#1B1B22" stroke="#C9C6E8" stroke-width="3" />`,
+  sleeves: (_c, x) => html`<path d=${`M${x + 10} 192 L${x + 10} 228 M${x + 4} 200 L${x + 10} 206 L${x + 16} 200`} stroke="#C9C6E8" stroke-width="1.4" fill="none" />`,
+  face: () => html`<g>
+    <path d="M58 50 L50 22 L76 40 Z" fill="#1B1B22" stroke="#C9C6E8" stroke-width="1.6" stroke-linejoin="round" />
+    <path d=${mirror('M58 50 L50 22 L76 40 Z')} fill="#1B1B22" stroke="#C9C6E8" stroke-width="1.6" stroke-linejoin="round" />
+    ${headMask('#1B1B22', '#000000')}
+    <path d="M92 100 L100 66 L108 100 M76 132 Q100 146 124 132" stroke="#C9C6E8" stroke-width="1.6" fill="none" />
+    <g class="robot-eye"><path d="M60 102 C68 90 86 90 93 102 C84 108 68 108 60 102 Z" fill="#F2F2FF" stroke="#C9C6E8" stroke-width="2" />
+      <path d=${mirror('M60 102 C68 90 86 90 93 102 C84 108 68 108 60 102 Z')} fill="#F2F2FF" stroke="#C9C6E8" stroke-width="2" /></g>
+  </g>`,
+};
+
+const captainMarvel = {
+  id: 'captain_marvel', name: 'Captain Marvel', price: 300, shirt: '#C8102E', sleeve: '#1F3E8C', gloves: '#1F3E8C',
+  torso: ({ id }) => html`<g>
+    <defs>${grad(`${id}-cm`, GOLD)}</defs>
+    <path d="M40 180 L68 180 C72 210 74 240 72 270 L40 270 Z" fill="#1F3E8C" /><path d=${mirror('M40 180 L68 180 C72 210 74 240 72 270 L40 270 Z')} fill="#1F3E8C" />
+    <path d="M66 182 L100 228 L134 182" stroke=${`url(#${id}-cm)`} stroke-width="3.4" fill="none" />
+    <circle cx="100" cy="210" r="13" fill=${`url(#${id}-cm)`} stroke="#B8860B" stroke-width="1.4" />
+    <path d=${starPath(100, 210, 10)} fill="#C8102E" />
+    ${belt('#E3B341', 246, 6)}
+  </g>`,
+  collar: () => html`<path d="M85 181 Q100 193 115 181" fill="#E3B341" stroke="#B8860B" stroke-width="2.4" />`,
+  sleeves: cuff('#E3B341', 222, 6),
+};
+
+const batman = {
+  id: 'batman', name: 'Batman', price: 300, shirt: '#525866', sleeve: '#525866', gloves: '#1B1B22', hideHair: true, hidesGlasses: true,
+  back: ({ id }) => capeBack(id, ['#3A3D47', '#22242B', '#111216']),
+  torso: () => html`<g>
+    ${bat(100, 206, 46, '#1B1B22')}
+    <rect x="40" y="244" width="120" height="9" fill="#F2C230" stroke="#C99A12" stroke-width="1" />
+    ${[56, 72, 128, 144].map((x) => html`<rect key=${x} x=${x - 5} y="242" width="10" height="13" rx="2" fill="#D9A21E" />`)}
+    <rect x="93" y="242" width="14" height="13" rx="2" fill="#C99A12" />
+  </g>`,
+  collar: plainCollar('#22242B', '#111216'),
+  face: () => html`<g>
+    <path d="M54 48 L56 10 L74 40 Z" fill="#1B1B22" /><path d=${mirror('M54 48 L56 10 L74 40 Z')} fill="#1B1B22" />
+    <path d="M28 106 C28 60 60 32 100 32 C140 32 172 60 172 106 L172 118 C152 118 140 124 132 134 C124 128 112 126 100 126 C88 126 76 128 68 134 C60 124 48 118 28 118 Z" fill="#1B1B22" stroke="#000000" stroke-width="2" />
+    <path d="M64 100 L90 104 L88 109 L66 107 Z" fill="#FFFFFF" /><path d=${mirror('M64 100 L90 104 L88 109 L66 107 Z')} fill="#FFFFFF" />
+  </g>`,
+};
+
+const superman = {
+  id: 'superman', name: 'Superman', price: 300, shirt: '#2357C9', sleeve: '#2357C9',
+  back: ({ id }) => capeBack(id, ['#FF4D5E', '#D61F30', '#A0141F']),
+  torso: () => html`<g>
+    <path d="M76 194 L124 194 L132 205 L100 238 L68 205 Z" fill="#D61F30" stroke="#A0141F" stroke-width="2" stroke-linejoin="round" />
+    <path d="M80 198 L120 198 L126 205 L100 231 L74 205 Z" fill="#FFD23F" />
+    <path d="M84 207 C92 200 104 214 116 205" stroke="#D61F30" stroke-width="4.4" fill="none" stroke-linecap="round" />
+    ${belt('#D61F30', 246, 7, '#FFD23F')}
+  </g>`,
+  collar: plainCollar('#2357C9', '#173E94'),
+  faceTop: ({ hairColor }) => html`<path d="M100 50 C90 54 92 66 100 64 C106 62 103 55 99 58" stroke=${hairColor} stroke-width="4" fill="none" stroke-linecap="round" />`,
+};
+
+const wonderWoman = {
+  id: 'wonder_woman', name: 'Wonder Woman', price: 300, shirt: '#C8102E',
+  torso: ({ id, skin }) => html`<g>
+    <defs>${grad(`${id}-ww`, GOLD)}</defs>
+    <path d="M40 176 L160 176 L160 196 C130 188 70 188 40 196 Z" fill=${skin} />
+    <path d="M58 198 C72 190 88 196 100 206 C112 196 128 190 142 198 C132 206 116 208 100 216 C84 208 68 206 58 198 Z" fill=${`url(#${id}-ww)`} stroke="#B8860B" stroke-width="1.4" />
+    <rect x="40" y="238" width="120" height="32" fill="#1F3E8C" />
+    ${[[64, 252], [84, 260], [116, 260], [136, 252], [100, 250]].map(([x, y]) => html`<path key=${x} d=${starPath(x, y, 4)} fill="#FFFFFF" />`)}
+    <rect x="40" y="234" width="120" height="6" fill=${`url(#${id}-ww)`} />
+  </g>`,
+  collar: ({ skin }) => html`<path d="M86 181 Q100 196 114 181" fill=${shade(skin, -0.06)} stroke="none" />`,
+  sleeves: ({ skin }, x) => html`<g><rect x=${x} y="188" width="20" height="46" rx="10" fill=${skin} stroke=${shade(skin, -0.2)} stroke-width="1.2" />
+    <rect x=${x - 0.5} y="212" width="21" height="13" rx="3" fill="#D4DAE4" stroke="#8A93A6" stroke-width="1.2" /></g>`,
+  hat: ({ id }) => html`<g>
+    <defs>${grad(`${id}-wwt`, GOLD)}</defs>
+    <path d="M56 56 C76 46 124 46 144 56 L142 64 C122 55 78 55 58 64 Z" fill=${`url(#${id}-wwt)`} stroke="#B8860B" stroke-width="1.4" />
+    <path d="M90 52 L100 30 L110 52 Z" fill=${`url(#${id}-wwt)`} stroke="#B8860B" stroke-width="1.4" stroke-linejoin="round" />
+    <path d=${starPath(100, 44, 6)} fill="#C8102E" />
+  </g>`,
+  prop: () => html`<g fill="none" stroke="#F2C230" stroke-width="3" class="glow-lasso">
+    <ellipse cx="18" cy="226" rx="13" ry="9" /><ellipse cx="18" cy="226" rx="9" ry="6" /><path d="M31 226 C40 232 40 242 34 250" stroke-linecap="round" />
+  </g>`,
+};
+
+const flash = {
+  id: 'flash', name: 'Flash', price: 300, shirt: '#D61F26', sleeve: '#D61F26', gloves: '#D61F26', hideHair: true,
+  torso: () => html`<g>
+    <circle cx="100" cy="211" r="15" fill="#FFFFFF" stroke="#F2C230" stroke-width="3" />
+    ${bolt()}
+    ${belt('#F2C230', 246, 6)}
+  </g>`,
+  collar: plainCollar('#D61F26', '#9E1419'),
+  sleeves: cuff('#F2C230', 224, 5),
+  face: () => html`<g>
+    <path fill-rule="evenodd" d=${`${HEAD_MASK} M100 80 C124 80 140 96 140 118 C140 142 122 160 100 160 C78 160 60 142 60 118 C60 96 76 80 100 80 Z`} fill="#D61F26" stroke="#9E1419" stroke-width="2.4" />
+    <path d="M32 94 L16 84 L24 98 L12 100 L32 110 Z" fill="#F2C230" stroke="#C99A12" stroke-width="1.2" stroke-linejoin="round" />
+    <path d=${mirror('M32 94 L16 84 L24 98 L12 100 L32 110 Z')} fill="#F2C230" stroke="#C99A12" stroke-width="1.2" stroke-linejoin="round" />
+  </g>`,
+};
+
+const aquaman = {
+  id: 'aquaman', name: 'Aquaman', price: 300, shirt: '#E8892B', sleeve: '#2E8B57', gloves: '#2E8B57',
+  torso: () => {
+    const rows = [];
+    for (let y = 186, r = 0; y < 244; y += 9, r++) {
+      for (let x = 44 + (r % 2) * 6; x < 156; x += 12) rows.push(html`<path key=${`${x}-${y}`} d=${`M${x} ${y} q6 8 12 0`} stroke="#B8621B" stroke-width="1.4" fill="none" />`);
+    }
+    return html`<g>${rows}${belt('#E3B341', 246, 8)}<circle cx="100" cy="250" r="6" fill="#E3B341" stroke="#B8860B" stroke-width="1.4" /></g>`;
+  },
+  collar: plainCollar('#E8892B', '#B8621B'),
+  sleeves: cuff('#E3B341', 222, 5),
+  prop: () => html`<g transform="translate(18 238) rotate(-12)" stroke="#E3B341" stroke-linecap="round" fill="none">
+    <path d="M0 18 L0 -40" stroke-width="4" />
+    <path d="M-10 -38 L10 -38 M-10 -38 L-10 -52 M0 -40 L0 -58 M10 -38 L10 -52" stroke-width="3" />
+    <path d="M-13 -50 L-10 -56 L-7 -50 M-3 -56 L0 -62 L3 -56 M7 -50 L10 -56 L13 -50" stroke-width="2.4" stroke-linejoin="round" />
+  </g>`,
+};
+
+const HEROES = [spiderman, ironman, captainAmerica, hulk, thor, blackPanther, captainMarvel, batman, superman, wonderWoman, flash, aquaman];
+
 export const COSTUMES = [
   pompier,
   police,
   medecin,
   superheros,
+  ...HEROES,
   turtle('#2F6FE0', 'bleue'),
   turtle('#E2363F', 'rouge'),
   turtle('#8A4FD8', 'violette'),

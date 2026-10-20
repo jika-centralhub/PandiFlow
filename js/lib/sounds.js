@@ -142,6 +142,11 @@ export const sfx = {
     noise({ dur: secs * 0.8, vol: 0.05, freq: 500, q: 0.5 });
     tone(294, { dur: secs, attack: 0.3, slide: -98, type: 'sine', vol: 0.07 });
   },
+  // Souffle de feu du dragon : un « fwoosh » grave, plus fort quand la colère est grande (1 -> 0)
+  fire: (power = 1) => {
+    noise({ dur: 1.2 + power, vol: 0.06 + power * 0.12, freq: 380 + power * 300, q: 0.6 });
+    tone(110 + power * 60, { dur: 0.9, type: 'sawtooth', vol: 0.025 + power * 0.04, slide: -50 });
+  },
   softChime: () => [1568, 2349].forEach((f, i) => tone(f, { at: i * 0.12, dur: 1.4, type: 'sine', vol: 0.06 })),
   softTap: () => tone(523 + Math.random() * 40, { dur: 0.12, type: 'sine', vol: 0.09 }),
   // Fini avant la sonnerie : « ta-da ! » et paillettes

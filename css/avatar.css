@@ -189,3 +189,7 @@
 /* Objet tenu par un costume complet (ballon, lionceau, livre…) */
 .avatar .av-prop { animation: pet-bob 2.8s ease-in-out infinite; }
 .av-prop { transform-box: fill-box; }
+
+/* Lasso doré de Wonder Woman : il brille doucement */
+.glow-lasso { animation: glow-lasso 2.4s ease-in-out infinite; }
+@keyframes glow-lasso { 50% { filter: drop-shadow(0 0 4px #FFE680); } }

@@ -85,9 +85,41 @@
 @keyframes cc-flame-blow { from { transform: skewX(-18deg) scale(.7, .75); } to { transform: skewX(-32deg) scale(.5, .6); } }
 
 /* Dragon */
-.cc-dragon { position: relative; font-size: calc(var(--u) * 22); transition: transform .6s cubic-bezier(.3, 1.6, .5, 1); }
-.b-in .cc-dragon, .b-hold .cc-dragon { transform: scale(1.15) translateY(-4%); }
-.cc-dragon.blow { animation: cc-roar .25s ease-in-out infinite alternate; }
+/* Le dragon crache son feu vers la droite : le texte passe en dessous */
+.cc-breath.v-dragon { flex-direction: column; gap: calc(var(--u) * 1.4); }
+.v-dragon .cc-visual { overflow: visible; width: min(calc(var(--u) * 46), 30vw, 42vh); }
+.v-dragon .cc-guide { max-width: none; }
+.v-dragon .cc-count { font-size: calc(var(--u) * 11); }
+.v-dragon .cc-text { font-size: calc(var(--u) * 5); }
+.cc-dragon-svg { position: relative; width: 130%; height: 130%; margin-left: -60%; overflow: visible; }
+.cc-dragon-svg .dr-all { transform-box: view-box; transform-origin: 100px 186px; animation: dr-bob 2.6s ease-in-out infinite; }
+.cc-dragon-svg.d-out .dr-all { animation: cc-roar .22s ease-in-out infinite alternate; }
+.cc-dragon-svg.d-calm .dr-all { animation: dr-happy 1.4s ease-in-out infinite; }
+.cc-dragon-svg .dr-body, .cc-dragon-svg .dr-cheek { transform-box: fill-box; transform-origin: 50% 70%; transition: transform var(--secs, 4s) cubic-bezier(.45, 0, .55, 1); }
+.cc-dragon-svg .dr-body.puff { transform: scale(1.12); }
+.cc-dragon-svg .dr-cheek.puff { transform: scale(1.25); }
+.cc-dragon-svg .dr-red { transition: opacity 1.2s; }
+.cc-dragon-svg .dr-wing { transform-box: fill-box; transform-origin: 100% 100%; animation: dr-wing 1.4s ease-in-out infinite alternate; }
+.cc-dragon-svg.d-out .dr-wing { animation-duration: .3s; }
+.cc-dragon-svg .dr-tail { transform-box: fill-box; transform-origin: 100% 60%; animation: dr-tail 1.8s ease-in-out infinite alternate; }
+.cc-dragon-svg .dr-eyes { transform-box: fill-box; transform-origin: center; animation: av-blink 4s infinite; }
+.dr-fire { transform-box: fill-box; }
+.dr-fire > path { transform-box: fill-box; transform-origin: 0% 50%; animation: dr-flame-in .5s cubic-bezier(.2, 1.4, .4, 1) both, dr-flicker .12s ease-in-out .5s infinite alternate; scale: var(--fire); }
+.dr-fire .f2 { animation-delay: .05s, .55s; }
+.dr-fire .f3 { animation-delay: .1s, .6s; }
+.dr-fire .ember { animation: dr-ember .9s ease-out infinite; }
+.dr-fire .smoke circle { animation: dr-smoke 1.6s ease-out infinite; }
+.dr-hearts path { animation: float-up 3s ease-in infinite; }
+@keyframes dr-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2%); } }
+@keyframes dr-happy { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-5%) rotate(2deg); } }
+@keyframes cc-roar { from { transform: rotate(-2deg) translateX(-1%); } to { transform: rotate(1deg) translateX(1%); } }
+@keyframes dr-wing { from { transform: rotate(6deg); } to { transform: rotate(-14deg); } }
+@keyframes dr-tail { from { transform: rotate(-6deg); } to { transform: rotate(8deg); } }
+@keyframes dr-flame-in { from { transform: scaleX(0) scaleY(.4); opacity: 0; } }
+@keyframes dr-flicker { from { transform: scaleX(.92) scaleY(.94) skewY(-2deg); } to { transform: scaleX(1.06) scaleY(1.06) skewY(2deg); } }
+@keyframes dr-ember { from { transform: translate(0, 0); opacity: 1; } to { transform: translate(60px, -26px); opacity: 0; } }
+@keyframes dr-smoke { from { transform: translate(0, 0) scale(.6); opacity: .7; } to { transform: translate(40px, -30px) scale(1.4); opacity: 0; } }
+.cc-smile { animation: stage-in .8s cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes cc-roar { from { transform: rotate(-3deg) scale(1.05); } to { transform: rotate(3deg) scale(1.08); } }
 
 /* Icônes des étapes */

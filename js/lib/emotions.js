@@ -107,6 +107,8 @@ export const TECHNIQUES = {
     inText: 'Le dragon prend de l’air…',
     holdText: 'Il se prépare…',
     outText: 'Crache le feu ! Fffffff…',
+    lastOutText: 'Un tout petit feu… presque plus de colère.',
+    endText: 'Le dragon est tout calme maintenant. Il te fait un grand sourire !',
   },
   tortue: {
     title: 'La tortue',
