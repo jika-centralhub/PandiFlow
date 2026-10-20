@@ -83,14 +83,16 @@ export function PhotoAvatar({ child, onClose, onEdit }) {
       setStep('capture');
       return;
     }
-    setPhoto(null);
     const drawn = analysis.status === 'fulfilled' ? analysis.value : { look: child.look };
     const face = portrait.status === 'fulfilled' ? portrait.value : null;
-    // Le visage 3D a échoué : on garde l'avatar dessiné et on dit pourquoi
-    const warning = cloud && !face ? `Le personnage 3D n'a pas pu être créé : ${portrait.reason?.message || 'réessaie plus tard.'}` : null;
+    // Le visage 3D a échoué : on le dit clairement, on garde la photo pour réessayer,
+    // et l'avatar dessiné n'est proposé qu'en solution de secours
+    const warning = cloud && !face ? portrait.reason?.message || "La magie n'a pas marché cette fois-ci." : null;
+    if (!warning) setPhoto(null);
     const { portrait: _old, ...look } = drawn.look;
     setResult({ ...drawn, look: face ? { ...look, portrait: face } : look, warning, in3d: Boolean(face) });
     setStep('result');
+    if (warning) return;
     sfx.sparkle();
     setTimeout(() => confettiBurst(resultRef.current), 200);
   }
@@ -148,7 +150,21 @@ export function PhotoAvatar({ child, onClose, onEdit }) {
         </div>
         <p class="hint" style="color:var(--ink-soft)">Le studio prend environ une minute.</p>`}`}
 
-      ${step === 'result' && result && html`
+      ${step === 'result' && result?.warning && html`
+        <h2>Pas de personnage 3D cette fois 😕</h2>
+        <p style="color:#b42536;font-weight:600">${result.warning}</p>
+        <p class="hint" style="color:var(--ink-soft)">En attendant, Pandi a réglé l'avatar dessiné d'après la photo :</p>
+        <div class="photo-result" style="height:calc(var(--u) * 44)">
+          <${Avatar} look=${result.look} equipped=${child.equipped} expr="happy" mode="full" seed=${child.id} />
+        </div>
+        <div class="sheet-actions">
+          <button class="btn btn-ghost" style="color:var(--ink)" onClick=${() => save(false)}>Garder le dessin</button>
+          ${photo
+            ? html`<button class="btn btn-pink btn-big" onClick=${runMagic}>✨ Réessayer la 3D</button>`
+            : html`<button class="btn btn-pink btn-big" onClick=${() => { setResult(null); setStep('capture'); }}>📸 Une autre photo</button>`}
+        </div>`}
+
+      ${step === 'result' && result && !result.warning && html`
         <h2>Tadaaa ! 🎉</h2>
         <div class="photo-result" ref=${resultRef}>
           <${Avatar} look=${result.look} equipped=${child.equipped} expr="joy" pose="cheer" mode="full" seed=${child.id} />
@@ -160,7 +176,6 @@ export function PhotoAvatar({ child, onClose, onEdit }) {
           </div>`)}
         </div>`}
         ${result.demo && html`<p class="hint" style="color:var(--ink-soft)">Mode démo : avatar imaginé au hasard. Avec Supabase, la photo devient un vrai personnage 3D.</p>`}
-        ${result.warning && html`<p class="hint" style="color:#b42536;font-weight:600">${result.warning}</p>`}
         ${result.notes && html`<p class="hint" style="color:var(--ink-soft)">${result.notes}</p>`}
         <div class="sheet-actions">
           <button class="btn btn-ghost" style="color:var(--ink)" onClick=${() => { setResult(null); setStep('capture'); }}>Reprendre une photo</button>

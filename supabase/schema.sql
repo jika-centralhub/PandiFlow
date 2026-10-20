@@ -403,3 +403,20 @@ create policy "portraits : lecture famille" on storage.objects for select to aut
     else false
   end
 );
+
+-- Journal des créations de visages 3D (durée, modèle, erreur ; jamais d'image), lu seulement par le service
+create table if not exists public.portrait_runs (
+  id bigint generated always as identity primary key,
+  at timestamptz not null default now(),
+  family_id uuid not null references public.families (id) on delete cascade,
+  child_id uuid not null,
+  expr text not null,
+  ok boolean not null,
+  ms int,
+  model text,
+  via text,
+  detail text
+);
+
+alter table public.portrait_runs enable row level security;
+revoke all on public.portrait_runs from anon, authenticated;
