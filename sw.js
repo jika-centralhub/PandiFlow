@@ -20,6 +20,7 @@ const SHELL = [
   './js/vendor/gsap.min.js',
   './js/vendor/confetti.js',
   './js/main.js',
+  './js/relais.js',
 ];
 
 self.addEventListener('install', (event) => {

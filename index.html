@@ -14,6 +14,8 @@
   <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
   <link rel="preload" href="assets/fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
+  <!-- Passage de http à https sans se reconnecter : doit passer avant l'app -->
+  <script src="js/relais.js"></script>
   <script>
     // Filet de sécurité : si l'écran ne rafraîchit pas les images (onglet en arrière-plan,
     // navigateur de télé économe…), les animations repassent sur un minuteur.

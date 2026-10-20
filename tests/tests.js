@@ -324,6 +324,26 @@ if (globalThis.crypto?.subtle) {
   });
 }
 
+// --- Relais http -> https ------------------------------------------------------------------------------
+await import('../js/relais.js');
+const R = window.PandiRelais;
+test('relais : la connexion et les réglages passent intacts (accents, émojis)', () => {
+  const items = { 'sb-kyhhkhmwdostzdaksxzw-auth-token': '{"access_token":"a.b.c","refresh_token":"r"}', 'pandiflow-prefs': '{"sound":true,"note":"Léa 🐼"}' };
+  const now = Date.now();
+  const code = R.encode(items, now);
+  ok(/^[A-Za-z0-9_-]+$/.test(code), 'code utilisable dans une adresse');
+  eq(R.decode(code, now + 1000), items);
+});
+test('relais : refusé s’il est trop vieux ou abîmé', () => {
+  const now = Date.now();
+  eq(R.decode(R.encode({ 'pandiflow-prefs': '{}' }, now - 5 * 60000), now), null);
+  eq(R.decode('nimporte-quoi', now), null);
+});
+test('relais : seules les clés de PandiFlow et de Supabase passent', () => {
+  const now = Date.now();
+  eq(R.decode(R.encode({ 'pandiflow-timers': '[]', autre: 'x', 'sb-x-auth-token': 'y' }, now), now), { 'pandiflow-timers': '[]', 'sb-x-auth-token': 'y' });
+});
+
 // --- Affichage ------------------------------------------------------------------------------------
 const passed = results.filter((r) => r.ok).length;
 document.getElementById('summary').textContent = `${passed} / ${results.length} tests réussis`;
