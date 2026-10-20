@@ -142,14 +142,32 @@ function keyGreen(px, w, h) {
       return k >= HIGH ? 0 : 1 - (k - LOW) / (HIGH - LOW);
     },
   );
+  // Liseré vert dans les cheveux : on retire le vert des pixels proches du fond (jusqu'à 7 px),
+  // franchement sur les 3 premiers, plus doucement ensuite
+  const RING = 7;
   const n = w * h;
-  for (let p = 0; p < n; p++) {
-    const x = p % w;
-    const edge = seen[p] || (x > 0 && seen[p - 1]) || (x < w - 1 && seen[p + 1]) || (p >= w && seen[p - w]) || (p < n - w && seen[p + w]);
-    if (!edge) continue;
-    const i = p * 4;
-    const m = Math.max(px[i], px[i + 2]);
-    if (px[i + 1] > m) px[i + 1] = m;
+  const dist = new Uint8Array(n);
+  let front = [];
+  for (let p = 0; p < n; p++) if (seen[p]) {
+    dist[p] = 1;
+    front.push(p);
+  }
+  for (let d = 1; d <= RING && front.length; d++) {
+    const next = [];
+    for (const p of front) {
+      const i = p * 4;
+      const lim = d <= 3 ? (px[i] + px[i + 2]) / 2 : Math.max(px[i], px[i + 2]);
+      if (px[i + 1] > lim) px[i + 1] = Math.round(lim);
+      if (d === RING) continue;
+      const x = p % w;
+      for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, p >= w ? p - w : -1, p < n - w ? p + w : -1]) {
+        if (q >= 0 && !dist[q]) {
+          dist[q] = d + 1;
+          next.push(q);
+        }
+      }
+    }
+    front = next;
   }
 }
 
