@@ -1,10 +1,10 @@
-// Personnage PandiFlow en SVG : style "chibi", dégradés et reflets pour un rendu doux en volume.
-// Repère : viewBox du personnage 0..200 x 0..240, tête centrée en (100, 100).
-// Avec un visage 3D (photo magique), l'image remplace la tête dessinée et se pose sur le corps dessiné.
+// Personnage PandiFlow en SVG : tête "chibi" dessinée ou visage 3D (photo magique), posé sur
+// le haut du corps de body.js. Repère : tête centrée en (100, 100), encolure à y = 182.
 import { html, useMemo } from '../vendor/preact-htm.js';
 import { SKIN_TONES, HAIR_COLORS, EYE_COLORS, OUTFIT_COLORS, GLASSES_COLORS, normalizeLook } from './palette.js';
 import { HAIR } from './hair.js';
 import { getItem } from './items.js';
+import { Body, BodyDefs } from './body.js';
 import { shade, mix, hashString } from '../lib/util.js';
 import { usePortrait, portraitPath } from '../lib/portraits.js';
 
@@ -14,10 +14,10 @@ let instance = 0;
 const PORTRAIT_FOR = { neutral: 'happy', happy: 'happy', joy: 'joy', encourage: 'encourage', focus: 'encourage' };
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-// Avec un visage 3D, la tête est un peu réduite et le corps élargi autour du cou :
-// des proportions d'enfant de film d'animation plutôt que de figurine.
+// Taille du visage 3D par rapport au cadrage moyen : proportions d'enfant de film d'animation
 const HEAD_3D = 0.86;
-const BODY_3D = 'translate(100 180) scale(1.14 1.1) translate(-100 -180)';
+// Menton du visage 3D : juste au-dessus de l'encolure (y = 183), pour un cou court d'enfant
+const CHIN_3D = 168;
 
 // Place le visage 3D dans le repère du personnage : yeux centrés, menton juste au-dessus du col.
 // Donne aussi le haut de la tête et la largeur (chapeaux), la transformation qui amène les yeux
@@ -29,7 +29,7 @@ function placePortrait(m) {
   const gap = m.eyeRightX - m.eyeLeftX;
   const size = HEAD_3D * clamp((46 / gap + 56 / (m.chinY - eyeY)) / 2, 160, 300);
   const x = 100 - eyeX * size;
-  const y = 162 - m.chinY * size;
+  const y = CHIN_3D - m.chinY * size;
   const k = (gap * size) / 44;
   const at = (fx, fy) => [x + fx * size, y + fy * size];
   const headW = (m.headRightX - m.headLeftX) * size;
@@ -148,48 +148,15 @@ function Glasses({ shape, color }) {
   </g>`;
 }
 
-const TORSO = 'M50 264 C50 206 64 182 100 180 C136 182 150 206 150 264 Z';
-
-// Découpe du visage 3D et lumière « film d'animation » posée sur le corps dessiné :
-// lumière principale en haut à gauche, ombres sur les côtés, ombre du menton sur le col.
-// Elle s'applique par-dessus les vêtements et costumes, qui prennent ainsi du volume.
+// Découpe du visage 3D : tête et cou sur fond détouré, sinon ovale doux coupé au menton
 function PortraitDefs({ id, pic, keyed }) {
   const o = pic.oval;
-  return html`
-    ${keyed
-      ? html`<clipPath id=${`${id}-pclip`}><path d=${pic.clip} /></clipPath>`
-      : html`<radialGradient id=${`${id}-poval`}><stop offset="0.82" stop-color="#fff" /><stop offset="1" stop-color="#000" /></radialGradient>
-        <mask id=${`${id}-pmask`} maskUnits="userSpaceOnUse" x=${pic.x - 40} y=${pic.y - 40} width=${pic.size + 80} height=${pic.size + 80}>
-          <ellipse cx=${o.cx} cy=${o.cy} rx=${o.rx} ry=${o.ry} fill=${`url(#${id}-poval)`} />
-        </mask>`}
-    <linearGradient id=${`${id}-vx`} x1="0" x2="1" y1="0" y2="0">
-      <stop offset="0" stop-color="#000" stop-opacity=".3" />
-      <stop offset=".3" stop-color="#fff" stop-opacity=".12" />
-      <stop offset=".55" stop-color="#fff" stop-opacity="0" />
-      <stop offset=".8" stop-color="#000" stop-opacity=".08" />
-      <stop offset="1" stop-color="#000" stop-opacity=".42" />
-    </linearGradient>
-    <linearGradient id=${`${id}-vy`} x1="0" x2="0" y1="0" y2="1">
-      <stop offset="0" stop-color="#fff" stop-opacity=".2" />
-      <stop offset=".3" stop-color="#fff" stop-opacity="0" />
-      <stop offset=".7" stop-color="#000" stop-opacity="0" />
-      <stop offset="1" stop-color="#000" stop-opacity=".32" />
-    </linearGradient>
-    <radialGradient id=${`${id}-ao`}>
-      <stop offset="0" stop-color="#000" stop-opacity=".45" />
-      <stop offset="1" stop-color="#000" stop-opacity="0" />
-    </radialGradient>
-    <linearGradient id=${`${id}-varm`} x1="0" x2="1" y1="0" y2="0">
-      <stop offset="0" stop-color="#000" stop-opacity=".25" />
-      <stop offset=".35" stop-color="#fff" stop-opacity=".18" />
-      <stop offset=".6" stop-color="#fff" stop-opacity="0" />
-      <stop offset="1" stop-color="#000" stop-opacity=".35" />
-    </linearGradient>
-    <radialGradient id=${`${id}-vhand`} cx="35%" cy="30%" r="75%">
-      <stop offset="0" stop-color="#fff" stop-opacity=".45" />
-      <stop offset=".45" stop-color="#fff" stop-opacity="0" />
-      <stop offset="1" stop-color="#000" stop-opacity=".3" />
-    </radialGradient>`;
+  return keyed
+    ? html`<clipPath id=${`${id}-pclip`}><path d=${pic.clip} /></clipPath>`
+    : html`<radialGradient id=${`${id}-poval`}><stop offset="0.82" stop-color="#fff" /><stop offset="1" stop-color="#000" /></radialGradient>
+      <mask id=${`${id}-pmask`} maskUnits="userSpaceOnUse" x=${pic.x - 40} y=${pic.y - 40} width=${pic.size + 80} height=${pic.size + 80}>
+        <ellipse cx=${o.cx} cy=${o.cy} rx=${o.rx} ry=${o.ry} fill=${`url(#${id}-poval)`} />
+      </mask>`;
 }
 
 const SLOT_ORDER = ['bg', 'skin', 'back', 'outfit', 'neck', 'face', 'hat', 'pet', 'fx', 'magic'];
@@ -241,6 +208,7 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
     outfit,
     crown: pic ? pic.crown : hair.crown,
     hatScale: pic ? pic.hatScale : hair.hatScale || 1,
+    in3d: Boolean(pic),
     child: seed,
     hairFill: `url(#${id}-hair)`,
     hairLine: shade(hairColor, -0.35),
@@ -261,7 +229,7 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
 
   const headBox = () => {
     const top = pic.crown - 22;
-    const h = Math.max(164, 172 - top);
+    const h = Math.max(164, CHIN_3D + 12 - top);
     return `${100 - h / 2} ${top} ${h} ${h}`;
   };
   const viewBox = head ? (pic ? headBox() : '18 4 164 164') : '-20 -44 240 298';
@@ -293,9 +261,14 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
         <stop offset="0%" stop-color=${shade(shirt, 0.18)} />
         <stop offset="100%" stop-color=${shade(shirt, -0.12)} />
       </linearGradient>
-      <clipPath id=${`${id}-torso`}><path d=${TORSO} /></clipPath>
+      ${showBody && html`<${BodyDefs} id=${id} />`}
       <clipPath id=${`${id}-head`}><path d=${face.d} /></clipPath>
       ${pic && html`<${PortraitDefs} id=${id} pic=${pic} keyed=${pImg.keyed} />`}
+      ${pic && costume?.tint3d && html`<filter id=${`${id}-tint`} color-interpolation-filters="sRGB">
+        <feFlood flood-color=${costume.tint3d} result="c" />
+        <feComposite in="c" in2="SourceAlpha" operator="in" result="m" />
+        <feBlend in="SourceGraphic" in2="m" mode="multiply" />
+      </filter>`}
     </defs>
 
     ${!head && mode !== 'bust' && items.bg && html`<g class="av-bg">${items.bg.render(ctx)}</g>`}
@@ -303,44 +276,16 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
     <g class="av-char" style=${{ animationDelay: delay(3) }}>
       ${!pic && hair.back && showHair && html`<g class="av-hair-back">${hair.back(hairC)}</g>`}
       ${pic && html`<g class="av-head" style=${{ animationDelay: delay(7) }}>
-        <image class="av-portrait" href=${pImg.url} x=${pic.x} y=${pic.y} width=${pic.size} height=${pic.size}
-          clip-path=${pImg.keyed ? `url(#${id}-pclip)` : undefined} mask=${pImg.keyed ? undefined : `url(#${id}-pmask)`} />
+        <g filter=${costume?.tint3d ? `url(#${id}-tint)` : undefined}>
+          <image class="av-portrait" href=${pImg.url} x=${pic.x} y=${pic.y} width=${pic.size} height=${pic.size}
+            clip-path=${pImg.keyed ? `url(#${id}-pclip)` : undefined} mask=${pImg.keyed ? undefined : `url(#${id}-pmask)`} />
+        </g>
       </g>`}
 
-      <g transform=${pic ? BODY_3D : undefined}>
       ${showBody && items.back && html`<g class="av-back">${items.back.render(ctx)}</g>`}
       ${showBody && costume?.back && html`<g class="av-back">${costume.back(ctx)}</g>`}
-      ${showBody && html`<g class="av-body">
-        ${!pImg?.keyed && html`<rect x="88" y=${pic ? 158 : 148} width="24" height=${pic ? 26 : 36} rx="8" fill=${shade(skin, -0.1)} />`}
-        <path d=${TORSO} fill=${`url(#${id}-shirt)`} />
-        <g clip-path=${`url(#${id}-torso)`}>
-          ${costume ? costume.torso?.(ctx) : items.outfit && items.outfit.render(ctx)}
-          <path d="M60 196 C80 188 120 188 140 196" stroke="#fff" stroke-width="5" opacity="0.18" fill="none" stroke-linecap="round" />
-          ${pic && html`<g class="av-volume">
-            <rect x="48" y="176" width="104" height="92" fill=${`url(#${id}-vx)`} />
-            <rect x="48" y="176" width="104" height="92" fill=${`url(#${id}-vy)`} />
-            <ellipse cx="100" cy="183" rx="32" ry="13" fill=${`url(#${id}-ao)`} />
-          </g>`}
-        </g>
-        ${costume?.collar ? costume.collar(ctx) : html`<path d="M86 181 Q100 196 114 181" fill=${shade(skin, -0.06)} stroke=${shade(shirt, -0.25)} stroke-width="3" />`}
-        ${items.neck && html`<g class="av-neck">${items.neck.render(ctx)}</g>`}
-        <g class="av-arm av-arm-l">
-          <rect x="43" y="188" width="20" height="46" rx="10" fill=${shade(sleeve, -0.08)} stroke=${shade(sleeve, -0.28)} stroke-width="1.4" />
-          ${costume?.sleeves?.(ctx, 43)}
-          ${pic && html`<rect x="43" y="188" width="20" height="46" rx="10" fill=${`url(#${id}-varm)`} />`}
-          <circle cx="53" cy="235" r="9.5" fill=${costume?.gloves || `url(#${id}-skin)`} stroke=${shade(costume?.gloves || skin, -0.2)} stroke-width="1" />
-          ${pic && html`<circle cx="53" cy="235" r="9.5" fill=${`url(#${id}-vhand)`} />`}
-        </g>
-        <g class="av-arm av-arm-r">
-          <rect x="137" y="188" width="20" height="46" rx="10" fill=${shade(sleeve, -0.08)} stroke=${shade(sleeve, -0.28)} stroke-width="1.4" />
-          ${costume?.sleeves?.(ctx, 137)}
-          ${pic && html`<rect x="137" y="188" width="20" height="46" rx="10" fill=${`url(#${id}-varm)`} />`}
-          <circle cx="147" cy="235" r="9.5" fill=${costume?.gloves || `url(#${id}-skin)`} stroke=${shade(costume?.gloves || skin, -0.2)} stroke-width="1" />
-          ${pic && html`<circle cx="147" cy="235" r="9.5" fill=${`url(#${id}-vhand)`} />`}
-        </g>
-        ${costume?.over && html`<g class="av-costume-over">${costume.over(ctx)}</g>`}
-      </g>`}
-      </g>
+      ${showBody && html`<${Body} id=${id} skin=${skin} shirt=${shirt} sleeve=${sleeve} costume=${costume} outfit=${items.outfit}
+        neckItem=${items.neck} ctx=${ctx} neck=${pImg?.keyed ? false : pic ? 158 : 150} />`}
 
       <g class="av-head" style=${{ animationDelay: delay(7) }}>
         ${!pic && html`
@@ -380,7 +325,7 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
 
         `}
 
-        ${costume?.face && html`<g class="av-costume-face" transform=${faceTransform}>${costume.face(ctx)}</g>`}
+        ${costume?.face && !(pic && costume.tint3d) && html`<g class="av-costume-face" transform=${faceTransform}>${costume.face(ctx)}</g>`}
         ${!pic && showHair && html`<g class="av-hair-front">${hair.front(hairC)}</g>`}
         ${costume?.faceTop && html`<g class="av-costume-face-top" transform=${faceTransform}>${costume.faceTop(ctx)}</g>`}
         ${!pic && !funFace && !costume?.hidesGlasses && html`<${Glasses} shape=${look.glasses} color=${GLASSES_COLORS[look.glassesColor].color} />`}
