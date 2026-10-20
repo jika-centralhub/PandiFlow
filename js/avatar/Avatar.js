@@ -14,24 +14,40 @@ let instance = 0;
 const PORTRAIT_FOR = { neutral: 'happy', happy: 'happy', joy: 'joy', encourage: 'encourage', focus: 'encourage' };
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
+// Avec un visage 3D, la tête est un peu réduite et le corps élargi autour du cou :
+// des proportions d'enfant de film d'animation plutôt que de figurine.
+const HEAD_3D = 0.86;
+const BODY_3D = 'translate(100 180) scale(1.14 1.1) translate(-100 -180)';
+
 // Place le visage 3D dans le repère du personnage : yeux centrés, menton juste au-dessus du col.
-// Donne aussi le haut de la tête et la largeur (chapeaux), et la transformation qui amène les yeux
-// du dessin (78 et 122, 106) sur ceux du visage, pour les masques et lunettes amusantes.
+// Donne aussi le haut de la tête et la largeur (chapeaux), la transformation qui amène les yeux
+// du dessin (78 et 122, 106) sur ceux du visage (masques, lunettes amusantes), et la découpe :
+// la tête entière, puis seulement le cou sous le menton (ni col ni épaules de la photo).
 function placePortrait(m) {
   const eyeX = (m.eyeLeftX + m.eyeRightX) / 2;
   const eyeY = (m.eyeLeftY + m.eyeRightY) / 2;
   const gap = m.eyeRightX - m.eyeLeftX;
-  const size = clamp((46 / gap + 56 / (m.chinY - eyeY)) / 2, 160, 300);
+  const size = HEAD_3D * clamp((46 / gap + 56 / (m.chinY - eyeY)) / 2, 160, 300);
   const x = 100 - eyeX * size;
   const y = 162 - m.chinY * size;
   const k = (gap * size) / 44;
+  const at = (fx, fy) => [x + fx * size, y + fy * size];
+  const headW = (m.headRightX - m.headLeftX) * size;
+  const [cx, chin] = at(eyeX, m.chinY);
+  const cut = chin + 0.03 * size;
+  const neck = headW * 0.3;
+  const top = y + m.topY * size;
   return {
     x,
     y,
     size,
-    crown: y + m.topY * size,
-    hatScale: clamp(((m.headRightX - m.headLeftX) * size) / 124, 0.85, 1.45),
+    crown: top,
+    hatScale: clamp(headW / 124, 0.8, 1.4),
     face: `translate(100 ${y + eyeY * size}) scale(${k}) translate(-100 -106)`,
+    clip: `M${x - 40} ${y - 40} H${x + size + 40} V${cut} H${cx + neck} V${y + size} H${cx - neck} V${cut} H${x - 40} Z`,
+    // Fond impossible à retirer : ovale doux autour de la tête (cheveux compris), coupé au menton ;
+    // le cou dessiné prend le relais, pour ne rien montrer du vêtement de la photo
+    oval: { cx: x + ((m.headLeftX + m.headRightX) / 2) * size, cy: (top + chin) / 2, rx: headW * 0.54, ry: (chin - top) * 0.56 },
   };
 }
 
@@ -134,6 +150,48 @@ function Glasses({ shape, color }) {
 
 const TORSO = 'M50 264 C50 206 64 182 100 180 C136 182 150 206 150 264 Z';
 
+// Découpe du visage 3D et lumière « film d'animation » posée sur le corps dessiné :
+// lumière principale en haut à gauche, ombres sur les côtés, ombre du menton sur le col.
+// Elle s'applique par-dessus les vêtements et costumes, qui prennent ainsi du volume.
+function PortraitDefs({ id, pic, keyed }) {
+  const o = pic.oval;
+  return html`
+    ${keyed
+      ? html`<clipPath id=${`${id}-pclip`}><path d=${pic.clip} /></clipPath>`
+      : html`<radialGradient id=${`${id}-poval`}><stop offset="0.82" stop-color="#fff" /><stop offset="1" stop-color="#000" /></radialGradient>
+        <mask id=${`${id}-pmask`} maskUnits="userSpaceOnUse" x=${pic.x - 40} y=${pic.y - 40} width=${pic.size + 80} height=${pic.size + 80}>
+          <ellipse cx=${o.cx} cy=${o.cy} rx=${o.rx} ry=${o.ry} fill=${`url(#${id}-poval)`} />
+        </mask>`}
+    <linearGradient id=${`${id}-vx`} x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#000" stop-opacity=".3" />
+      <stop offset=".3" stop-color="#fff" stop-opacity=".12" />
+      <stop offset=".55" stop-color="#fff" stop-opacity="0" />
+      <stop offset=".8" stop-color="#000" stop-opacity=".08" />
+      <stop offset="1" stop-color="#000" stop-opacity=".42" />
+    </linearGradient>
+    <linearGradient id=${`${id}-vy`} x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".2" />
+      <stop offset=".3" stop-color="#fff" stop-opacity="0" />
+      <stop offset=".7" stop-color="#000" stop-opacity="0" />
+      <stop offset="1" stop-color="#000" stop-opacity=".32" />
+    </linearGradient>
+    <radialGradient id=${`${id}-ao`}>
+      <stop offset="0" stop-color="#000" stop-opacity=".45" />
+      <stop offset="1" stop-color="#000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id=${`${id}-varm`} x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#000" stop-opacity=".25" />
+      <stop offset=".35" stop-color="#fff" stop-opacity=".18" />
+      <stop offset=".6" stop-color="#fff" stop-opacity="0" />
+      <stop offset="1" stop-color="#000" stop-opacity=".35" />
+    </linearGradient>
+    <radialGradient id=${`${id}-vhand`} cx="35%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#fff" stop-opacity=".45" />
+      <stop offset=".45" stop-color="#fff" stop-opacity="0" />
+      <stop offset="1" stop-color="#000" stop-opacity=".3" />
+    </radialGradient>`;
+}
+
 const SLOT_ORDER = ['bg', 'skin', 'back', 'outfit', 'neck', 'face', 'hat', 'pet', 'fx', 'magic'];
 // Un costume complet recouvre ces emplacements (ils restent équipés, mais cachés)
 export const COVERED_BY_SKIN = ['back', 'outfit', 'neck', 'face', 'hat'];
@@ -150,10 +208,11 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
   const look = normalizeLook(rawLook);
   const portrait = look.portrait && !look.portrait.off ? look.portrait : null;
   const pExpr = portrait?.exprs[PORTRAIT_FOR[expr]] ? PORTRAIT_FOR[expr] : 'happy';
-  const pUrl = usePortrait(portrait ? portraitPath(portrait.base, pExpr) : null);
+  const pMarks = portrait?.exprs[pExpr];
+  const pImg = usePortrait(portrait ? portraitPath(portrait.base, pExpr) : null, pMarks);
   // Tant que le visage 3D n'est pas chargé, la tête dessinée s'affiche
-  const pic = pUrl ? placePortrait(portrait.exprs[pExpr]) : null;
-  const skin = (pic && portrait.skin) || SKIN_TONES[look.skin].color;
+  const pic = pImg ? placePortrait(pMarks) : null;
+  const skin = (pic && (pImg.skin || portrait.skin)) || SKIN_TONES[look.skin].color;
   const hairColor = HAIR_COLORS[look.hairColor].color;
   const eyeColor = EYE_COLORS[look.eyeColor].color;
   const outfit = OUTFIT_COLORS[look.outfit].color;
@@ -236,39 +295,52 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
       </linearGradient>
       <clipPath id=${`${id}-torso`}><path d=${TORSO} /></clipPath>
       <clipPath id=${`${id}-head`}><path d=${face.d} /></clipPath>
+      ${pic && html`<${PortraitDefs} id=${id} pic=${pic} keyed=${pImg.keyed} />`}
     </defs>
 
     ${!head && mode !== 'bust' && items.bg && html`<g class="av-bg">${items.bg.render(ctx)}</g>`}
 
     <g class="av-char" style=${{ animationDelay: delay(3) }}>
-      ${showBody && items.back && html`<g class="av-back">${items.back.render(ctx)}</g>`}
-      ${showBody && costume?.back && html`<g class="av-back">${costume.back(ctx)}</g>`}
       ${!pic && hair.back && showHair && html`<g class="av-hair-back">${hair.back(hairC)}</g>`}
       ${pic && html`<g class="av-head" style=${{ animationDelay: delay(7) }}>
-        <image class="av-portrait" href=${pUrl} x=${pic.x} y=${pic.y} width=${pic.size} height=${pic.size} />
+        <image class="av-portrait" href=${pImg.url} x=${pic.x} y=${pic.y} width=${pic.size} height=${pic.size}
+          clip-path=${pImg.keyed ? `url(#${id}-pclip)` : undefined} mask=${pImg.keyed ? undefined : `url(#${id}-pmask)`} />
       </g>`}
 
+      <g transform=${pic ? BODY_3D : undefined}>
+      ${showBody && items.back && html`<g class="av-back">${items.back.render(ctx)}</g>`}
+      ${showBody && costume?.back && html`<g class="av-back">${costume.back(ctx)}</g>`}
       ${showBody && html`<g class="av-body">
-        ${!pic && html`<rect x="88" y="148" width="24" height="36" rx="8" fill=${shade(skin, -0.1)} />`}
+        ${!pImg?.keyed && html`<rect x="88" y=${pic ? 158 : 148} width="24" height=${pic ? 26 : 36} rx="8" fill=${shade(skin, -0.1)} />`}
         <path d=${TORSO} fill=${`url(#${id}-shirt)`} />
         <g clip-path=${`url(#${id}-torso)`}>
           ${costume ? costume.torso?.(ctx) : items.outfit && items.outfit.render(ctx)}
           <path d="M60 196 C80 188 120 188 140 196" stroke="#fff" stroke-width="5" opacity="0.18" fill="none" stroke-linecap="round" />
+          ${pic && html`<g class="av-volume">
+            <rect x="48" y="176" width="104" height="92" fill=${`url(#${id}-vx)`} />
+            <rect x="48" y="176" width="104" height="92" fill=${`url(#${id}-vy)`} />
+            <ellipse cx="100" cy="183" rx="32" ry="13" fill=${`url(#${id}-ao)`} />
+          </g>`}
         </g>
         ${costume?.collar ? costume.collar(ctx) : html`<path d="M86 181 Q100 196 114 181" fill=${shade(skin, -0.06)} stroke=${shade(shirt, -0.25)} stroke-width="3" />`}
         ${items.neck && html`<g class="av-neck">${items.neck.render(ctx)}</g>`}
         <g class="av-arm av-arm-l">
           <rect x="43" y="188" width="20" height="46" rx="10" fill=${shade(sleeve, -0.08)} stroke=${shade(sleeve, -0.28)} stroke-width="1.4" />
           ${costume?.sleeves?.(ctx, 43)}
+          ${pic && html`<rect x="43" y="188" width="20" height="46" rx="10" fill=${`url(#${id}-varm)`} />`}
           <circle cx="53" cy="235" r="9.5" fill=${costume?.gloves || `url(#${id}-skin)`} stroke=${shade(costume?.gloves || skin, -0.2)} stroke-width="1" />
+          ${pic && html`<circle cx="53" cy="235" r="9.5" fill=${`url(#${id}-vhand)`} />`}
         </g>
         <g class="av-arm av-arm-r">
           <rect x="137" y="188" width="20" height="46" rx="10" fill=${shade(sleeve, -0.08)} stroke=${shade(sleeve, -0.28)} stroke-width="1.4" />
           ${costume?.sleeves?.(ctx, 137)}
+          ${pic && html`<rect x="137" y="188" width="20" height="46" rx="10" fill=${`url(#${id}-varm)`} />`}
           <circle cx="147" cy="235" r="9.5" fill=${costume?.gloves || `url(#${id}-skin)`} stroke=${shade(costume?.gloves || skin, -0.2)} stroke-width="1" />
+          ${pic && html`<circle cx="147" cy="235" r="9.5" fill=${`url(#${id}-vhand)`} />`}
         </g>
         ${costume?.over && html`<g class="av-costume-over">${costume.over(ctx)}</g>`}
       </g>`}
+      </g>
 
       <g class="av-head" style=${{ animationDelay: delay(7) }}>
         ${!pic && html`

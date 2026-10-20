@@ -17,7 +17,8 @@ import { adminClient, claudeClient, parentOfChild, replier } from "../_shared/co
 
 // Du plus récent au plus ancien : si le compte n'a pas accès à un modèle, on essaie le suivant
 const IMAGE_MODELS = ["gpt-image-2.5-sunburst", "gpt-image-2", "gpt-image-1.5"];
-const IMAGE_QUALITY = "medium";
+// Une image prend ~20 s en « medium » : « high » tient encore largement dans les 150 s
+const IMAGE_QUALITY = "high";
 const CLAUDE_MODEL = "claude-opus-5-5";
 const DAILY_IMAGES = 9; // 3 séances photo (3 expressions) par enfant et par jour
 const MAX_IMAGE_BASE64 = 7_000_000; // ~5 Mo
@@ -32,13 +33,16 @@ const LOOK =
   "Pixar-style 3D animated feature film character, like the children in Coco or Ratatouille: stylized, appealing proportions with a slightly larger head, " +
   "big expressive eyes with glossy irises and bright catchlights, soft rounded cheeks, a small cute nose, skin with soft subsurface scattering, " +
   "hair sculpted in soft clumps with fine strands and gentle highlights, warm soft key light with a subtle rim light, cinematic high-detail render.";
+// Le modèle ignore la demande de fond transparent : on demande un fond vert uni, que l'app retire elle-même
 const FRAMING =
   "Head-and-neck portrait facing the camera, centered, with the whole head and hair visible and a little empty space above the hair. " +
-  "The neck goes straight down to the bottom edge of the image; nothing below the neck is visible. No hat, no accessories, no text.";
+  "Tight head-and-neck crop: the neck goes straight down to the bottom edge of the image and the shoulders are out of frame. " +
+  "Perfectly flat, uniform pure chroma-key green background (#00FF00), with no gradient, no shadow, no scenery and no green light on the character. " +
+  "No hat, no accessories, no text.";
 const SMILE = "Expression: a warm, gentle closed-mouth smile.";
 const SAME_CHARACTER =
-  "This is a Pixar-style 3D animated film character. Keep exactly the same character: same face, hair, colors, art style and lighting, " +
-  "with the same framing, size and position in the image, and the neck still going straight down to the bottom edge. ";
+  "This is a Pixar-style 3D animated film character on a flat chroma-key green background. Keep exactly the same character: same face, hair, colors, " +
+  "art style, lighting and green background, with the same framing, size and position in the image, and the neck still going straight down to the bottom edge. ";
 
 const PROMPTS: Record<Expr, string> = {
   happy:
@@ -71,7 +75,7 @@ const MARKS_SCHEMA = {
   required: [...MARK_KEYS],
   properties: Object.fromEntries(MARK_KEYS.map((k) => [k, { type: "number" }])),
 };
-const MARKS_PROMPT = `Cette image montre la tête d'un personnage de dessin animé, sur fond transparent.
+const MARKS_PROMPT = `Cette image montre la tête d'un personnage de dessin animé, sur fond vert uni.
 Donne ces repères en pourcentage de la largeur (x) ou de la hauteur (y) de l'image, de 0 (bord gauche ou haut) à 100 (bord droit ou bas) :
 - eyeLeftX, eyeLeftY : le centre de la pupille de l'œil situé du côté gauche de l'image ;
 - eyeRightX, eyeRightY : le centre de la pupille de l'œil situé du côté droit de l'image ;
@@ -211,15 +215,14 @@ const isModeration = (err: OpenAIError) =>
   err.code === "moderation_blocked" || /moderation|safety system|content policy/i.test(err.message ?? "");
 
 // input : image de départ (édition) ; null : création d'après le texte seul
-async function openai(apiKey: string, model: string, prompt: string, input: Blob | null, deadline: number, transparent = true): Promise<string> {
+async function openai(apiKey: string, model: string, prompt: string, input: Blob | null, deadline: number): Promise<string> {
   const params: Record<string, string> = {
     model,
     prompt,
     size: "1024x1024",
     quality: IMAGE_QUALITY,
     output_format: "webp",
-    output_compression: "90",
-    ...(transparent ? { background: "transparent" } : {}),
+    output_compression: "92",
   };
   let body: FormData | string;
   if (input) {
@@ -227,7 +230,7 @@ async function openai(apiKey: string, model: string, prompt: string, input: Blob
     for (const [k, v] of Object.entries(params)) body.append(k, v);
     body.append("image[]", input, input.type === "image/jpeg" ? "photo.jpg" : input.type === "image/png" ? "photo.png" : "visage.webp");
   } else {
-    body = JSON.stringify({ ...params, output_compression: 90, n: 1 });
+    body = JSON.stringify({ ...params, output_compression: 92, n: 1 });
   }
   const res = await fetch(`https://api.openai.com/v1/images/${input ? "edits" : "generations"}`, {
     method: "POST",
@@ -238,10 +241,6 @@ async function openai(apiKey: string, model: string, prompt: string, input: Blob
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = json?.error ?? {};
-    // Fond transparent refusé par le modèle : on recommence avec un fond, que l'app retire elle-même
-    if (transparent && res.status === 400 && /background|transparen/i.test(err.message ?? "")) {
-      return openai(apiKey, model, prompt, input, deadline, false);
-    }
     throw Object.assign(new Error(err.message ?? `Erreur OpenAI ${res.status}`), { status: res.status, code: err.code, type: err.type });
   }
   const out = json?.data?.[0]?.b64_json;
