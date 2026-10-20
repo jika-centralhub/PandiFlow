@@ -214,6 +214,15 @@ test('look aléatoire toujours valide', () => {
     eq(normalizeLook(l), l);
   }
 });
+test('look : visage 3D gardé seulement s\'il est valide', () => {
+  const marks = { eyeLeftX: 0.4, eyeLeftY: 0.45, eyeRightX: 0.6, eyeRightY: 0.45, chinY: 0.74, topY: 0.08, headLeftX: 0.2, headRightX: 0.8 };
+  const base = '11111111-2222-3333-4444-555555555555/66666666-7777-8888-9999-aaaaaaaaaaaa/mabc1234';
+  const look = normalizeLook({ skin: 'miel', portrait: { base, exprs: { happy: marks, joy: { ...marks, chinY: 3 } }, skin: '#E0B090', off: false, x: 1 } });
+  eq(look.portrait, { base, exprs: { happy: marks }, skin: '#E0B090' });
+  ok(!('portrait' in normalizeLook({ portrait: { base: '../autre-famille', exprs: { happy: marks } } })));
+  ok(!('portrait' in normalizeLook({ portrait: { base, exprs: { joy: marks } } })));
+  eq(normalizeLook({ portrait: { base, exprs: { happy: marks }, off: true } }).portrait.off, true);
+});
 
 // --- Routine du matin ------------------------------------------------------------------------------
 function morningFixture() {

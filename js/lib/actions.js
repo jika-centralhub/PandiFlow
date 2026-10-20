@@ -11,6 +11,7 @@ import { toISODate } from './dates.js';
 import { hashPin, checkPin } from './pin.js';
 import { getItem } from '../avatar/items.js';
 import { normalizeLook, randomLook } from '../avatar/palette.js';
+import { setPortraitSource, primePortrait, portraitPath, sampleSkin } from './portraits.js';
 
 let repo = null;
 export const getRepo = () => repo;
@@ -24,6 +25,7 @@ export async function boot() {
     if (isCloudConfigured()) {
       const { SupabaseRepo } = await import('./supabaseRepo.js');
       repo = new SupabaseRepo();
+      setPortraitSource((path) => repo.downloadPortrait(path));
       setState({ mode: 'cloud' });
       loadOutbox();
       const user = await repo.getUser();
@@ -408,6 +410,27 @@ export async function analyzePhoto(childId, imageBase64, mediaType = 'image/jpeg
   }
   const res = await repo.analyzePhoto({ childId, image: imageBase64, mediaType });
   return { look: normalizeLook(res.look), notes: res.notes };
+}
+
+export const canMakePortrait = () => getState().mode === 'cloud';
+
+// Visage 3D en 3 expressions : d'abord le sourire à partir de la photo, puis la joie et
+// l'encouragement à partir de ce sourire (même personnage). onFace(expr, url) à chaque visage prêt.
+// Renvoie le portrait à ranger dans le look ; seul le sourire est indispensable.
+export async function makePortrait(childId, imageBase64, mediaType, onFace) {
+  const face = async (expr, body) => {
+    const res = await repo.makePortrait({ childId, expr, ...body });
+    const blob = await (await fetch(`data:image/webp;base64,${res.image}`)).blob();
+    const url = await primePortrait(portraitPath(res.base, expr), blob);
+    onFace?.(expr, url);
+    return { ...res, blob };
+  };
+  const first = await face('happy', { image: imageBase64, mediaType });
+  const exprs = { happy: first.marks };
+  const others = await Promise.allSettled(['joy', 'encourage'].map((expr) => face(expr, { version: first.version })));
+  for (const r of others) if (r.status === 'fulfilled') exprs[r.value.expr] = r.value.marks;
+  const skin = await sampleSkin(first.blob, first.marks);
+  return { base: first.base, exprs, ...(skin ? { skin } : {}) };
 }
 
 // --- Compte et famille (cloud) ------------------------------------------------------------------

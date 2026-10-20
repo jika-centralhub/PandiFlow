@@ -81,6 +81,16 @@ Chaque parent crée son compte avec **e-mail + mot de passe** (8 caractères min
 
 Coût indicatif : quelques centimes par photo (modèle `claude-opus-5-5`). L'app limite à 5 analyses par enfant et par jour.
 
+### Étape B bis — Visage 3D (Edge Function + clé OpenAI)
+
+La photo magique crée aussi le visage de l'enfant façon film d'animation 3D, en 3 expressions (sourire, joie, courage), avec OpenAI (`gpt-image-2.5-sunburst`, qualité `medium`). Claude repère ensuite les yeux et le menton pour poser le visage sur le corps dessiné et y accrocher chapeaux et masques. Les images sont rangées dans le bucket privé `portraits` (lisible seulement par la famille) ; la photo n'est jamais gardée.
+
+1. Sur [platform.openai.com](https://platform.openai.com) : ajouter du crédit (*Settings → Billing*) et faire vérifier l'organisation (*Settings → Organization → General → Verify Organization*), exigé pour les modèles d'images.
+2. Enregistrer la clé avec [`tools/set-openai-key.ps1`](tools/set-openai-key.ps1) (saisie masquée, secret `OPENAI_API_KEY`).
+3. La fonction est déployée avec `supabase functions deploy make-portrait --project-ref kyhhkhmwdostzdaksxzw --no-verify-jwt` ; le bucket et la limite du jour viennent de `supabase/migrations/20261021130000_portraits.sql`.
+
+Coût indicatif : quelques centimes par visage, donc 3 visages par photo. L'app limite à 3 séances photo par enfant et par jour.
+
 ### Étape C — GitHub Pages (déjà fait)
 
 Le code est sur [github.com/jika-psia/PandiFlow](https://github.com/jika-psia/PandiFlow) (dépôt public, commits signés avec l'adresse privée GitHub). GitHub Pages publie la branche `main` (dossier racine) avec le domaine `pandiflow.com` (fichier `CNAME`). Chaque `git push` sur `main` met le site à jour en moins d'une minute.
@@ -141,6 +151,7 @@ js/anim/                                   ciel du soir, pièces volantes, confe
 js/components/, js/pages/                  interface
 supabase/schema.sql                        tables + règles de sécurité RLS
 supabase/functions/analyze-photo/          Edge Function photo -> avatar (Claude)
+supabase/functions/make-portrait/          Edge Function photo -> visage 3D (OpenAI, repères par Claude)
 tests/                                     tests unitaires et galerie d'avatars
 tools/                                     serveur de dev, génération des icônes
 ```

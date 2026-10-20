@@ -176,19 +176,34 @@ export class SupabaseRepo {
     if (error) throw fail(error, status);
   }
 
-  // --- Photo -> avatar (Edge Function analyze-photo) ------------------------------
-  async analyzePhoto({ childId, image, mediaType }) {
-    const { data, error } = await this.sb.functions.invoke('analyze-photo', { body: { childId, image, mediaType } });
+  // --- Photo -> avatar (Edge Functions analyze-photo et make-portrait) ----------------
+  async invoke(name, body) {
+    const { data, error } = await this.sb.functions.invoke(name, { body });
     if (error) {
       let message = "La magie n'a pas marché cette fois-ci. Réessaie dans un instant.";
       try {
-        const body = await error.context?.json?.();
-        if (body?.error) message = body.error;
+        const res = await error.context?.json?.();
+        if (res?.error) message = res.error;
       } catch {
         /* message par défaut */
       }
       throw new Error(message);
     }
+    return data;
+  }
+
+  analyzePhoto({ childId, image, mediaType }) {
+    return this.invoke('analyze-photo', { childId, image, mediaType });
+  }
+
+  // Un visage 3D pour une expression : { version, base, expr, marks, image (webp en base64) }
+  makePortrait({ childId, expr, image, mediaType, version }) {
+    return this.invoke('make-portrait', { childId, expr, image, mediaType, version });
+  }
+
+  async downloadPortrait(path) {
+    const { data, error } = await this.sb.storage.from('portraits').download(path);
+    if (error) throw fail(error);
     return data;
   }
 }

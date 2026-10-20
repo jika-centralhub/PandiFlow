@@ -1,12 +1,39 @@
 // Personnage PandiFlow en SVG : style "chibi", dégradés et reflets pour un rendu doux en volume.
 // Repère : viewBox du personnage 0..200 x 0..240, tête centrée en (100, 100).
+// Avec un visage 3D (photo magique), l'image remplace la tête dessinée et se pose sur le corps dessiné.
 import { html, useMemo } from '../vendor/preact-htm.js';
 import { SKIN_TONES, HAIR_COLORS, EYE_COLORS, OUTFIT_COLORS, GLASSES_COLORS, normalizeLook } from './palette.js';
 import { HAIR } from './hair.js';
 import { getItem } from './items.js';
 import { shade, mix, hashString } from '../lib/util.js';
+import { usePortrait, portraitPath } from '../lib/portraits.js';
 
 let instance = 0;
+
+// Expression de l'avatar -> visage 3D correspondant
+const PORTRAIT_FOR = { neutral: 'happy', happy: 'happy', joy: 'joy', encourage: 'encourage', focus: 'encourage' };
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+// Place le visage 3D dans le repère du personnage : yeux centrés, menton juste au-dessus du col.
+// Donne aussi le haut de la tête et la largeur (chapeaux), et la transformation qui amène les yeux
+// du dessin (78 et 122, 106) sur ceux du visage, pour les masques et lunettes amusantes.
+function placePortrait(m) {
+  const eyeX = (m.eyeLeftX + m.eyeRightX) / 2;
+  const eyeY = (m.eyeLeftY + m.eyeRightY) / 2;
+  const gap = m.eyeRightX - m.eyeLeftX;
+  const size = clamp((46 / gap + 56 / (m.chinY - eyeY)) / 2, 160, 300);
+  const x = 100 - eyeX * size;
+  const y = 162 - m.chinY * size;
+  const k = (gap * size) / 44;
+  return {
+    x,
+    y,
+    size,
+    crown: y + m.topY * size,
+    hatScale: clamp(((m.headRightX - m.headLeftX) * size) / 124, 0.85, 1.45),
+    face: `translate(100 ${y + eyeY * size}) scale(${k}) translate(-100 -106)`,
+  };
+}
 
 const FACES = {
   rond: { d: 'M100 42 C134 42 160 66 160 100 C160 136 134 158 100 158 C66 158 40 136 40 100 C40 66 66 42 100 42 Z', ear: 40 },
@@ -121,7 +148,12 @@ export const COVERED_BY_SKIN = ['back', 'outfit', 'neck', 'face', 'hat'];
 export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'full', tryOn = null, pose = 'idle', seed = '', still = false, class: cls = '', style }) {
   const id = useMemo(() => `av${++instance}`, []);
   const look = normalizeLook(rawLook);
-  const skin = SKIN_TONES[look.skin].color;
+  const portrait = look.portrait && !look.portrait.off ? look.portrait : null;
+  const pExpr = portrait?.exprs[PORTRAIT_FOR[expr]] ? PORTRAIT_FOR[expr] : 'happy';
+  const pUrl = usePortrait(portrait ? portraitPath(portrait.base, pExpr) : null);
+  // Tant que le visage 3D n'est pas chargé, la tête dessinée s'affiche
+  const pic = pUrl ? placePortrait(portrait.exprs[pExpr]) : null;
+  const skin = (pic && portrait.skin) || SKIN_TONES[look.skin].color;
   const hairColor = HAIR_COLORS[look.hairColor].color;
   const eyeColor = EYE_COLORS[look.eyeColor].color;
   const outfit = OUTFIT_COLORS[look.outfit].color;
@@ -148,13 +180,14 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
     skin,
     hairColor,
     outfit,
-    crown: hair.crown,
-    hatScale: hair.hatScale || 1,
+    crown: pic ? pic.crown : hair.crown,
+    hatScale: pic ? pic.hatScale : hair.hatScale || 1,
     child: seed,
     hairFill: `url(#${id}-hair)`,
     hairLine: shade(hairColor, -0.35),
   };
-  const hatTransform = `translate(100 ${hair.crown}) scale(${ctx.hatScale}) translate(-100 -26)`;
+  const hatTransform = `translate(100 ${ctx.crown}) scale(${ctx.hatScale}) translate(-100 -26)`;
+  const faceTransform = pic?.face;
 
   // Décalages pseudo-aléatoires mais stables : chaque enfant cligne à son rythme
   const h = hashString(seed || id);
@@ -167,7 +200,12 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
     buzz: mix(hairColor, skin, 0.35),
   };
 
-  const viewBox = head ? '18 4 164 164' : '-20 -44 240 298';
+  const headBox = () => {
+    const top = pic.crown - 22;
+    const h = Math.max(164, 172 - top);
+    return `${100 - h / 2} ${top} ${h} ${h}`;
+  };
+  const viewBox = head ? (pic ? headBox() : '18 4 164 164') : '-20 -44 240 298';
   const showBody = !head;
   const browColor = shade(hairColor, ['blond', 'platine', 'blond_fonce'].includes(look.hairColor) ? -0.3 : -0.15);
   const bw = BROW_WIDTH[look.browThickness];
@@ -205,10 +243,13 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
     <g class="av-char" style=${{ animationDelay: delay(3) }}>
       ${showBody && items.back && html`<g class="av-back">${items.back.render(ctx)}</g>`}
       ${showBody && costume?.back && html`<g class="av-back">${costume.back(ctx)}</g>`}
-      ${hair.back && showHair && html`<g class="av-hair-back">${hair.back(hairC)}</g>`}
+      ${!pic && hair.back && showHair && html`<g class="av-hair-back">${hair.back(hairC)}</g>`}
+      ${pic && html`<g class="av-head" style=${{ animationDelay: delay(7) }}>
+        <image class="av-portrait" href=${pUrl} x=${pic.x} y=${pic.y} width=${pic.size} height=${pic.size} />
+      </g>`}
 
       ${showBody && html`<g class="av-body">
-        <rect x="88" y="148" width="24" height="36" rx="8" fill=${shade(skin, -0.1)} />
+        ${!pic && html`<rect x="88" y="148" width="24" height="36" rx="8" fill=${shade(skin, -0.1)} />`}
         <path d=${TORSO} fill=${`url(#${id}-shirt)`} />
         <g clip-path=${`url(#${id}-torso)`}>
           ${costume ? costume.torso?.(ctx) : items.outfit && items.outfit.render(ctx)}
@@ -230,6 +271,7 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
       </g>`}
 
       <g class="av-head" style=${{ animationDelay: delay(7) }}>
+        ${!pic && html`
         ${!hair.coversEars && html`<g>
           <circle cx=${face.ear} cy="110" r="11" fill=${shade(skin, -0.05)} />
           <circle cx=${200 - face.ear} cy="110" r="11" fill=${shade(skin, -0.05)} />
@@ -264,14 +306,16 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
           </g>
         </g>
 
-        ${costume?.face && html`<g class="av-costume-face">${costume.face(ctx)}</g>`}
-        ${showHair && html`<g class="av-hair-front">${hair.front(hairC)}</g>`}
-        ${costume?.faceTop && html`<g class="av-costume-face-top">${costume.faceTop(ctx)}</g>`}
-        ${!funFace && !costume?.hidesGlasses && html`<${Glasses} shape=${look.glasses} color=${GLASSES_COLORS[look.glassesColor].color} />`}
-        ${funFace && html`<g class="av-face-item">${funFace.render(ctx)}</g>`}
-        ${items.hat && html`<g class="av-hat" transform=${items.hat.free ? '' : hatTransform}>${items.hat.render(ctx)}</g>`}
+        `}
+
+        ${costume?.face && html`<g class="av-costume-face" transform=${faceTransform}>${costume.face(ctx)}</g>`}
+        ${!pic && showHair && html`<g class="av-hair-front">${hair.front(hairC)}</g>`}
+        ${costume?.faceTop && html`<g class="av-costume-face-top" transform=${faceTransform}>${costume.faceTop(ctx)}</g>`}
+        ${!pic && !funFace && !costume?.hidesGlasses && html`<${Glasses} shape=${look.glasses} color=${GLASSES_COLORS[look.glassesColor].color} />`}
+        ${funFace && html`<g class="av-face-item" transform=${faceTransform}>${funFace.render(ctx)}</g>`}
+        ${items.hat && html`<g class="av-hat" transform=${items.hat.free ? faceTransform : hatTransform}>${items.hat.render(ctx)}</g>`}
         ${costume?.hat && html`<g class="av-hat" transform=${hatTransform}>${costume.hat(ctx)}</g>`}
-        ${costume?.headFree && html`<g class="av-hat">${costume.headFree(ctx)}</g>`}
+        ${costume?.headFree && html`<g class="av-hat" transform=${faceTransform}>${costume.headFree(ctx)}</g>`}
       </g>
 
       ${showBody && items.pet && html`<g class="av-pet" style=${{ animationDelay: delay(5) }}>${items.pet.render(ctx)}</g>`}

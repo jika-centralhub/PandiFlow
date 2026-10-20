@@ -38,11 +38,33 @@ export function LookEditor({ look: raw, onChange, onPhoto }) {
     sfx.pop();
     onChange({ ...look, [key]: !look[key] });
   };
+  // Visage 3D de la photo magique : il remplace la tête dessinée, dont les réglages sont alors cachés
+  const portrait = look.portrait;
+  const in3d = portrait && !portrait.off;
+  const switch3d = () => {
+    sfx.pop();
+    onChange({ ...look, portrait: { ...portrait, off: in3d } });
+  };
   return html`<div>
     ${onPhoto && html`<button class="photo-cta" onClick=${onPhoto}>
       <span class="ico">📸</span>
-      <span style="text-align:left"><strong>Créer mon avatar avec une photo</strong><span>La magie de Pandi transforme ta photo en personnage !</span></span>
+      <span style="text-align:left"><strong>${portrait ? 'Refaire mon personnage avec une photo' : 'Créer mon avatar avec une photo'}</strong><span>La magie de Pandi transforme ta photo en personnage de film d'animation !</span></span>
     </button>`}
+    ${portrait && html`<div class="look-group portrait-card">
+      <div class="mini"><${Avatar} look=${look} mode="head" still=${true} /></div>
+      <div>
+        <h3>${in3d ? 'Mon personnage 3D' : 'Mon avatar dessiné'}</h3>
+        <p>${in3d ? 'Créé avec la photo magique. Les tenues de la boutique s’ajoutent en dessous.' : 'Ton personnage 3D est gardé : tu peux le remettre quand tu veux.'}</p>
+        <button class="chip" onClick=${switch3d}>${in3d ? '✏️ Utiliser le dessin' : '✨ Remettre mon personnage 3D'}</button>
+      </div>
+    </div>`}
+    ${!in3d && html`<${DrawnLook} look=${look} set=${set} toggle=${toggle} />`}
+    <div class="look-group"><h3>Couleur du haut</h3><${Swatches} options=${OUTFIT_COLORS} value=${look.outfit} onPick=${set('outfit')} /></div>
+  </div>`;
+}
+
+function DrawnLook({ look, set, toggle }) {
+  return html`<div>
     <div class="look-group"><h3>Couleur de peau</h3><${Swatches} options=${SKIN_TONES} value=${look.skin} onPick=${set('skin')} /></div>
     <div class="look-group"><h3>Coiffure</h3><${Options} options=${HAIR_STYLES} value=${look.hair} onPick=${set('hair')} previewKey="hair" look=${look} /></div>
     <div class="look-group"><h3>Couleur des cheveux</h3><${Swatches} options=${HAIR_COLORS} value=${look.hairColor} onPick=${set('hairColor')} /></div>
@@ -58,6 +80,5 @@ export function LookEditor({ look: raw, onChange, onPhoto }) {
       <button class=${`chip ${look.dimples ? 'on' : ''}`} onClick=${toggle('dimples')}>Fossettes</button>
       <button class=${`chip ${look.missingTooth ? 'on' : ''}`} onClick=${toggle('missingTooth')}>Dent de lait tombée</button>
     </div></div>
-    <div class="look-group"><h3>Couleur du haut</h3><${Swatches} options=${OUTFIT_COLORS} value=${look.outfit} onPick=${set('outfit')} /></div>
   </div>`;
 }

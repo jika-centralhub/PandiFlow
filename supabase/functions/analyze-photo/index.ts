@@ -6,21 +6,11 @@
 //   ANTHROPIC_API_KEY  — ta clé API Claude
 // (SUPABASE_URL, SUPABASE_ANON_KEY et SUPABASE_SERVICE_ROLE_KEY sont fournis automatiquement.)
 
-import Anthropic from "npm:@anthropic-ai/sdk";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { adminClient, claudeClient, parentOfChild, replier } from "../_shared/common.ts";
 
 const MODEL = "claude-opus-5-5";
 const DAILY_LIMIT = 5;
 const MAX_IMAGE_BASE64 = 7_000_000; // ~5 Mo
-const ALLOWED_ORIGINS = [
-  "https://pandiflow.com",
-  "https://www.pandiflow.com",
-  // Tant que le certificat HTTPS de GitHub Pages n'est pas actif, le site est servi en http
-  "http://pandiflow.com",
-  "http://www.pandiflow.com",
-  "http://localhost:8080",
-  "http://127.0.0.1:8080",
-];
 
 // Vocabulaire identique à js/avatar/palette.js : toute modification doit être faite des deux côtés.
 const OPTIONS = {
@@ -66,33 +56,12 @@ Pour chaque caractéristique, choisis l'option la plus proche de ce que tu vois,
 notes : une phrase courte et bienveillante en français, adressée à l'enfant, sur un détail sympa de son avatar (par exemple « J'ai gardé tes jolies boucles ! »). Ne décris rien d'autre, n'essaie pas d'identifier la personne et ne fais aucune supposition sur elle.
 Si aucun visage d'enfant n'est visible, choisis des valeurs neutres et indique dans notes qu'il faudrait une photo de face.`;
 
-function cors(origin: string) {
-  return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    Vary: "Origin",
-  };
-}
-
 Deno.serve(async (req) => {
-  const headers = cors(req.headers.get("Origin") ?? "");
-  const reply = (body: unknown, status = 200) =>
-    new Response(JSON.stringify(body), { status, headers: { ...headers, "Content-Type": "application/json" } });
-
+  const { headers, reply } = replier(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers });
   if (req.method !== "POST") return reply({ error: "Méthode non autorisée." }, 405);
 
-  // 1. Le parent doit être connecté
-  const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-  if (!jwt) return reply({ error: "Connecte-toi pour utiliser la photo magique." }, 401);
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY");
-  const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey!, { auth: { persistSession: false } });
-  const { data: auth } = await admin.auth.getUser(jwt);
-  const user = auth?.user;
-  if (!user) return reply({ error: "Ta session a expiré, reconnecte-toi." }, 401);
-
-  // 2. Vérification de la requête
+  // 1. Vérification de la requête
   let body: { childId?: unknown; image?: unknown; mediaType?: unknown };
   try {
     body = await req.json();
@@ -106,14 +75,13 @@ Deno.serve(async (req) => {
   if (!["image/jpeg", "image/png", "image/webp"].includes(mediaType)) return reply({ error: "Format de photo non pris en charge." }, 415);
   if (image.length > MAX_IMAGE_BASE64) return reply({ error: "Photo trop lourde." }, 413);
 
-  // 3. L'enfant doit appartenir à la famille de ce parent
-  const { data: child } = await admin.from("children").select("id, family_id").eq("id", childId).maybeSingle();
-  const { data: member } = child
-    ? await admin.from("family_members").select("user_id").eq("family_id", child.family_id).eq("user_id", user.id).maybeSingle()
-    : { data: null };
-  if (!child || !member) return reply({ error: "Enfant introuvable." }, 404);
+  // 2. Le parent doit être connecté et l'enfant appartenir à sa famille
+  const admin = adminClient();
+  const access = await parentOfChild(req, admin, childId);
+  if (access.error) return reply({ error: access.error[0] }, access.error[1]);
+  const { child } = access;
 
-  // 4. Limite quotidienne (pour maîtriser le coût)
+  // 3. Limite quotidienne (pour maîtriser le coût)
   const day = new Date().toISOString().slice(0, 10);
   const { data: quota } = await admin.from("photo_analyses").select("count").eq("child_id", childId).eq("day", day).maybeSingle();
   const used = quota?.count ?? 0;
@@ -125,13 +93,8 @@ Deno.serve(async (req) => {
     { onConflict: "child_id,day" },
   );
 
-  // 5. Analyse par Claude. Une clé d'organisation (non rattachée à un espace de travail)
-  // a besoin de l'identifiant d'espace de travail : secret facultatif ANTHROPIC_WORKSPACE_ID.
-  const workspace = Deno.env.get("ANTHROPIC_WORKSPACE_ID");
-  const anthropic = new Anthropic({
-    apiKey: Deno.env.get("ANTHROPIC_API_KEY"),
-    ...(workspace ? { defaultHeaders: { "anthropic-workspace-id": workspace } } : {}),
-  });
+  // 4. Analyse par Claude
+  const anthropic = claudeClient();
   try {
     const response = await anthropic.beta.messages.create({
       model: MODEL,

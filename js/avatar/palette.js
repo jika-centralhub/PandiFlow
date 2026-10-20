@@ -139,6 +139,31 @@ export function normalizeLook(input) {
   for (const key of BOOLS) {
     if (typeof src[key] === 'boolean') out[key] = src[key];
   }
+  const portrait = normalizePortrait(src.portrait);
+  if (portrait) out.portrait = portrait;
+  return out;
+}
+
+// Visage 3D (Edge Function make-portrait) : images rangées sous <famille>/<enfant>/<version>/<expression>.webp,
+// avec, pour chaque expression, les repères des yeux, du menton et de la tête (fractions de l'image).
+export const PORTRAIT_EXPRS = ['happy', 'joy', 'encourage'];
+export const PORTRAIT_MARKS = ['eyeLeftX', 'eyeLeftY', 'eyeRightX', 'eyeRightY', 'chinY', 'topY', 'headLeftX', 'headRightX'];
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+const PORTRAIT_BASE = new RegExp(`^${UUID}/${UUID}/[a-z0-9]{6,20}$`);
+
+function normalizePortrait(p) {
+  if (!p || typeof p !== 'object' || typeof p.base !== 'string' || !PORTRAIT_BASE.test(p.base)) return null;
+  const exprs = {};
+  for (const expr of PORTRAIT_EXPRS) {
+    const m = p.exprs?.[expr];
+    if (m && PORTRAIT_MARKS.every((k) => Number.isFinite(m[k]) && m[k] >= 0 && m[k] <= 1)) {
+      exprs[expr] = Object.fromEntries(PORTRAIT_MARKS.map((k) => [k, m[k]]));
+    }
+  }
+  if (!exprs.happy) return null;
+  const out = { base: p.base, exprs };
+  if (typeof p.skin === 'string' && /^#[0-9a-f]{6}$/i.test(p.skin)) out.skin = p.skin;
+  if (p.off === true) out.off = true;
   return out;
 }
 

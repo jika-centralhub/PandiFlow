@@ -21,3 +21,7 @@ enable_confirmations = false
 [functions.analyze-photo]
 # La fonction vérifie elle-même la session du parent
 verify_jwt = false
+
+[functions.make-portrait]
+# La fonction vérifie elle-même la session du parent
+verify_jwt = false
