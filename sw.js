@@ -40,12 +40,15 @@ self.addEventListener('activate', (event) => {
 });
 
 // Fichiers de l'app : réseau d'abord (pour avoir la dernière version), cache si hors ligne.
+// « no-cache » : le navigateur revalide chaque fichier au lieu de garder sa copie 10 minutes,
+// pour qu'une nouvelle version soit prise dès le rechargement.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
   event.respondWith(
-    fetch(req)
+    // (une navigation ne peut pas recevoir d'options : la page elle-même est revalidée par défaut)
+    (req.mode === 'navigate' ? fetch(req) : fetch(req, { cache: 'no-cache' }))
       .then((res) => {
         if (res.ok) {
           const copy = res.clone();

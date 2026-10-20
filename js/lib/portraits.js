@@ -100,12 +100,52 @@ async function prepare(blob, marks) {
     const img = ctx.getImageData(0, 0, w, h);
     const keyed = clearBackground(img.data, w, h);
     const skin = marks ? sampleSkin(img.data, w, h, marks) : null;
+    const neck = keyed && marks ? measureNeck(img.data, w, h, (marks.eyeLeftX + marks.eyeRightX) / 2, marks.chinY) : null;
     if (keyed !== 'already') ctx.putImageData(img, 0, 0);
     const out = keyed === 'already' ? blob : await new Promise((resolve) => canvas.toBlob((b) => resolve(b || blob), 'image/png'));
-    return { url: URL.createObjectURL(out), skin, keyed: keyed !== false };
+    return { url: URL.createObjectURL(out), skin, neck, keyed: keyed !== false };
   } catch {
-    return { url: URL.createObjectURL(blob), skin: null, keyed: false };
+    return { url: URL.createObjectURL(blob), skin: null, neck: null, keyed: false };
   }
+}
+
+// Cou dans l'image (fractions) : bas du cou, largeur et couleur à mi-hauteur entre le menton et
+// le bas (là où il est droit, avant de s'élargir vers les épaules). Le cou dessiné derrière le
+// visage le prolonge ainsi jusqu'au col, quel que soit le cadrage.
+function measureNeck(px, w, h, centerX, chinY) {
+  const cx = Math.round(centerX * w);
+  const solid = (x, y) => px[(y * w + x) * 4 + 3] > 200;
+  let bottom = -1;
+  for (let y = h - 1; y > chinY * h; y--) {
+    if (solid(cx, y)) {
+      bottom = y;
+      break;
+    }
+  }
+  if (bottom < 0) return null;
+  const y = Math.round(chinY * h + (bottom - chinY * h) * 0.5);
+  if (!solid(cx, y)) return null;
+  let x0 = cx;
+  let x1 = cx;
+  while (x0 > 0 && solid(x0 - 1, y)) x0--;
+  while (x1 < w - 1 && solid(x1 + 1, y)) x1++;
+  if (x1 - x0 < w * 0.06 || x1 - x0 > w * 0.5) return null;
+  // Couleur prise là où le cou dessiné prend le relais (juste au-dessus du bas de l'image)
+  const yc = Math.max(y, bottom - Math.round(h * 0.012));
+  let r = 0, g = 0, b = 0, n = 0;
+  for (let yy = yc - 3; yy <= yc + 3; yy++) {
+    for (let x = x0 + Math.round((x1 - x0) * 0.3); x <= x1 - Math.round((x1 - x0) * 0.3); x++) {
+      const i = (yy * w + x) * 4;
+      if (px[i + 3] < 220) continue;
+      r += px[i];
+      g += px[i + 1];
+      b += px[i + 2];
+      n++;
+    }
+  }
+  if (!n) return null;
+  const hex = (v) => Math.round(v / n).toString(16).padStart(2, '0');
+  return { left: x0 / w, right: (x1 + 1) / w, top: y / h, bottom: (bottom + 1) / h, color: `#${hex(r)}${hex(g)}${hex(b)}` };
 }
 
 // Renvoie 'already' (déjà transparent), 'green', 'plain' ou false (fond impossible à retirer)

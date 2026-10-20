@@ -41,6 +41,8 @@ function placePortrait(m) {
     x,
     y,
     size,
+    cx,
+    headW,
     crown: top,
     hatScale: clamp(headW / 124, 0.8, 1.4),
     face: `translate(100 ${y + eyeY * size}) scale(${k}) translate(-100 -106)`,
@@ -148,11 +150,45 @@ function Glasses({ shape, color }) {
   </g>`;
 }
 
-// Découpe du visage 3D : tête et cou sur fond détouré, sinon ovale doux coupé au menton
-function PortraitDefs({ id, pic, keyed }) {
+// Cou du visage 3D prolongé jusque sous l'encolure (y = 197), derrière l'image : même largeur
+// et même couleur que le bas du cou de l'image, mesurés au chargement. Inutile si le cou de l'image
+// descend déjà sous le col.
+function portraitNeck(pic, measured, skin) {
+  const at = (f) => pic.y + f * pic.size;
+  const bottom = measured ? at(measured.bottom) : pic.y + pic.size;
+  if (bottom > 194) return null;
+  // Un peu plus étroit que le cou de l'image, pour ne jamais dépasser sur les côtés
+  const x0 = (measured ? pic.x + measured.left * pic.size : pic.cx - pic.headW * 0.16) + 0.8;
+  const x1 = (measured ? pic.x + measured.right * pic.size : pic.cx + pic.headW * 0.16) - 0.8;
+  // Le haut du cou dessiné reste caché sous la partie opaque de l'image (le fondu fait 9 unités)
+  const top = Math.min(measured ? at(measured.top) : bottom, bottom - 14);
+  const mid = (top + 197) / 2;
+  return {
+    bottom,
+    color: measured?.color || skin,
+    // Plus étroit en haut (caché sous le visage), à la largeur mesurée au milieu, un peu plus large au col
+    d: `M${x0 + 3} ${top} L${x1 - 3} ${top} C${x1} ${mid} ${x1 + 0.6} 191 ${x1 + 3} 197 L${x0 - 3} 197 C${x0 - 0.6} 191 ${x0} ${mid} ${x0 + 3} ${top} Z`,
+  };
+}
+
+// Découpe du visage 3D : tête et cou sur fond détouré (bas du cou fondu dans le cou prolongé),
+// sinon ovale doux coupé au menton
+function PortraitDefs({ id, pic, keyed, neck }) {
   const o = pic.oval;
+  const fade = neck ? neck.bottom : pic.y + pic.size;
   return keyed
-    ? html`<clipPath id=${`${id}-pclip`}><path d=${pic.clip} /></clipPath>`
+    ? html`<linearGradient id=${`${id}-pfade`} gradientUnits="userSpaceOnUse" x1="0" x2="0" y1=${fade - 9} y2=${fade - 1}>
+        <stop offset="0" stop-color="#fff" /><stop offset="1" stop-color="#000" />
+      </linearGradient>
+      <mask id=${`${id}-pmask`} maskUnits="userSpaceOnUse" x=${pic.x - 40} y=${pic.y - 40} width=${pic.size + 80} height=${pic.size + 80}>
+        <path d=${pic.clip} fill=${neck ? `url(#${id}-pfade)` : '#fff'} />
+      </mask>
+      <linearGradient id=${`${id}-pneck`} x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0" stop-color="#000" stop-opacity=".16" />
+        <stop offset=".25" stop-color="#000" stop-opacity="0" />
+        <stop offset=".75" stop-color="#000" stop-opacity="0" />
+        <stop offset="1" stop-color="#000" stop-opacity=".2" />
+      </linearGradient>`
     : html`<radialGradient id=${`${id}-poval`}><stop offset="0.82" stop-color="#fff" /><stop offset="1" stop-color="#000" /></radialGradient>
       <mask id=${`${id}-pmask`} maskUnits="userSpaceOnUse" x=${pic.x - 40} y=${pic.y - 40} width=${pic.size + 80} height=${pic.size + 80}>
         <ellipse cx=${o.cx} cy=${o.cy} rx=${o.rx} ry=${o.ry} fill=${`url(#${id}-poval)`} />
@@ -180,6 +216,7 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
   // Tant que le visage 3D n'est pas chargé, la tête dessinée s'affiche
   const pic = pImg ? placePortrait(pMarks) : null;
   const skin = (pic && (pImg.skin || portrait.skin)) || SKIN_TONES[look.skin].color;
+  const pNeck = pic && pImg.keyed ? portraitNeck(pic, pImg.neck, skin) : null;
   const hairColor = HAIR_COLORS[look.hairColor].color;
   const eyeColor = EYE_COLORS[look.eyeColor].color;
   const outfit = OUTFIT_COLORS[look.outfit].color;
@@ -263,7 +300,7 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
       </linearGradient>
       ${showBody && html`<${BodyDefs} id=${id} />`}
       <clipPath id=${`${id}-head`}><path d=${face.d} /></clipPath>
-      ${pic && html`<${PortraitDefs} id=${id} pic=${pic} keyed=${pImg.keyed} />`}
+      ${pic && html`<${PortraitDefs} id=${id} pic=${pic} keyed=${pImg.keyed} neck=${pNeck} />`}
       ${pic && costume?.tint3d && html`<filter id=${`${id}-tint`} color-interpolation-filters="sRGB">
         <feFlood flood-color=${costume.tint3d} result="c" />
         <feComposite in="c" in2="SourceAlpha" operator="in" result="m" />
@@ -277,8 +314,8 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
       ${!pic && hair.back && showHair && html`<g class="av-hair-back">${hair.back(hairC)}</g>`}
       ${pic && html`<g class="av-head" style=${{ animationDelay: delay(7) }}>
         <g filter=${costume?.tint3d ? `url(#${id}-tint)` : undefined}>
-          <image class="av-portrait" href=${pImg.url} x=${pic.x} y=${pic.y} width=${pic.size} height=${pic.size}
-            clip-path=${pImg.keyed ? `url(#${id}-pclip)` : undefined} mask=${pImg.keyed ? undefined : `url(#${id}-pmask)`} />
+          ${pNeck && html`<path d=${pNeck.d} fill=${pNeck.color} /><path d=${pNeck.d} fill=${`url(#${id}-pneck)`} />`}
+          <image class="av-portrait" href=${pImg.url} x=${pic.x} y=${pic.y} width=${pic.size} height=${pic.size} mask=${`url(#${id}-pmask)`} />
         </g>
       </g>`}
 
