@@ -555,15 +555,3 @@ h1, h2, h3, p { margin: 0; }
 .invite-box p { margin-bottom: calc(var(--u) * 1.6); }
 .invite-box .meta { color: var(--ink-soft); font-size: calc(var(--u) * 3.3); margin-top: calc(var(--u) * 1.6); }
 .row.muted-row { background: #f8f6fe; }
-
-/* ===== Coin de l'enfant : la scène du garage à côté de l'avatar ===== */
-.child-body.has-garage { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.25fr); }
-.child-stage.has-garage > .avatar { width: 54%; height: 96%; top: 4%; }
-.child-stage .garage { position: absolute; right: 1%; bottom: 3%; width: 54%; height: 60%; }
-.buy-scene { position: relative; width: calc(var(--u) * 70); height: calc(var(--u) * 52); border-radius: calc(var(--u) * 6); overflow: hidden; background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--kid), #fff 40%), var(--kid)); }
-.buy-scene .avatar { position: absolute; left: 0; top: 0; width: 56%; height: 100%; }
-.buy-scene .garage { position: absolute; right: 0; bottom: 2%; width: 64%; height: 70%; }
-@media (orientation: portrait) {
-  .child-body.has-garage { grid-template-columns: 1fr; }
-  .buy-scene { width: calc(var(--u) * 60); height: calc(var(--u) * 44); }
-}

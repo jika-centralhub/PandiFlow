@@ -157,6 +157,79 @@ export const sfx = {
   },
 };
 
+// --- Sons du garage (quand on touche un véhicule ou un accessoire) ---------------------------
+export const garageSfx = {
+  honk: () => {
+    tone(392, { dur: 0.18, type: 'square', vol: 0.12 });
+    tone(330, { at: 0.22, dur: 0.3, type: 'square', vol: 0.12 });
+  },
+  bell: () => [0, 0.28].forEach((at) => {
+    tone(2093, { at, dur: 0.45, type: 'sine', vol: 0.16 });
+    tone(2637, { at: at + 0.08, dur: 0.5, type: 'sine', vol: 0.1 });
+  }),
+  siren: () => [0, 0.9].forEach((at) => {
+    tone(660, { at, dur: 0.45, type: 'square', vol: 0.06, slide: 300 });
+    tone(960, { at: at + 0.45, dur: 0.45, type: 'square', vol: 0.06, slide: -300 });
+  }),
+  engine: () => {
+    tone(80, { dur: 1.3, type: 'sawtooth', vol: 0.09, slide: 180, attack: 0.15 });
+    noise({ dur: 1.2, vol: 0.06, freq: 300, q: 0.6 });
+  },
+  rumble: () => {
+    noise({ dur: 2.4, vol: 0.22, freq: 140, q: 0.4 });
+    tone(55, { dur: 2.2, type: 'sawtooth', vol: 0.06, slide: 260, attack: 0.4 });
+  },
+  plane: () => {
+    noise({ dur: 1.6, vol: 0.12, freq: 900, q: 0.5 });
+    tone(180, { dur: 1.6, type: 'sawtooth', vol: 0.04, slide: 120, attack: 0.3 });
+  },
+  helico: () => {
+    for (let i = 0; i < 14; i++) noise({ at: i * 0.11, dur: 0.07, vol: 0.12, freq: 260, q: 0.8 });
+  },
+  ufo: () => {
+    for (let i = 0; i < 8; i++) tone(i % 2 ? 720 : 520, { at: i * 0.16, dur: 0.18, type: 'sine', vol: 0.09, slide: i % 2 ? -200 : 200 });
+  },
+  neigh: () => {
+    tone(620, { dur: 0.35, type: 'triangle', vol: 0.12, slide: 420 });
+    tone(1040, { at: 0.32, dur: 0.6, type: 'triangle', vol: 0.1, slide: -560 });
+    for (let i = 0; i < 6; i++) noise({ at: 0.9 + i * 0.14, dur: 0.04, vol: 0.14, freq: 2200, q: 2 });
+  },
+  roar: () => {
+    noise({ dur: 1.4, vol: 0.18, freq: 500, q: 0.6 });
+    tone(120, { dur: 1, type: 'sawtooth', vol: 0.07, slide: -50 });
+  },
+  horn: () => {
+    tone(147, { dur: 1.2, type: 'sawtooth', vol: 0.08, attack: 0.08 });
+    tone(220, { dur: 1.2, type: 'triangle', vol: 0.08, attack: 0.08 });
+  },
+  kick: () => {
+    tone(160, { dur: 0.15, type: 'sine', vol: 0.3, slide: -100 });
+    noise({ dur: 0.06, vol: 0.12, freq: 1800, q: 1 });
+  },
+  skate: () => {
+    noise({ dur: 0.5, vol: 0.1, freq: 2500, q: 0.8 });
+    tone(300, { at: 0.35, dur: 0.12, type: 'square', vol: 0.06, slide: -120 });
+  },
+  sparkle: () => [1568, 2093, 2637, 3136].forEach((f, i) => tone(f, { at: i * 0.06, dur: 0.3, type: 'sine', vol: 0.12 })),
+  strum: () => [196, 247, 294, 392, 494, 587].forEach((f, i) => tone(f, { at: i * 0.035, dur: 1.2, type: 'triangle', vol: 0.09 })),
+  whoosh: () => noise({ dur: 0.5, vol: 0.2, freq: 900, q: 0.7 }),
+  drum: () => {
+    [0, 0.5].forEach((at) => tone(140, { at, dur: 0.16, type: 'sine', vol: 0.32, slide: -90 }));
+    [0.25, 0.75].forEach((at) => noise({ at, dur: 0.12, vol: 0.16, freq: 1700, q: 0.6 }));
+    noise({ at: 1, dur: 0.7, vol: 0.12, freq: 6000, q: 0.5 });
+  },
+  beep: () => [0, 0.16, 0.32].forEach((at, i) => tone(i % 2 ? 1600 : 1200, { at, dur: 0.1, type: 'square', vol: 0.07 })),
+  splash: () => noise({ dur: 0.7, vol: 0.22, freq: 1500, q: 0.5 }),
+  crackle: () => {
+    for (let i = 0; i < 10; i++) noise({ at: Math.random() * 1.2, dur: 0.03, vol: 0.18, freq: 2500 + Math.random() * 2000, q: 2 });
+  },
+  tweet: () => [0, 0.14, 0.28, 0.6, 0.74].forEach((at) => tone(2600, { at, dur: 0.08, type: 'sine', vol: 0.1, slide: 900 })),
+  boing: () => {
+    tone(200, { dur: 0.22, type: 'sine', vol: 0.25, slide: 600 });
+    tone(520, { at: 0.22, dur: 0.3, type: 'sine', vol: 0.2, slide: -320 });
+  },
+};
+
 // --- Musique du minuteur -------------------------------------------------------------------
 // Une ritournelle de 4 mesures jouée en boucle. Plus la fin approche, plus elle accélère,
 // monte d'un cran (au début de chaque tour) et s'enrichit : charleston, puis grosse caisse

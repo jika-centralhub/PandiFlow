@@ -75,9 +75,9 @@ function pony(id, { body, mane, horn = false, saddle = '#E2363F' }) {
 }
 
 const VEHICLES = [
-  { id: 'velo', name: 'Vélo', price: 80, render: ({ id }) => bike(id, '#E2363F') },
+  { id: 'velo', act: 'drive', sound: 'bell', name: 'Vélo', price: 80, render: ({ id }) => bike(id, '#E2363F') },
   {
-    id: 'trottinette', name: 'Trottinette', price: 60,
+    id: 'trottinette', act: 'drive', sound: 'bell', name: 'Trottinette', price: 60,
     render: () => html`<g class="veh-bob">${shadow(96, 50)}
       <path d="M50 160 L136 160 L132 168 L54 168 Z" fill="#4D9BFF" stroke="#2F74D6" stroke-width="2" />
       ${wheel(58, 170, 8)}${wheel(132, 170, 8)}
@@ -86,7 +86,7 @@ const VEHICLES = [
       <path d="M126 104 L130 104 M150 104 L154 104" stroke="#FF7EB6" stroke-width="7" stroke-linecap="round" /></g>`,
   },
   {
-    id: 'kart', name: 'Kart', price: 150,
+    id: 'kart', act: 'drive', sound: 'engine', name: 'Kart', price: 150,
     render: () => html`<g class="veh-bob">${shadow(100, 72)}
       <path d="M34 150 C40 136 70 132 96 136 L150 140 C162 142 168 152 164 160 L40 162 C34 160 32 156 34 150 Z" fill="#FFD23F" stroke="#C99A12" stroke-width="2" />
       <path d="M70 136 L66 116 L86 118 L90 136 Z" fill="#2B2B33" />
@@ -95,7 +95,7 @@ const VEHICLES = [
       ${wheel(58, 162, 14)}${wheel(146, 162, 14)}</g>`,
   },
   {
-    id: 'voiture_course', name: 'Voiture de course', price: 250,
+    id: 'voiture_course', act: 'drive', sound: 'engine', name: 'Voiture de course', price: 250,
     render: () => html`<g class="veh-bob">${shadow(116, 96)}
       <path d="M14 120 L42 120 L42 127 L14 127 Z M26 127 L28 140" fill="#2B2B33" stroke="#2B2B33" stroke-width="3" />
       <path d="M20 156 C24 140 46 132 70 132 L96 120 C104 114 124 114 132 120 L150 132 L196 136 C210 138 214 150 210 160 L22 162 Z" fill="#E2363F" stroke="#A81C2C" stroke-width="2" />
@@ -105,7 +105,7 @@ const VEHICLES = [
       ${wheel(52, 162, 16)}${wheel(176, 162, 16)}</g>`,
   },
   {
-    id: 'voiture_police', name: 'Voiture de police', price: 220,
+    id: 'voiture_police', act: 'drive', sound: 'siren', name: 'Voiture de police', price: 220,
     render: () => html`<g class="veh-bob">${shadow(115, 96)}
       <rect x="104" y="96" width="14" height="8" rx="2" fill="#E2363F" class="blink-light" /><rect x="118" y="96" width="14" height="8" rx="2" fill="#2F74D6" class="blink-light" style="animation-delay:.6s" />
       <path d="M24 150 C26 136 40 130 56 128 L74 112 C80 106 90 104 100 104 L140 104 C152 104 160 110 166 118 L178 128 C194 130 206 138 206 152 L206 162 L24 162 Z" fill="#FFFFFF" stroke="#2B2B33" stroke-width="2" />
@@ -115,7 +115,7 @@ const VEHICLES = [
       ${wheel(64, 162, 15)}${wheel(170, 162, 15)}</g>`,
   },
   {
-    id: 'camion_pompiers', name: 'Camion de pompiers', price: 250,
+    id: 'camion_pompiers', act: 'drive', sound: 'siren', name: 'Camion de pompiers', price: 250,
     render: () => html`<g class="veh-bob">${shadow(115, 98)}
       <g stroke="#C9D1DE" stroke-width="3" stroke-linecap="round"><path d="M30 106 L146 96 M30 113 L146 103" />${[44, 64, 84, 104, 124].map((x) => html`<path key=${x} d=${`M${x} ${105 - (x - 30) * 0.086} L${x} ${112 - (x - 30) * 0.086}`} />`)}</g>
       <path d="M24 116 L150 116 L150 162 L24 162 Z" fill="#E2363F" stroke="#A81C2C" stroke-width="2" />
@@ -127,7 +127,7 @@ const VEHICLES = [
       ${wheel(60, 164, 15)}${wheel(172, 164, 15)}</g>`,
   },
   {
-    id: 'moto', name: 'Moto', price: 200,
+    id: 'moto', act: 'drive', sound: 'engine', name: 'Moto', price: 200,
     render: () => html`<g class="veh-bob">${shadow(102, 68)}
       ${wheel(54, 160, 17)}${wheel(150, 160, 17)}
       <path d="M66 148 L40 152" stroke="#9AA6BA" stroke-width="5" stroke-linecap="round" />
@@ -139,7 +139,7 @@ const VEHICLES = [
       <circle cx="152" cy="130" r="6" fill="#FFF3B0" stroke="#C99A12" stroke-width="1.4" /></g>`,
   },
   {
-    id: 'tracteur', name: 'Tracteur', price: 180,
+    id: 'tracteur', act: 'drive', sound: 'engine', name: 'Tracteur', price: 180,
     render: () => html`<g class="veh-bob">${shadow(118, 70)}
       <path d="M150 132 L150 96" stroke="#2B2B33" stroke-width="6" stroke-linecap="round" />
       <g class="puff"><circle cx="152" cy="86" r="6" fill="#D8D4E8" /><circle cx="160" cy="78" r="4" fill="#D8D4E8" /></g>
@@ -150,7 +150,7 @@ const VEHICLES = [
       ${wheel(84, 154, 26, '#FFD23F')}${wheel(162, 162, 15, '#FFD23F')}</g>`,
   },
   {
-    id: 'bateau', name: 'Voilier', price: 200,
+    id: 'bateau', act: 'sail', sound: 'horn', name: 'Voilier', price: 200,
     render: () => html`<g>
       <g class="veh-bob"><path d="M50 150 L190 150 L170 172 L70 172 Z" fill="#C47A3A" stroke="#7E4520" stroke-width="2" />
         <path d="M120 150 L120 64" stroke="#7A4A26" stroke-width="4" />
@@ -161,7 +161,7 @@ const VEHICLES = [
     </g>`,
   },
   {
-    id: 'avion', name: 'Avion', price: 300, box: '20 50 200 110',
+    id: 'avion', act: 'fly', sound: 'plane', zone: 'sky', name: 'Avion', price: 300, box: '20 50 200 110',
     render: () => html`<g class="veh-hover">
       <path d="M44 98 L28 68 L52 72 L68 96 Z" fill="#E2363F" stroke="#A81C2C" stroke-width="1.6" />
       <path d="M40 96 C60 84 150 82 186 92 C196 96 196 104 186 108 C150 116 60 114 40 104 Z" fill="#FFFFFF" stroke="#9AA6BA" stroke-width="2" />
@@ -173,7 +173,7 @@ const VEHICLES = [
     </g>`,
   },
   {
-    id: 'helico', name: 'Hélicoptère', price: 300, box: '10 50 200 110',
+    id: 'helico', act: 'fly', sound: 'helico', zone: 'sky', name: 'Hélicoptère', price: 300, box: '10 50 200 110',
     render: () => html`<g class="veh-hover">
       <path d="M118 72 L118 64" stroke="#2B2B33" stroke-width="4" />
       <path class="rotor" d="M46 62 L190 62" stroke="#2B2B33" stroke-width="4" stroke-linecap="round" />
@@ -185,7 +185,7 @@ const VEHICLES = [
     </g>`,
   },
   {
-    id: 'fusee', name: 'Fusée', price: 400, box: '40 20 120 160',
+    id: 'fusee', act: 'launch', sound: 'rumble', zone: 'sky', name: 'Fusée', price: 400, box: '40 20 120 160',
     render: () => html`<g class="veh-hover">
       <g class="flame"><path d="M88 140 C90 156 96 166 100 176 C104 166 110 156 112 140 Z" fill="#FF8A2B" /><path d="M94 140 C96 150 98 158 100 166 C102 158 104 150 106 140 Z" fill="#FFF3B0" /></g>
       <path d="M100 36 C118 52 126 80 126 112 L126 140 L74 140 L74 112 C74 80 82 52 100 36 Z" fill="#FFFFFF" stroke="#9AA6BA" stroke-width="2" />
@@ -196,7 +196,7 @@ const VEHICLES = [
     </g>`,
   },
   {
-    id: 'soucoupe', name: 'Soucoupe volante', price: 350, box: '20 70 180 110',
+    id: 'soucoupe', act: 'fly', sound: 'ufo', zone: 'sky', name: 'Soucoupe volante', price: 350, box: '20 70 180 110',
     render: () => html`<g>
       <path class="glow-pulse" d="M74 128 L126 128 L156 178 L44 178 Z" fill="#FFF3B0" opacity="0.35" />
       <g class="veh-hover">
@@ -208,16 +208,16 @@ const VEHICLES = [
       </g>
     </g>`,
   },
-  { id: 'poney', name: 'Poney', price: 220, render: ({ id }) => pony(id, { body: '#C98A5B', mane: '#6B3E1E' }) },
+  { id: 'poney', act: 'gallop', sound: 'neigh', name: 'Poney', price: 220, render: ({ id }) => pony(id, { body: '#C98A5B', mane: '#6B3E1E' }) },
   {
-    id: 'licorne', name: 'Licorne', price: 350,
+    id: 'licorne', act: 'gallop', sound: 'neigh', name: 'Licorne', price: 350,
     render: ({ id }) => html`<g>
       <defs><linearGradient id=${`${id}-mane`} x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FF6B6B" /><stop offset="33%" stop-color="#FFD23F" /><stop offset="66%" stop-color="#48D07F" /><stop offset="100%" stop-color="#9B6CF0" /></linearGradient></defs>
       ${pony(id, { body: '#FFF6FB', mane: `url(#${id}-mane)`, horn: true, saddle: '#9B6CF0' })}
     </g>`,
   },
   {
-    id: 'dragon_monture', name: 'Dragon', price: 450,
+    id: 'dragon_monture', act: 'gallop', sound: 'roar', name: 'Dragon', price: 450,
     render: () => html`<g class="veh-bob">${shadow(104, 70)}
       <path d="M52 150 C24 156 10 140 18 122 C22 112 34 112 36 120 C30 122 28 132 38 136 C48 140 56 136 62 132 Z" fill="#3FAE5A" stroke="#23824A" stroke-width="2" />
       <g class="wing-l"><path d="M80 112 C56 76 30 78 22 90 C38 90 42 100 38 110 C52 104 60 114 58 124 Z" fill="#9B7BFF" stroke="#6A40C8" stroke-width="2" stroke-linejoin="round" /></g>
@@ -233,9 +233,9 @@ const VEHICLES = [
       <g class="puff"><circle cx="188" cy="102" r="5" fill="#D8D4E8" /><circle cx="196" cy="96" r="3.4" fill="#D8D4E8" /></g>
       <ellipse cx="78" cy="172" rx="13" ry="7" fill="#2FA65A" /><ellipse cx="118" cy="172" rx="13" ry="7" fill="#2FA65A" /></g>`,
   },
-  { id: 'tandem', name: 'Tandem de l’équipe', price: 0, exclusive: true, team: true, render: ({ id }) => bike(id, '#9B6CF0', { tandem: true }) },
+  { id: 'tandem', act: 'drive', sound: 'bell', name: 'Tandem de l’équipe', price: 0, exclusive: true, team: true, render: ({ id }) => bike(id, '#9B6CF0', { tandem: true }) },
   {
-    id: 'bus_fratrie', name: 'Bus de la fratrie', price: 500, exclusive: true, pot: true,
+    id: 'bus_fratrie', act: 'drive', sound: 'honk', name: 'Bus de la fratrie', price: 500, exclusive: true, pot: true,
     render: () => html`<g class="veh-bob">${shadow(117, 98)}
       <path d="M20 100 L200 100 C210 100 214 108 214 118 L214 162 L20 162 Z" fill="#FFD23F" stroke="#C99A12" stroke-width="2" />
       ${[30, 62, 94, 126, 158].map((x, i) => html`<g key=${x}><rect x=${x} y="108" width="26" height="22" rx="4" fill=${glass} stroke="#C99A12" stroke-width="1.4" /><path d=${heartPath(x + 13, 120, 4.4)} fill=${['#FF7EB6', '#5EC8FF', '#48E0A4', '#9B7BFF', '#FF8A5C'][i]} /></g>`)}
@@ -268,7 +268,7 @@ const CY = FY + FH / 2;
 
 function flag(id, name, content) {
   return {
-    id: `drapeau_${id}`, name, price: 30, box: '186 26 60 50',
+    id: `drapeau_${id}`, name, price: 30, box: '186 26 60 50', act: 'wave', sound: 'whoosh',
     render: (ctx) => html`<g>
       <path d="M196 36 L196 178" stroke="#9AA6BA" stroke-width="3.5" stroke-linecap="round" /><circle cx="196" cy="34" r="3.6" fill="#FFD23F" />
       <ellipse cx="196" cy="179" rx="8" ry="3" fill="#000" opacity="0.16" />
@@ -350,19 +350,19 @@ const soccer = (cx, cy, r) => html`<g class="ball-bounce">
 </g>`;
 
 const GEAR = [
-  { id: 'ballon_foot', name: 'Ballon de foot', price: 30, box: '10 130 60 54', render: () => html`<g>${shadow(40, 14)}${soccer(40, 164, 13)}</g>` },
+  { id: 'ballon_foot', act: 'bounce', sound: 'kick', name: 'Ballon de foot', price: 30, box: '10 130 60 54', render: () => html`<g>${shadow(40, 14)}${soccer(40, 164, 13)}</g>` },
   {
-    id: 'ballon_basket', name: 'Ballon de basket', price: 30, box: '10 130 60 54',
+    id: 'ballon_basket', act: 'bounce', sound: 'kick', name: 'Ballon de basket', price: 30, box: '10 130 60 54',
     render: () => html`<g>${shadow(40, 14)}<g class="ball-bounce"><circle cx="40" cy="164" r="13" fill="#F28C28" stroke="#B85E12" stroke-width="1.8" />
       <path d="M27 164 L53 164 M40 151 L40 177 M31 154 C37 160 37 168 31 174 M49 154 C43 160 43 168 49 174" stroke="#7A3C0A" stroke-width="1.4" fill="none" /></g></g>`,
   },
   {
-    id: 'skate', name: 'Skateboard', price: 50, box: '6 140 76 44',
+    id: 'skate', act: 'ollie', sound: 'skate', name: 'Skateboard', price: 50, box: '6 140 76 44',
     render: () => html`<g>${shadow(44, 30)}<path d="M12 164 C12 160 16 158 20 160 L68 160 C72 158 76 160 76 164 C76 168 72 170 68 168 L20 168 C16 170 12 168 12 164 Z" fill="#FF7EB6" stroke="#D94A8A" stroke-width="1.6" />
       <path d="M24 164 L64 164" stroke="#fff" stroke-width="2" stroke-dasharray="4 3" />${wheel(24, 173, 4.6, '#FFD23F')}${wheel(64, 173, 4.6, '#FFD23F')}</g>`,
   },
   {
-    id: 'trophee', name: 'Trophée', price: 120, box: '10 110 60 74',
+    id: 'trophee', act: 'shine', sound: 'sparkle', name: 'Trophée', price: 120, box: '10 110 60 74',
     render: ({ id }) => html`<g>${shadow(40, 16)}<defs>${grad(`${id}-tr`, GOLD)}</defs>
       <rect x="28" y="166" width="24" height="10" rx="2" fill="#7A4A26" /><rect x="34" y="152" width="12" height="16" fill=${`url(#${id}-tr)`} />
       <path d="M24 124 L56 124 C56 142 50 152 40 154 C30 152 24 142 24 124 Z" fill=${`url(#${id}-tr)`} stroke="#B8860B" stroke-width="1.6" />
@@ -370,14 +370,14 @@ const GEAR = [
       <path d=${starPath(40, 136, 6)} fill="#FFF3B0" />${sparkle(60, 118, 5, 'tw', 0.3)}</g>`,
   },
   {
-    id: 'guitare', name: 'Guitare', price: 90, box: '8 96 64 88',
+    id: 'guitare', act: 'strum', sound: 'strum', name: 'Guitare', price: 90, box: '8 96 64 88',
     render: () => html`<g>${shadow(38, 14)}<g transform="rotate(-14 38 150)">
       <rect x="35" y="100" width="6" height="44" fill="#7A4A26" /><rect x="33" y="96" width="10" height="8" rx="2" fill="#4E2E16" />
       <circle cx="38" cy="156" r="14" fill="#E2363F" stroke="#A81C2C" stroke-width="1.6" /><circle cx="38" cy="140" r="10" fill="#E2363F" stroke="#A81C2C" stroke-width="1.6" />
       <circle cx="38" cy="150" r="4" fill="#4E2E16" /><path d="M36 104 L36 162 M40 104 L40 162" stroke="#F2F2F2" stroke-width="0.6" /></g></g>`,
   },
   {
-    id: 'cerf_volant', name: 'Cerf-volant', price: 60, box: '10 30 80 150',
+    id: 'cerf_volant', act: 'swoop', sound: 'whoosh', name: 'Cerf-volant', price: 60, box: '10 30 80 150',
     render: () => html`<g>
       <path d="M40 176 C30 140 60 110 52 76" stroke="#6B7486" stroke-width="1.2" fill="none" />
       <g class="sway" style="transform-origin: 50% 100%"><path d="M52 40 L70 62 L52 90 L34 62 Z" fill="#FF7EB6" stroke="#D94A8A" stroke-width="1.6" />
@@ -386,7 +386,7 @@ const GEAR = [
         <path d="M46 101 L52 98 L50 104 Z M48 122 L54 120 L52 126 Z" fill="#FFD23F" /></g></g>`,
   },
   {
-    id: 'robot', name: 'Robot', price: 150, box: '12 112 60 72',
+    id: 'robot', act: 'dance', sound: 'beep', name: 'Robot', price: 150, box: '12 112 60 72',
     render: () => html`<g>${shadow(42, 16)}
       <path d="M42 124 L42 116" stroke="#9AA6BA" stroke-width="2.4" /><circle class="blink-light" cx="42" cy="114" r="3.4" fill="#FF6B6B" />
       <rect x="28" y="124" width="28" height="22" rx="6" fill="#C9D1DE" stroke="#6B7486" stroke-width="1.8" />
@@ -396,7 +396,7 @@ const GEAR = [
       <circle cx="42" cy="158" r="4" fill="#FFD23F" /><rect x="30" y="168" width="8" height="9" rx="2" fill="#6B7486" /><rect x="46" y="168" width="8" height="9" rx="2" fill="#6B7486" /></g>`,
   },
   {
-    id: 'telescope', name: 'Télescope', price: 100, box: '6 100 74 84',
+    id: 'telescope', act: 'star', sound: 'sparkle', name: 'Télescope', price: 100, box: '6 100 74 84',
     render: () => html`<g>${shadow(40, 18)}
       <path d="M40 140 L26 176 M40 140 L54 176 M40 140 L40 176" stroke="#7A4A26" stroke-width="3" stroke-linecap="round" />
       <g transform="rotate(-30 40 136)"><rect x="18" y="128" width="46" height="13" rx="4" fill="#2F74D6" stroke="#1E52A8" stroke-width="1.6" />
@@ -404,7 +404,7 @@ const GEAR = [
       ${sparkle(72, 104, 5, 'tw', 0)}</g>`,
   },
   {
-    id: 'batterie', name: 'Batterie', price: 120, box: '2 110 84 74',
+    id: 'batterie', act: 'drum', sound: 'drum', name: 'Batterie', price: 120, box: '2 110 84 74',
     render: () => html`<g>${shadow(44, 30)}
       <path d="M64 130 L64 172 M56 128 L74 124" stroke="#9AA6BA" stroke-width="2.4" stroke-linecap="round" /><ellipse cx="64" cy="128" rx="14" ry="3.4" fill="#FFD23F" stroke="#C99A12" stroke-width="1.2" />
       <circle cx="38" cy="158" r="18" fill="#E2363F" stroke="#A81C2C" stroke-width="2" /><circle cx="38" cy="158" r="12" fill="#FFF6F0" />
@@ -412,7 +412,7 @@ const GEAR = [
       <path d="M58 142 L70 132 M72 144 L80 132" stroke="#C47A3A" stroke-width="2.4" stroke-linecap="round" /></g>`,
   },
   {
-    id: 'talkie', name: 'Talkies-walkies de l’équipe', price: 0, exclusive: true, team: true, box: '8 104 76 80',
+    id: 'talkie', act: 'beep', sound: 'beep', name: 'Talkies-walkies de l’équipe', price: 0, exclusive: true, team: true, box: '8 104 76 80',
     render: () => html`<g>${shadow(44, 26)}
       ${[[26, '#9B6CF0'], [56, '#FF7EB6']].map(([x, c]) => html`<g key=${x}>
         <path d=${`M${x + 8} 140 L${x + 8} 116`} stroke="#2B2B33" stroke-width="3" stroke-linecap="round" />
@@ -427,7 +427,7 @@ const GEAR = [
 // --- Le jardin de la fratrie : gros objets partagés, achetés avec la cagnotte commune -------------------
 const YARD = [
   {
-    id: 'cabane', name: 'Cabane dans les arbres', price: 400, exclusive: true, pot: true, box: '96 6 148 178',
+    id: 'cabane', act: 'bird', sound: 'tweet', name: 'Cabane dans les arbres', price: 400, exclusive: true, pot: true, box: '96 6 148 178',
     render: () => html`<g>
       <rect x="166" y="96" width="16" height="82" rx="4" fill="#8B5A2B" />
       <g class="sway" style="animation-duration:6s"><circle cx="150" cy="56" r="30" fill="#48B05E" /><circle cx="196" cy="50" r="32" fill="#3FA352" /><circle cx="174" cy="30" r="28" fill="#5CC46E" /></g>
@@ -438,7 +438,7 @@ const YARD = [
     </g>`,
   },
   {
-    id: 'trampoline', name: 'Trampoline', price: 300, exclusive: true, pot: true, box: '100 60 140 124',
+    id: 'trampoline', act: 'boing', sound: 'boing', name: 'Trampoline', price: 300, exclusive: true, pot: true, box: '100 60 140 124',
     render: () => html`<g>
       <path d="M128 150 L122 176 M210 150 L216 176 M168 154 L168 178" stroke="#6B7486" stroke-width="4" stroke-linecap="round" />
       <ellipse cx="168" cy="146" rx="50" ry="12" fill="#2B2B33" stroke="#2F74D6" stroke-width="6" />
@@ -446,7 +446,7 @@ const YARD = [
     </g>`,
   },
   {
-    id: 'piscine', name: 'Piscine gonflable', price: 250, exclusive: true, pot: true, box: '100 110 140 74',
+    id: 'piscine', act: 'splash', sound: 'splash', name: 'Piscine gonflable', price: 250, exclusive: true, pot: true, box: '100 110 140 74',
     render: () => html`<g>
       <ellipse cx="170" cy="164" rx="60" ry="16" fill="#FF7EB6" stroke="#D94A8A" stroke-width="2" />
       <ellipse cx="170" cy="156" rx="60" ry="16" fill="#5EC8FF" stroke="#FF7EB6" stroke-width="8" />
@@ -455,7 +455,7 @@ const YARD = [
     </g>`,
   },
   {
-    id: 'tente', name: 'Tente de camping', price: 200, exclusive: true, pot: true, box: '96 80 148 104',
+    id: 'tente', act: 'crackle', sound: 'crackle', name: 'Tente de camping', price: 200, exclusive: true, pot: true, box: '96 80 148 104',
     render: () => html`<g>
       <path d="M118 176 L166 96 L214 176 Z" fill="#FF8A2B" stroke="#C25E12" stroke-width="2" stroke-linejoin="round" />
       <path d="M166 96 L152 176 L180 176 Z" fill="#7E3A0A" /><path d="M166 96 L166 86" stroke="#7E4520" stroke-width="3" />
@@ -464,7 +464,7 @@ const YARD = [
     </g>`,
   },
   {
-    id: 'chateau_gonflable', name: 'Château gonflable', price: 450, exclusive: true, pot: true, box: '96 30 148 154',
+    id: 'chateau_gonflable', act: 'boing', sound: 'boing', name: 'Château gonflable', price: 450, exclusive: true, pot: true, box: '96 30 148 154',
     render: () => html`<g>
       <rect x="120" y="96" width="100" height="80" rx="12" fill="#5EC8FF" stroke="#2F74D6" stroke-width="2.4" />
       ${[120, 194].map((x) => html`<g key=${x}><rect x=${x - 4} y="72" width="30" height="104" rx="12" fill="#FF7EB6" stroke="#D94A8A" stroke-width="2.4" />
