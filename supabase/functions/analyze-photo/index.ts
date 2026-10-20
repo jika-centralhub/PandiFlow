@@ -15,6 +15,9 @@ const MAX_IMAGE_BASE64 = 7_000_000; // ~5 Mo
 const ALLOWED_ORIGINS = [
   "https://pandiflow.com",
   "https://www.pandiflow.com",
+  // Tant que le certificat HTTPS de GitHub Pages n'est pas actif, le site est servi en http
+  "http://pandiflow.com",
+  "http://www.pandiflow.com",
   "http://localhost:8080",
   "http://127.0.0.1:8080",
 ];
