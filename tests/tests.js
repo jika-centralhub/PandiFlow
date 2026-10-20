@@ -1,5 +1,7 @@
 import * as d from '../js/domain.js';
-import { eveningDate, addDays, weekday } from '../js/lib/dates.js';
+import { eveningDate, addDays, weekday, currentRoutine, routineDate, atTime } from '../js/lib/dates.js';
+import * as cd from '../js/lib/countdown.js';
+import { sha256Bytes, hashPin } from '../js/lib/pin.js';
 import { normalizeLook, DEFAULT_LOOK, randomLook } from '../js/avatar/palette.js';
 
 const results = [];
@@ -212,6 +214,115 @@ test('look aléatoire toujours valide', () => {
     eq(normalizeLook(l), l);
   }
 });
+
+// --- Routine du matin ------------------------------------------------------------------------------
+function morningFixture() {
+  const s = fixture();
+  return {
+    ...s,
+    tasks: [...s.tasks, { id: 'm1', title: 'Se lever', sort: 100, active: true, days: [1, 2, 3, 4, 5], routine: 'matin' }, { id: 'm2', title: 'Habits', sort: 101, active: true, days: [1, 2, 3, 4, 5], routine: 'matin' }],
+    childTasks: [...s.childTasks, { child_id: 'c1', task_id: 'm1' }, { child_id: 'c1', task_id: 'm2' }],
+  };
+}
+test('routine : matin entre 4 h et 13 h, soir sinon', () => {
+  eq(currentRoutine(new Date(2026, 9, 20, 7, 0)), 'matin');
+  eq(currentRoutine(new Date(2026, 9, 20, 12, 59)), 'matin');
+  eq(currentRoutine(new Date(2026, 9, 20, 13, 0)), 'soir');
+  eq(currentRoutine(new Date(2026, 9, 20, 2, 0)), 'soir');
+  eq(routineDate('matin', new Date(2026, 9, 20, 7, 0)), TUESDAY);
+  eq(routineDate('soir', new Date(2026, 9, 20, 1, 0)), MONDAY);
+});
+test('tâches séparées entre matin et soir', () => {
+  const s = morningFixture();
+  eq(d.tasksForChild('c1', TUESDAY, s, 'matin').map((t) => t.id), ['m1', 'm2']);
+  eq(d.tasksForChild('c1', TUESDAY, s, 'soir').map((t) => t.id), ['t1', 't2']);
+  eq(d.tasksForChild('c1', TUESDAY, s).map((t) => t.id), ['t1', 't2'], 'le soir par défaut');
+  eq(d.tasksForChild('c1', '2026-10-24', s, 'matin').length, 0, 'pas d’école le samedi');
+});
+test('matinée parfaite et soirée parfaite le même jour : deux bonus distincts', () => {
+  const { state, result } = rateAll(morningFixture(), [
+    ['c1', 'm1', TUESDAY, 'green'],
+    ['c1', 'm2', TUESDAY, 'green'],
+  ]);
+  ok(result.perfectGained, 'bonus du matin attendu');
+  eq(result.routine, 'matin');
+  ok(state.ledger.some((l) => l.id === d.perfectBonusId('c1', TUESDAY, 'matin') && l.note === 'Matinée parfaite'));
+  const evening = rateAll(state, [
+    ['c1', 't1', TUESDAY, 'green'],
+    ['c1', 't2', TUESDAY, 'green'],
+  ]);
+  ok(evening.result.perfectGained, 'bonus du soir attendu aussi');
+  eq(d.balance('c1', evening.state), 6 + 5 + 6 + 5);
+});
+test('heure du départ à une date donnée', () => {
+  eq(atTime(TUESDAY, '08:15'), new Date(2026, 9, 20, 8, 15).getTime());
+});
+
+// --- Minuteur --------------------------------------------------------------------------------------
+const T0 = 1000000;
+test('minuteur : temps restant et phases', () => {
+  const t = cd.createTimer({ childId: 'c1', taskId: 't1', date: TUESDAY, minutes: 2, now: T0 });
+  eq(cd.remainingMs(t, T0 + 30000), 90000);
+  eq(cd.phaseOf(t, T0 + 10000), 'calm');
+  eq(cd.phaseOf(t, T0 + 70000), 'hurry');
+  eq(cd.phaseOf(t, T0 + 100000), 'rush');
+  eq(cd.phaseOf(t, T0 + 112000), 'final');
+  eq(cd.phaseOf(t, T0 + 120000), 'over');
+  eq(cd.clockText(t, T0), '2:00');
+  eq(cd.clockText(t, T0 + 500), '2:00');
+  eq(cd.clockText(t, T0 + 1000), '1:59');
+  eq(cd.clockText(t, T0 + 132000), '+0:12');
+});
+test('minuteur : la pause ne compte pas', () => {
+  let t = cd.createTimer({ childId: 'c1', taskId: 't1', date: TUESDAY, minutes: 1, now: T0 });
+  t = cd.pauseTimer(t, T0 + 10000);
+  eq(cd.remainingMs(t, T0 + 50000), 50000, 'figé pendant la pause');
+  t = cd.resumeTimer(t, T0 + 50000);
+  eq(cd.remainingMs(t, T0 + 60000), 40000);
+});
+test('minuteur : +1 min avant et après la sonnerie', () => {
+  const t = cd.createTimer({ childId: 'c1', taskId: 't1', date: TUESDAY, minutes: 1, now: T0 });
+  eq(cd.remainingMs(cd.addTime(t, 60000, T0 + 30000), T0 + 30000), 90000);
+  const late = cd.addTime({ ...t, alarmed: true }, 60000, T0 + 90000);
+  eq(cd.remainingMs(late, T0 + 90000), 60000, 'la minute part de maintenant');
+  eq(late.alarmed, false);
+});
+test('minuteur : résultat à temps ou en retard', () => {
+  const t = cd.createTimer({ childId: 'c1', taskId: 't1', date: TUESDAY, minutes: 5, now: T0 });
+  const ok1 = cd.timerResult(cd.finishTimer(t, T0 + 192000), T0 + 999999);
+  eq([ok1.elapsedMs, ok1.inTime, ok1.extended], [192000, true, false]);
+  const late = cd.timerResult(cd.finishTimer(t, T0 + 345000), T0 + 345000);
+  eq([late.inTime, late.elapsedMs - late.durationMs], [false, 45000]);
+});
+test('musique : suit le minuteur le plus proche de la fin', () => {
+  const a = cd.createTimer({ childId: 'c1', taskId: 't1', date: TUESDAY, minutes: 10, now: T0 });
+  const b = cd.createTimer({ childId: 'c2', taskId: 't2', date: TUESDAY, minutes: 1, now: T0 });
+  eq(cd.musicMood([a], T0).level, 0);
+  eq(cd.musicMood([a, b], T0 + 55000).level, 3, 'dernières secondes de b');
+  eq(cd.musicMood([cd.pauseTimer(a, T0)], T0 + 1000), null, 'rien quand tout est en pause');
+  eq(cd.musicMood([b], T0 + 61000), null, 'rien après la sonnerie');
+  ok(cd.musicMood([a], T0 + 500000).bpm > cd.musicMood([a], T0).bpm, 'le tempo accélère');
+});
+
+// --- Code parent ------------------------------------------------------------------------------------
+const hex = (u8) => Array.from(u8, (x) => x.toString(16).padStart(2, '0')).join('');
+const utf8 = (str) => new TextEncoder().encode(str);
+test('SHA-256 de secours (pages en http) : vecteurs officiels', () => {
+  eq(hex(sha256Bytes(utf8(''))), 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+  eq(hex(sha256Bytes(utf8('abc'))), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+  eq(hex(sha256Bytes(utf8('abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq'))), '248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1');
+  eq(hex(sha256Bytes(utf8('a'.repeat(1000)))), '41edece42d63e8d9bf515a9ba6932e1c20cbc9f5a5d134645adb5db1b9737ea3');
+});
+// Un code créé en HTTPS (crypto.subtle) doit rester valable en http (calcul de secours), et inversement
+if (globalThis.crypto?.subtle) {
+  const data = utf8('pandiflow:famille-test:1234');
+  const viaBrowser = hex(new Uint8Array(await crypto.subtle.digest('SHA-256', data)));
+  const viaPin = await hashPin('1234', 'famille-test');
+  test('code parent : même hash avec et sans crypto.subtle', () => {
+    eq(hex(sha256Bytes(data)), viaBrowser);
+    eq(viaPin, viaBrowser);
+  });
+}
 
 // --- Affichage ------------------------------------------------------------------------------------
 const passed = results.filter((r) => r.ok).length;

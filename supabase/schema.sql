@@ -49,6 +49,7 @@ create table if not exists public.tasks (
   sort int not null default 0,
   active boolean not null default true,
   archived boolean not null default false,
+  routine text not null default 'soir' check (routine in ('soir', 'matin')),
   created_at timestamptz not null default now(),
   unique (id, family_id)
 );

@@ -17,7 +17,19 @@ export const DEFAULT_SETTINGS = {
   perfectBonus: 5,
   pinHash: null,
   photoConsent: false,
+  // Routine du matin : heure du départ à l'école (null = pas de compte à rebours) et jours d'école
+  departure: '08:15',
+  departureDays: [1, 2, 3, 4, 5],
+  morningSeeded: false,
 };
+
+// Deux routines : le soir et le matin avant l'école. Même barème, même cagnotte, mêmes défis.
+export const ROUTINES = {
+  matin: { label: 'Matin', icon: '☀️', today: 'Ce matin', yesterday: 'Hier matin', perfect: 'Matinée parfaite', done: 'Toute ta routine du matin est faite. En route pour l’école !' },
+  soir: { label: 'Soir', icon: '🌙', today: 'Ce soir', yesterday: 'Hier soir', perfect: 'Soirée parfaite', done: 'Toute ta soirée est faite. Quelle belle réussite !' },
+};
+
+export const routineOf = (task) => (task?.routine === 'matin' ? 'matin' : 'soir');
 
 export function mergeSettings(settings) {
   const s = settings && typeof settings === 'object' ? settings : {};
@@ -34,13 +46,13 @@ export function activeChildren(children) {
   return children.filter((c) => !c.archived).sort(bySort);
 }
 
-// Tâches d'un enfant pour une soirée donnée (en tenant compte des jours actifs).
-// Sans date : toutes les tâches actives affectées à l'enfant.
-export function tasksForChild(childId, date, { tasks, childTasks }) {
+// Tâches d'un enfant pour une routine et un jour donnés (en tenant compte des jours actifs).
+// Sans date : toutes les tâches actives de la routine affectées à l'enfant.
+export function tasksForChild(childId, date, { tasks, childTasks }, routine = 'soir') {
   const assigned = new Set(childTasks.filter((ct) => ct.child_id === childId).map((ct) => ct.task_id));
   const wd = date ? weekday(date) : null;
   return tasks
-    .filter((t) => t.active !== false && assigned.has(t.id))
+    .filter((t) => t.active !== false && assigned.has(t.id) && routineOf(t) === routine)
     .filter((t) => wd === null || !Array.isArray(t.days) || t.days.includes(wd))
     .sort(bySort);
 }
@@ -54,9 +66,9 @@ export function pointsFor(color, settings) {
   return Number(s.points[color]) || 0;
 }
 
-// Avancement de la soirée d'un enfant : sert à la jauge et aux célébrations.
-export function eveningProgress(childId, date, state) {
-  const list = tasksForChild(childId, date, state);
+// Avancement d'une routine (soir ou matin) d'un enfant : sert à la jauge et aux célébrations.
+export function routineProgress(childId, date, state, routine = 'soir') {
+  const list = tasksForChild(childId, date, state, routine);
   const counts = { green: 0, orange: 0, red: 0 };
   let points = 0;
   const segments = list.map((task) => {
@@ -81,6 +93,8 @@ export function eveningProgress(childId, date, state) {
   };
 }
 
+export const eveningProgress = (childId, date, state) => routineProgress(childId, date, state, 'soir');
+
 export function balance(childId, { ratings, ledger }) {
   let sum = 0;
   for (const r of ratings) if (r.child_id === childId) sum += Number(r.points) || 0;
@@ -96,7 +110,7 @@ export function earnedOn(childId, date, { ratings, ledger }) {
   return sum;
 }
 
-export const perfectBonusId = (childId, date) => `perfect-${childId}-${date}`;
+export const perfectBonusId = (childId, date, routine = 'soir') => (routine === 'matin' ? `perfect-matin-${childId}-${date}` : `perfect-${childId}-${date}`);
 export const challengeBonusId = (challengeId, childId) => `challenge-${challengeId}-${childId}`;
 
 export function isOwned(childId, itemId, owned) {
@@ -150,7 +164,8 @@ export function newlyUnlocked(childId, state) {
 // Renvoie { ratings, ledger, owned, ops, result } : le nouvel état et les opérations de stockage.
 export function applyRating(state, { familyId, childId, taskId, date, color, now = new Date().toISOString() }) {
   const settings = mergeSettings(state.settings);
-  const before = eveningProgress(childId, date, state);
+  const routine = routineOf(state.tasks.find((t) => t.id === taskId));
+  const before = routineProgress(childId, date, state, routine);
   const balanceBefore = balance(childId, state);
   const ops = [];
 
@@ -174,15 +189,15 @@ export function applyRating(state, { familyId, childId, taskId, date, color, now
   let ledger = state.ledger;
   let owned = state.owned;
   const next = { ...state, ratings, ledger, owned };
-  const after = eveningProgress(childId, date, next);
+  const after = routineProgress(childId, date, next, routine);
 
-  // Bonus de soirée parfaite : ajouté quand tout est vert, retiré si une note est corrigée.
-  const bonusId = perfectBonusId(childId, date);
+  // Bonus de soirée (ou matinée) parfaite : ajouté quand tout est vert, retiré si une note est corrigée.
+  const bonusId = perfectBonusId(childId, date, routine);
   const hasBonus = ledger.some((l) => l.id === bonusId);
   let perfectGained = false;
   let perfectLost = false;
   if (after.perfect && !hasBonus && settings.perfectBonus > 0) {
-    const row = { id: bonusId, family_id: familyId, child_id: childId, kind: 'perfect', amount: settings.perfectBonus, evening_date: date, note: 'Soirée parfaite', created_at: now };
+    const row = { id: bonusId, family_id: familyId, child_id: childId, kind: 'perfect', amount: settings.perfectBonus, evening_date: date, note: ROUTINES[routine].perfect, created_at: now };
     ledger = [...ledger, row];
     ops.push({ op: 'put', table: 'ledger', rows: [row] });
     perfectGained = true;
@@ -216,6 +231,7 @@ export function applyRating(state, { familyId, childId, taskId, date, color, now
       delta: balance(childId, finalState) - balanceBefore,
       before,
       after,
+      routine,
       becameComplete: !before.complete && after.complete,
       perfectGained,
       perfectLost,

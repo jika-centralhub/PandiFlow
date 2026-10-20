@@ -1,6 +1,6 @@
 // Code parent à 4 chiffres (création la première fois, puis vérification).
 import { html, useState } from '../vendor/preact-htm.js';
-import { useStore } from '../lib/store.js';
+import { useStore, toast } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import { Modal } from './ui.js';
 import { sfx } from '../lib/sounds.js';
@@ -17,7 +17,18 @@ export function PinPad({ onSuccess }) {
     ? 'Ce code à 4 chiffres protège les notes et les réglages. Les enfants ne doivent pas le connaître 😉'
     : 'Seuls les parents peuvent noter et modifier les réglages.';
 
+  // Une erreur inattendue ne doit jamais laisser le clavier bloqué avec 4 points remplis
   async function complete(code) {
+    try {
+      await check(code);
+    } catch (e) {
+      console.error(e);
+      toast("Le code n'a pas pu être vérifié. Réessaie.", 'error');
+      fail();
+    }
+  }
+
+  async function check(code) {
     if (creating) {
       if (!first) {
         setFirst(code);

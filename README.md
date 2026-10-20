@@ -1,6 +1,6 @@
 # PandiFlow 🐼✨
 
-**La routine du soir des enfants devient un jeu.** Le parent note chaque tâche de la soirée en vert, orange ou rouge depuis son téléphone, dont l'écran est dupliqué sur la télé. La jauge de chaque enfant avance, il gagne des **pandi** et les dépense en accessoires pour son avatar. Des **défis** (par exemple 10 brossages de dents en vert) débloquent des trésors animés comme **Brossou, la brosse à dents super-héros** qui vole et se met du dentifrice toute seule.
+**Les routines du matin et du soir des enfants deviennent un jeu.** Le parent note chaque tâche en vert, orange ou rouge depuis son téléphone, dont l'écran est dupliqué sur la télé. La jauge de chaque enfant avance, il gagne des **pandi** et les dépense en accessoires pour son avatar. Des **défis** (par exemple 10 brossages de dents en vert) débloquent des trésors animés comme **Brossou, la brosse à dents super-héros** qui vole et se met du dentifrice toute seule.
 
 Pensé pour les 5 à 10 ans : grosses tuiles avec émojis, couleurs vives, sons, et des animations partout.
 
@@ -11,16 +11,21 @@ Pensé pour les 5 à 10 ans : grosses tuiles avec émojis, couleurs vives, sons,
 | | |
 |---|---|
 | 🌙 **Soirée** | Une colonne par enfant, une jauge par enfant, notation en un tap. Pièces qui volent, jauge qui se remplit, célébration de fin de soirée et bonus « soirée parfaite ». |
+| ☀️ **Matin** | La routine du réveil avant l'école (se lever, s'habiller, petit-déjeuner, dents, cartable…), du lundi au vendredi. L'app ouvre le matin entre 4 h et 13 h, le soir ensuite ; le bouton ☀️ / 🌙 change à tout moment. Ciel de lever de soleil, bonus « matinée parfaite », et compte à rebours jusqu'au départ à l'école (heure réglable) avec rappels à 10 et 5 minutes puis sonnerie. |
+| 🎠 **Carrousel** | Les tâches de chaque enfant défilent dans l'ordre de la routine : la tâche du moment en grand au centre, les voisines inclinées en 3D. Après une note, la carte suivante glisse au centre. On balaie, on touche une carte, une flèche ou une pastille de la frise. |
+| ⏱️ **Minuteur** | Sur la carte du centre, ⏱️ lance un minuteur de 1 à 15 minutes. L'anneau se vide et change de couleur (vert, jaune, orange, rouge), la carte bat puis tremble ; une petite musique accélère et monte vers la fin, bips des 10 dernières secondes, réveil qui sonne. Touche la carte pour le grand écran (Pandi s'agite de plus en plus), « Fini ! » puis notation avec le temps mis. Plusieurs minuteurs à la fois, gardés sur l'appareil même après un rechargement. |
+| 🌈 **Coin calme** | Pour une colère, une tristesse, une peur, une inquiétude ou trop d'excitation : l'enfant choisit sa « météo », Pandi le guide 1 à 2 minutes (souffle du dragon, fleur et bougie, ballon dans le ventre, la tortue, presser le citron, robot-spaghetti, 5-4-3-2-1, câlin papillon, bulle magique, bocal à paillettes…), puis lui demande comment il se sent. Conseils pour les parents pendant la crise. Rien n'est enregistré. |
 | 🧒 **Avatar** | Personnage dessiné (14 coiffures, 10 teintes de peau, yeux, lunettes, taches de rousseur, dent de lait…), qui cligne des yeux, respire et réagit aux notes. |
 | 📸 **Photo magique** | Une photo de l'enfant est analysée par Claude, qui règle l'avatar pour qu'il lui ressemble. La photo n'est jamais conservée. |
 | 🛍️ **Boutique** | 40 objets : chapeaux, lunettes, capes et ailes, pyjamas, compagnons animés, décors, effets magiques. |
 | 🎭 **Costumes complets** | 25 tenues qui habillent tout le personnage : pompier, police, médecin, super-héros, tortues ninja (4 couleurs), maillots de foot (PSG, OM, OL, France, Real Madrid, Barça, Brésil — couleurs des équipes, sans logo officiel), rabbin (chapeau, barbe, péot, tsitsit), dompteur de lions, dresseur de dragons, astronaute, chef, chevalier, capitaine pirate, magicien, prince et princesse. |
 | 💰 **Cagnotte** | En touchant le compteur de pandi (code parent), on offre ou retire des pandi hors des routines, avec une raison. Pandi la mascotte saute de joie ou pleure sous son petit nuage. Un retrait ne fait jamais passer la cagnotte sous zéro. |
 | 🏆 **Défis** | Défis cumulatifs (les soirs ratés ne remettent pas à zéro) avec 4 trésors exclusifs animés. |
-| 🔐 **Espace parent** | Code PIN, gestion des enfants, des tâches (jours actifs), des défis et du barème, historique corrigeable, ajustement des pandi, sauvegarde. |
+| 🎨 **Couleur** | Chaque enfant choisit la couleur de sa colonne (16 couleurs ou nuancier libre) dans « Mon look », ou le parent dans l'espace parent. |
+| 🔐 **Espace parent** | Code PIN, gestion des enfants, des tâches du matin et du soir (jours actifs, ordre du carrousel), des défis et du barème, heure du départ à l'école, historique corrigeable, ajustement des pandi, sauvegarde. |
 | ☁️ **Synchronisation** | Supabase : les deux parents partagent la même famille, chacun sur son téléphone. Les notes données hors connexion partent dès le retour du réseau. |
 
-Barème par défaut : vert = 3 pandi, orange = 1, rouge = 0, +5 pour une soirée toute verte (modifiable).
+Barème par défaut, le même matin et soir : vert = 3 pandi, orange = 1, rouge = 0, +5 pour une routine toute verte (modifiable).
 
 ---
 
@@ -43,6 +48,7 @@ Puis ouvrir http://localhost:8080. Les tests unitaires sont sur http://localhost
 Le projet Supabase **pandiflow** (région Paris, référence `kyhhkhmwdostzdaksxzw`) a été créé et configuré avec l'outil en ligne de commande Supabase :
 
 - tables et règles de sécurité : [`supabase/schema.sql`](supabase/schema.sql), envoyé avec `supabase db query --linked --project-ref kyhhkhmwdostzdaksxzw --file supabase/schema.sql` ;
+- évolutions envoyées de la même façon depuis [`supabase/migrations/`](supabase/migrations/) : invitations des parents, puis routine du matin (colonne `routine` des tâches, appliquée le 21/10/2026) ;
 - adresse du site et redirections autorisées : [`supabase/config.toml`](supabase/config.toml), envoyé avec `supabase config push --project-ref kyhhkhmwdostzdaksxzw` ;
 - URL du projet et clé publique (*publishable*) dans [`js/config.js`](js/config.js). Ces deux valeurs sont publiques par conception : la sécurité repose sur les règles RLS du schéma.
 
@@ -123,8 +129,11 @@ css/app.css, css/avatar.css                styles et animations
 js/main.js, js/router.js                   démarrage et navigation (#/soiree, #/enfant/:id, #/parent)
 js/domain.js                               règles du jeu (points, bonus, solde, défis) — fonctions pures
 js/lib/actions.js                          actions de l'app + file d'attente d'écriture hors ligne
+js/lib/countdown.js, timers.js             minuteur : calculs purs / sonnerie, bips et musique
+js/lib/emotions.js                         émotions et techniques du coin calme
 js/lib/localRepo.js, supabaseRepo.js       stockage démo (localStorage) / cloud (Supabase)
 js/avatar/                                 personnage SVG, coiffures, objets, trésors animés
+css/routine.css, css/calm.css              carrousel, minuteur, départ, ciel du matin / coin calme
 js/anim/                                   ciel du soir, pièces volantes, confettis
 js/components/, js/pages/                  interface
 supabase/schema.sql                        tables + règles de sécurité RLS

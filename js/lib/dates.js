@@ -1,4 +1,4 @@
-import { EVENING_CUTOFF_HOUR } from '../config.js';
+import { EVENING_CUTOFF_HOUR, MORNING_END_HOUR } from '../config.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -16,6 +16,25 @@ export function eveningDate(now = new Date(), cutoffHour = EVENING_CUTOFF_HOUR) 
   const d = new Date(now);
   if (d.getHours() < cutoffHour) d.setDate(d.getDate() - 1);
   return toISODate(d);
+}
+
+// Routine affichée par défaut selon l'heure : le matin entre 4 h et 13 h, le soir sinon.
+export function currentRoutine(now = new Date()) {
+  const h = new Date(now).getHours();
+  return h >= EVENING_CUTOFF_HOUR && h < MORNING_END_HOUR ? 'matin' : 'soir';
+}
+
+// Le jour d'une routine : la date du jour le matin, la « soirée » (qui déborde après minuit) le soir.
+export function routineDate(routine, now = new Date()) {
+  return routine === 'matin' ? toISODate(new Date(now)) : eveningDate(now);
+}
+
+// Instant précis d'un jour donné : atTime('2026-10-21', '08:15') -> horodatage en ms
+export function atTime(iso, hhmm) {
+  const [h, m] = String(hhmm).split(':').map(Number);
+  const d = fromISODate(iso);
+  d.setHours(h || 0, m || 0, 0, 0);
+  return d.getTime();
 }
 
 export function addDays(iso, days) {

@@ -5,7 +5,7 @@ import { LocalRepo } from './localRepo.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config.js';
 import * as domain from '../domain.js';
 import { STATE_KEYS, sameKey, matches } from './tables.js';
-import { buildFamilySeed, makeChild, DEMO_CHILDREN } from './seed.js';
+import { buildFamilySeed, buildMorningSeed, makeChild, DEMO_CHILDREN } from './seed.js';
 import { uid, sleep } from './util.js';
 import { hashPin, checkPin } from './pin.js';
 import { getItem } from '../avatar/items.js';
@@ -52,6 +52,21 @@ async function afterLogin(user) {
 export async function reload() {
   const data = await repo.loadAll(getState().family?.id);
   setState({ ...data, settings: domain.mergeSettings(data.family?.settings), status: 'ready' });
+  ensureMorningTasks();
+}
+
+// Le mode matin est arrivé après coup : une famille existante reçoit une seule fois
+// les tâches du matin par défaut (elle peut ensuite les modifier ou les supprimer).
+function ensureMorningTasks() {
+  const s = getState();
+  if (!s.family || s.settings.morningSeeded) return;
+  if (!s.tasks.some((t) => domain.routineOf(t) === 'matin')) {
+    const kids = domain.activeChildren(s.children);
+    const seed = buildMorningSeed(familyId(), kids, Math.max(-1, ...s.tasks.map((t) => t.sort ?? 0)) + 1);
+    put('tasks', seed.tasks);
+    if (seed.childTasks.length) put('child_tasks', seed.childTasks);
+  }
+  updateSettings({ morningSeeded: true });
 }
 
 // Rafraîchit les données quand l'app revient au premier plan (synchro entre parents).
@@ -217,7 +232,7 @@ export function archiveChild(childId, archived = true) {
 }
 
 // --- Tâches ----------------------------------------------------------------------------
-export function addTask({ title, emoji, days, childIds }) {
+export function addTask({ title, emoji, days, childIds, routine = 'soir' }) {
   const s = getState();
   const task = {
     id: uid(),
@@ -228,6 +243,7 @@ export function addTask({ title, emoji, days, childIds }) {
     sort: Math.max(-1, ...s.tasks.map((t) => t.sort ?? 0)) + 1,
     active: true,
     archived: false,
+    routine,
   };
   put('tasks', [task]);
   setTaskChildren(task.id, childIds || domain.activeChildren(s.children).map((c) => c.id));
@@ -253,13 +269,17 @@ export function setTaskChildren(taskId, childIds) {
   for (const id of current) if (!wanted.has(id)) del('child_tasks', { child_id: id, task_id: taskId });
 }
 
+// Change l'ordre d'une tâche au sein de sa routine (cet ordre est celui du carrousel)
 export function moveTask(taskId, dir) {
-  const list = getState().tasks.filter((t) => !t.archived).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+  const tasks = getState().tasks;
+  const routine = domain.routineOf(tasks.find((t) => t.id === taskId));
+  const list = tasks.filter((t) => !t.archived && domain.routineOf(t) === routine).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
   const i = list.findIndex((t) => t.id === taskId);
   const j = i + dir;
   if (i < 0 || j < 0 || j >= list.length) return;
   [list[i], list[j]] = [list[j], list[i]];
-  put('tasks', list.map((t, k) => ({ ...t, sort: k })));
+  const base = routine === 'matin' ? 100 : 0;
+  put('tasks', list.map((t, k) => ({ ...t, sort: base + k })));
 }
 
 // --- Défis ------------------------------------------------------------------------------

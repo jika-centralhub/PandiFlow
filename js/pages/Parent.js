@@ -2,13 +2,13 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { useStore, setPrefs } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { activeChildren, tasksForChild, findRating, balance, challengesForChild, COLOR_META } from '../domain.js';
-import { eveningDate, addDays, formatLong, WEEKDAYS_SHORT } from '../lib/dates.js';
+import { activeChildren, tasksForChild, findRating, balance, challengesForChild, COLOR_META, ROUTINES, routineOf } from '../domain.js';
+import { eveningDate, addDays, formatLong, WEEKDAYS_SHORT, currentRoutine } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { CHILD_COLORS } from '../avatar/palette.js';
 import { ITEMS, SLOTS, rewardItems, getItem } from '../avatar/items.js';
 import { ItemThumb } from '../components/ItemThumb.js';
-import { Modal, Toggle, NumberInput } from '../components/ui.js';
+import { Modal, Toggle, NumberInput, ColorPicker } from '../components/ui.js';
 import { PinPad } from '../components/PinGate.js';
 import { PhotoAvatar } from '../components/PhotoAvatar.js';
 import { PandiBank } from '../components/PandiBank.js';
@@ -25,7 +25,7 @@ const SECTIONS = [
   { id: 'reglages', label: 'Réglages', icon: '⚙️' },
 ];
 
-const EMOJIS = ['🍽️', '🥦', '🥛', '🍎', '🛁', '🚿', '🧼', '🪥', '🦷', '👕', '🧦', '👖', '🎒', '📚', '📖', '✏️', '🧸', '🧩', '🛏️', '😴', '🌙', '🚽', '🧴', '💧', '🪮', '👟', '🧥', '🧹', '🗑️', '🐶', '🐱', '🌱', '🎹', '⚽', '🧘', '💊', '⏰', '📵', '🤗', '💬', '🌟', '❤️', '🙏', '🎨', '🧺', '🍳'];
+const EMOJIS = ['⏰', '☀️', '🥣', '🥐', '🧃', '🍽️', '🥦', '🥛', '🍎', '🛁', '🚿', '🧼', '🪥', '🦷', '👕', '🧦', '👖', '🎒', '📚', '📖', '✏️', '🧸', '🧩', '🛏️', '😴', '🌙', '🚽', '🧴', '💧', '🪮', '👟', '🧥', '🧹', '🗑️', '🐶', '🐱', '🌱', '🎹', '⚽', '🧘', '💊', '⏰', '📵', '🤗', '💬', '🌟', '❤️', '🙏', '🎨', '🧺', '🍳'];
 
 // --- Enfants -------------------------------------------------------------------
 function ChildForm({ child, onClose }) {
@@ -44,7 +44,7 @@ function ChildForm({ child, onClose }) {
     <h2>${child ? `Modifier ${child.name}` : 'Nouvel enfant'}</h2>
     <div class="field"><label>Prénom</label><input class="input" value=${name} maxLength="20" onInput=${(e) => setName(e.target.value)} placeholder="Prénom" /></div>
     <div class="field"><label>Âge</label><${NumberInput} value=${age} onChange=${setAge} min=${2} max=${14} /></div>
-    <div class="field"><label>Sa couleur</label><div class="swatches">${CHILD_COLORS.map((c) => html`<button key=${c} class=${`swatch ${color === c ? 'on' : ''}`} style=${{ background: c }} onClick=${() => setColor(c)} />`)}</div></div>
+    <div class="field"><label>Sa couleur (celle de sa colonne)</label><${ColorPicker} value=${color} onChange=${setColor} /></div>
     <div class="sheet-actions">
       ${child && html`<button class="p-btn danger" onClick=${() => { actions.archiveChild(child.id, !child.archived); onClose(); }}>${child.archived ? 'Réactiver' : 'Archiver'}</button>`}
       <button class="btn btn-green" onClick=${save} disabled=${!name.trim()}>Enregistrer</button>
@@ -59,7 +59,7 @@ function ChildrenSection() {
   const list = [...s.children].sort((a, b) => Number(a.archived) - Number(b.archived) || (a.sort ?? 0) - (b.sort ?? 0));
   return html`<div>
     <h2>Les enfants</h2>
-    <p class="hint">Chaque enfant a sa colonne le soir, son avatar et sa cagnotte de pandi.</p>
+    <p class="hint">Chaque enfant a sa colonne le matin et le soir, son avatar et sa cagnotte de pandi.</p>
     <div class="row-list">
       ${list.map((c) => html`<div key=${c.id} class=${`row ${c.archived ? 'muted' : ''}`} style=${{ '--kid': c.color }}>
         <div class="mini-head" style=${{ background: c.color }}><${Avatar} look=${c.look} mode="head" still=${true} /></div>
@@ -76,21 +76,22 @@ function ChildrenSection() {
 }
 
 // --- Tâches ----------------------------------------------------------------------
-function TaskForm({ task, onClose }) {
+function TaskForm({ task, routine: initialRoutine = 'soir', onClose }) {
   const s = useStore();
   const kids = activeChildren(s.children);
+  const [routine, setRoutine] = useState(task ? routineOf(task) : initialRoutine);
   const [title, setTitle] = useState(task?.title || '');
   const [emoji, setEmoji] = useState(task?.emoji || '⭐');
-  const [days, setDays] = useState(task?.days || [0, 1, 2, 3, 4, 5, 6]);
+  const [days, setDays] = useState(task?.days || (initialRoutine === 'matin' ? [1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5, 6]));
   const [childIds, setChildIds] = useState(task ? s.childTasks.filter((ct) => ct.task_id === task.id).map((ct) => ct.child_id) : kids.map((k) => k.id));
   const toggleDay = (d) => setDays((list) => (list.includes(d) ? list.filter((x) => x !== d) : [...list, d].sort()));
   const toggleKid = (id) => setChildIds((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]));
   function save() {
     if (!title.trim()) return;
     if (task) {
-      actions.saveTask({ ...task, title: title.trim(), emoji, days });
+      actions.saveTask({ ...task, title: title.trim(), emoji, days, routine });
       actions.setTaskChildren(task.id, childIds);
-    } else actions.addTask({ title: title.trim(), emoji, days, childIds });
+    } else actions.addTask({ title: title.trim(), emoji, days, childIds, routine });
     sfx.green();
     onClose();
   }
@@ -98,7 +99,8 @@ function TaskForm({ task, onClose }) {
     <h2>${task ? 'Modifier la tâche' : 'Nouvelle tâche'}</h2>
     <div class="field"><label>Nom de la tâche</label><input class="input" value=${title} maxLength="28" onInput=${(e) => setTitle(e.target.value)} placeholder="Ex. : Préparer ses habits" /></div>
     <div class="field"><label>Image</label><div class="emoji-grid">${EMOJIS.map((e) => html`<button key=${e} class=${emoji === e ? 'on' : ''} onClick=${() => setEmoji(e)}>${e}</button>`)}</div></div>
-    <div class="field"><label>Quels soirs ?</label><div class="days">${[1, 2, 3, 4, 5, 6, 0].map((d) => html`<button key=${d} class=${`day ${days.includes(d) ? 'on' : ''}`} onClick=${() => toggleDay(d)}>${WEEKDAYS_SHORT[d]}</button>`)}</div></div>
+    <div class="field"><label>Routine</label><${RoutineSwitch} value=${routine} onChange=${setRoutine} /></div>
+    <div class="field"><label>Quels jours ?</label><div class="days">${[1, 2, 3, 4, 5, 6, 0].map((d) => html`<button key=${d} class=${`day ${days.includes(d) ? 'on' : ''}`} onClick=${() => toggleDay(d)}>${WEEKDAYS_SHORT[d]}</button>`)}</div></div>
     <div class="field"><label>Pour qui ?</label><div class="chip-row">${kids.map((k) => html`<button key=${k.id} class=${`kid-chip ${childIds.includes(k.id) ? 'on' : ''}`} style=${{ '--kid': k.color }} onClick=${() => toggleKid(k.id)}><i />${k.name}</button>`)}</div></div>
     <div class="sheet-actions">
       ${task && html`<button class="p-btn danger" onClick=${() => { actions.archiveTask(task.id); onClose(); }}>Supprimer</button>`}
@@ -107,14 +109,20 @@ function TaskForm({ task, onClose }) {
   <//>`;
 }
 
+function RoutineSwitch({ value, onChange }) {
+  return html`<div class="routine-switch">${['matin', 'soir'].map((r) => html`<button key=${r} class=${value === r ? 'on' : ''} onClick=${() => { sfx.tap(); onChange(r); }}>${ROUTINES[r].icon} ${ROUTINES[r].label}</button>`)}</div>`;
+}
+
 function TasksSection() {
   const s = useStore();
   const [editing, setEditing] = useState(null);
+  const [routine, setRoutine] = useState(currentRoutine());
   const kids = activeChildren(s.children);
-  const list = s.tasks.filter((t) => !t.archived).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+  const list = s.tasks.filter((t) => !t.archived && routineOf(t) === routine).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
   return html`<div>
-    <h2>Les tâches du soir</h2>
-    <p class="hint">Choisis les soirs où chaque tâche apparaît et pour quels enfants. Une tâche supprimée garde ses pandi déjà gagnés.</p>
+    <h2>Les tâches</h2>
+    <${RoutineSwitch} value=${routine} onChange=${setRoutine} />
+    <p class="hint">${routine === 'matin' ? 'La routine du réveil, avant de partir à l’école.' : 'La routine du soir.'} Les tâches défilent dans le carrousel dans cet ordre (flèches ↑ ↓). Choisis les jours où chaque tâche apparaît et pour quels enfants. Une tâche supprimée garde ses pandi déjà gagnés.</p>
     <div class="row-list">
       ${list.map((t, i) => {
         const assigned = new Set(s.childTasks.filter((ct) => ct.task_id === t.id).map((ct) => ct.child_id));
@@ -134,7 +142,8 @@ function TasksSection() {
       })}
     </div>
     <div class="sheet-actions" style="justify-content:flex-start"><button class="btn btn-blue" onClick=${() => setEditing('new')}>+ Nouvelle tâche</button></div>
-    ${editing && html`<${TaskForm} task=${editing === 'new' ? null : editing} onClose=${() => setEditing(null)} />`}
+    ${list.length === 0 && html`<p class="hint">Aucune tâche pour le ${ROUTINES[routine].label.toLowerCase()} : ajoute la première !</p>`}
+    ${editing && html`<${TaskForm} task=${editing === 'new' ? null : editing} routine=${routine} onClose=${() => setEditing(null)} />`}
   </div>`;
 }
 
@@ -237,7 +246,7 @@ function HistorySection() {
   const today = eveningDate();
   const days = Array.from({ length: 14 }, (_, i) => addDays(today, -i));
   return html`<div>
-    <h2>Historique des soirées</h2>
+    <h2>Historique</h2>
     <p class="hint">Touche une pastille pour corriger une note (vert → orange → rouge → vide). Les pandi et les bonus sont recalculés.</p>
     <div class="row-list" style="margin-bottom:16px">${kids.map((k) => html`<div key=${k.id} class="row" style=${{ '--kid': k.color }}>
       <div class="mini-head" style=${{ background: k.color }}><${Avatar} look=${k.look} mode="head" still=${true} /></div>
@@ -245,13 +254,17 @@ function HistorySection() {
       <button class="p-btn" onClick=${() => setAdjust(k)}>💰 Cagnotte</button>
     </div>`)}</div>
     ${days.map((d) => html`<div key=${d} class="history-day">
-      <h3>${d === today ? 'Ce soir' : formatLong(d)}</h3>
+      <h3>${d === today ? 'Aujourd’hui' : formatLong(d)}</h3>
       <div class="history-grid">${kids.map((k) => html`<div key=${k.id} class="history-line">
         <span class="who"><span class="kid-chip on" style=${{ '--kid': k.color }}><i />${k.name}</span></span>
-        ${tasksForChild(k.id, d, s).map((t) => {
-          const r = findRating(s.ratings, k.id, t.id, d);
-          return html`<button key=${t.id} class=${`dot-btn ${r?.color || ''}`} title=${`${t.title}${r ? ` : ${COLOR_META[r.color].label}` : ''}`}
-            onClick=${() => { sfx.tap(); actions.rate(k.id, t.id, d, NEXT[r?.color]); }}>${t.emoji}</button>`;
+        ${['matin', 'soir'].map((routine) => {
+          const list = tasksForChild(k.id, d, s, routine);
+          if (!list.length) return null;
+          return html`<span key=${routine} class="history-routine"><em title=${ROUTINES[routine].label}>${ROUTINES[routine].icon}</em>${list.map((t) => {
+            const r = findRating(s.ratings, k.id, t.id, d);
+            return html`<button key=${t.id} class=${`dot-btn ${r?.color || ''}`} title=${`${t.title}${r ? ` : ${COLOR_META[r.color].label}` : ''}`}
+              onClick=${() => { sfx.tap(); actions.rate(k.id, t.id, d, NEXT[r?.color]); }}>${t.emoji}</button>`;
+          })}</span>`;
         })}
       </div>`)}</div>
     </div>`)}
@@ -272,9 +285,22 @@ function SettingsSection() {
       <div class="row"><span class="emoji">😄</span><div class="grow"><div class="title">Vert : bravo !</div></div><${NumberInput} value=${pts.green} onChange=${setPoints('green')} max=${20} /></div>
       <div class="row"><span class="emoji">😐</span><div class="grow"><div class="title">Orange : presque</div></div><${NumberInput} value=${pts.orange} onChange=${setPoints('orange')} max=${20} /></div>
       <div class="row"><span class="emoji">😟</span><div class="grow"><div class="title">Rouge : à retravailler</div></div><${NumberInput} value=${pts.red} onChange=${setPoints('red')} max=${20} /></div>
-      <div class="row"><span class="emoji">⭐</span><div class="grow"><div class="title">Bonus soirée parfaite</div><div class="meta">Quand toutes les tâches sont vertes</div></div><${NumberInput} value=${s.settings.perfectBonus} onChange=${(v) => actions.updateSettings({ perfectBonus: v })} max=${50} /></div>
+      <div class="row"><span class="emoji">⭐</span><div class="grow"><div class="title">Bonus soirée ou matinée parfaite</div><div class="meta">Quand toutes les tâches de la routine sont vertes</div></div><${NumberInput} value=${s.settings.perfectBonus} onChange=${(v) => actions.updateSettings({ perfectBonus: v })} max=${50} /></div>
     </div>
     <p class="hint" style="margin-top:8px">Un nouveau barème s'applique aux prochaines notes : les pandi déjà gagnés ne changent pas.</p>
+
+    <h3 class="section-title" style="color:var(--ink);margin-top:20px">Routine du matin</h3>
+    <div class="row-list">
+      <div class="row"><span class="emoji">🎒</span><div class="grow"><div class="title">Compte à rebours du départ</div><div class="meta">L'écran du matin affiche le temps qui reste avant de partir à l'école, puis sonne à l'heure.</div></div>
+        <${Toggle} on=${Boolean(s.settings.departure)} label="Compte à rebours du départ" onChange=${(on) => actions.updateSettings({ departure: on ? '08:15' : null })} /></div>
+      ${s.settings.departure && html`<div class="row"><span class="emoji">⏰</span><div class="grow"><div class="title">Heure du départ</div></div>
+        <input class="input time-input" type="time" value=${s.settings.departure} onChange=${(e) => e.target.value && actions.updateSettings({ departure: e.target.value })} /></div>`}
+      ${s.settings.departure && html`<div class="row"><span class="emoji">📅</span><div class="grow"><div class="title">Jours d'école</div></div>
+        <div class="days">${[1, 2, 3, 4, 5, 6, 0].map((d) => {
+          const on = s.settings.departureDays.includes(d);
+          return html`<button key=${d} class=${`day ${on ? 'on' : ''}`} onClick=${() => actions.updateSettings({ departureDays: on ? s.settings.departureDays.filter((x) => x !== d) : [...s.settings.departureDays, d] })}>${WEEKDAYS_SHORT[d]}</button>`;
+        })}</div></div>`}
+    </div>
 
     <h3 class="section-title" style="color:var(--ink);margin-top:20px">Sur cet appareil</h3>
     <div class="row-list">

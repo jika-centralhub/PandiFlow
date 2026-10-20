@@ -4,6 +4,7 @@ import { Coin } from './Coin.js';
 import { useStore } from '../lib/store.js';
 import { sfx } from '../lib/sounds.js';
 import { prefersReducedMotion } from '../lib/util.js';
+import { KID_PALETTE } from '../avatar/palette.js';
 
 // Compteur de pandi : le nombre défile comme un compteur kilométrique
 export function PandiCounter({ value, big = false, counterRef, id }) {
@@ -88,6 +89,19 @@ export function NumberInput({ value, onChange, min = 0, max = 999, step = 1 }) {
     <output>${value}</output>
     <button onClick=${() => set(value + step)} aria-label="Plus">+</button>
   </span>`;
+}
+
+// Couleur d'un enfant : 16 pastilles + un nuancier libre (🎨)
+export function ColorPicker({ value, onChange }) {
+  const custom = !KID_PALETTE.includes(value);
+  const valid = /^#[0-9a-f]{6}$/i.test(value || '');
+  return html`<div class="swatches">
+    ${KID_PALETTE.map((c) => html`<button key=${c} class=${`swatch ${value === c ? 'on' : ''}`} style=${{ background: c }} aria-label=${`Couleur ${c}`} onClick=${() => { sfx.pop(); onChange(c); }} />`)}
+    <label class=${`swatch swatch-custom ${custom ? 'on' : ''}`} style=${custom && valid ? { background: value } : null} title="Choisir une autre couleur">
+      <span aria-hidden="true">🎨</span>
+      <input type="color" aria-label="Choisir une autre couleur" value=${valid ? value : '#ff7eb6'} onChange=${(e) => { sfx.pop(); onChange(e.target.value); }} />
+    </label>
+  </div>`;
 }
 
 export function Loading() {

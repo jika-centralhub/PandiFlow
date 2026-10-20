@@ -30,7 +30,8 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
+    # Port : argument, sinon variable PORT (donnée par l'aperçu de Claude Code), sinon 8080
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", 8080))
     handler = partial(NoCacheHandler, directory=ROOT)
     with http.server.ThreadingHTTPServer(("127.0.0.1", port), handler) as httpd:
         print(f"PandiFlow : http://localhost:{port}")

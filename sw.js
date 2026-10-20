@@ -10,6 +10,8 @@ const SHELL = [
   './manifest.webmanifest',
   './css/app.css',
   './css/avatar.css',
+  './css/routine.css',
+  './css/calm.css',
   './assets/fonts/fredoka.woff2',
   './assets/icons/icon.svg',
   './assets/icons/icon-192.png',

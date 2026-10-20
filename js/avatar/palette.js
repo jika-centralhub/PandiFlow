@@ -167,3 +167,6 @@ export function randomLook(seed = Math.random) {
 }
 
 export const CHILD_COLORS = ['#FF7EB6', '#5EC8FF', '#9B7BFF', '#FFB84D', '#48E0A4', '#FF8A5C'];
+
+// Toutes les couleurs proposées pour la colonne d'un enfant (les 6 premières sont données par défaut)
+export const KID_PALETTE = [...CHILD_COLORS, '#FF5C7A', '#FFD23F', '#A8E05F', '#2FCF74', '#3DD6D0', '#4D9BFF', '#6C7CFF', '#C77DFF', '#F06BD8', '#B08968'];

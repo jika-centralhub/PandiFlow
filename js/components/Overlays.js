@@ -10,6 +10,7 @@ import { PandiCounter } from './ui.js';
 import { sfx } from '../lib/sounds.js';
 import { fireworks, coinRain, confettiBurst, flyCoins, dropCoins } from '../anim/fx.js';
 import { sleep } from '../lib/util.js';
+import { ROUTINES } from '../domain.js';
 
 let queue = [];
 
@@ -93,7 +94,7 @@ function useChild(childId) {
   return getState().children.find((c) => c.id === childId);
 }
 
-function Celebration({ childId, perfect, bonus, onClose }) {
+function Celebration({ childId, perfect, bonus, routine = 'soir', onClose }) {
   const child = useChild(childId);
   const [canClose, setCanClose] = useState(false);
   useEffect(() => {
@@ -115,8 +116,8 @@ function Celebration({ childId, perfect, bonus, onClose }) {
     </div>
     <div class="text">
       <div class="title">Bravo ${child.name} !</div>
-      <div class="subtitle">Toute ta soirée est faite. Quelle belle réussite !</div>
-      ${perfect && html`<div class="perfect-banner"><${Coin} /> Soirée parfaite ! +${bonus}</div>`}
+      <div class="subtitle">${(ROUTINES[routine] || ROUTINES.soir).done}</div>
+      ${perfect && html`<div class="perfect-banner"><${Coin} /> ${(ROUTINES[routine] || ROUTINES.soir).perfect} ! +${bonus}</div>`}
       <div class="tap-hint">Touche l'écran pour continuer</div>
     </div>
   </div>`;

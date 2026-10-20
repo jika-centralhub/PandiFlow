@@ -6,7 +6,7 @@ import { balance, isOwned, challengesForChild } from '../domain.js';
 import { Avatar, COVERED_BY_SKIN } from '../avatar/Avatar.js';
 import { ITEMS, SLOTS, shopItems, getItem } from '../avatar/items.js';
 import { ItemThumb } from '../components/ItemThumb.js';
-import { PandiCounter, Modal } from '../components/ui.js';
+import { PandiCounter, Modal, ColorPicker } from '../components/ui.js';
 import { Coin } from '../components/Coin.js';
 import { LookEditor } from '../components/LookEditor.js';
 import { PinGate } from '../components/PinGate.js';
@@ -178,7 +178,10 @@ export function ChildPage({ childId, tab = 'look' }) {
           </button>`)}
         </nav>
         <div class="tab-content" key=${current}>
-          ${current === 'look' && html`<${LookEditor} look=${child.look} onChange=${(look) => actions.saveLook(child.id, look)} onPhoto=${() => (actions.isParentUnlocked() ? setPhoto(true) : setGate(true))} />`}
+          ${current === 'look' && html`<div>
+            <div class="look-group"><h3>Ma couleur</h3><${ColorPicker} value=${child.color} onChange=${(color) => actions.saveChild({ ...child, color })} /></div>
+            <${LookEditor} look=${child.look} onChange=${(look) => actions.saveLook(child.id, look)} onPhoto=${() => (actions.isParentUnlocked() ? setPhoto(true) : setGate(true))} />
+          </div>`}
           ${current === 'affaires' && html`<${Inventory} child=${child} owned=${owned} onEquip=${equipToggle} />`}
           ${current === 'boutique' && html`<${Shop} child=${child} owned=${owned} bal=${bal} onPick=${(it) => { sfx.tap(); setBuying(it); }} />`}
           ${current === 'defis' && html`<${Challenges} child=${child} state=${s} />`}
