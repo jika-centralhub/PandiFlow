@@ -1,5 +1,5 @@
-﻿# Crée, une seule fois, les images façon film d'animation 3D des saynètes de la bulle
-# « Transformation en cours… » (princesse, cowboy, super-héros, animaux, astronaute, pirate).
+﻿# Crée, une seule fois, les 13 images façon film d'animation 3D des saynètes de la bulle
+# « Transformation en cours… » (princesse, cowboy, super-héros, éléphant et panda, astronaute, pirate).
 # Les images brutes (fond vert à détourer) vont dans tests/local/scene-art/ (hors dépôt),
 # puis `python tools/make_scene_art.py` les détoure et les range dans assets/scenes/.
 # La clé OpenAI est saisie de façon masquée, reste en mémoire et n'est écrite nulle part.
@@ -31,7 +31,6 @@ $images = @(
   @{ name = 'heros'; quality = 'high'; prompt = "A brave little kid superhero about 7 years old flying horizontally to the right, one fist stretched forward, the body straight and the legs behind, wearing an original blue suit with a long red cape flowing behind and a yellow star emblem on the chest (not any existing hero), a small red eye mask, a confident smile, hair blown by the wind. $style $cutout" }
   @{ name = 'astronaute'; quality = 'high'; prompt = "A delighted little girl about 7 years old in a white and orange space suit with a round helmet and a clear glass visor showing her face, floating weightlessly in a relaxed star pose, waving one hand, a big amazed smile. $style $cutout" }
   @{ name = 'pirate'; quality = 'high'; prompt = "A cheerful little boy pirate captain about 7 years old, with a black tricorn hat, a red and white striped shirt, a blue coat with golden buttons, a toy wooden sword at his belt and a red and blue parrot on his shoulder, holding a brass spyglass, standing with his legs apart, a big playful grin. $style $cutout" }
-  @{ name = 'lion'; quality = 'high'; prompt = "An adorable chubby lion cub with big golden eyes and a fluffy little mane, sitting up happily with one paw raised in a wave, mouth open in a joyful smile. $style $cutout" }
   @{ name = 'elephant'; quality = 'high'; prompt = "An adorable chubby baby elephant, light grey-blue with big floppy pink-lined ears, standing happily with its trunk raised high in a joyful trumpet, big shiny eyes. $style $cutout" }
   @{ name = 'panda'; quality = 'high'; prompt = "An adorable chubby baby panda sitting and clapping its paws, big shiny eyes, a joyful open-mouth smile. $style $cutout" }
   @{ name = 'fond_chateau'; quality = 'medium'; prompt = "A dreamy fairy-tale castle garden at golden hour: a pastel pink and white princess castle with pointed blue-roof towers in the distance, flowering hedges, rose bushes, a sparkling fountain, soft glowing light and floating sparkles. $scenery" }

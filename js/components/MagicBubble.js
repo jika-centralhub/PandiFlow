@@ -16,9 +16,8 @@ export const SCENES = [
   {
     id: 'animaux', bg: 'fond_jungle', fx: 'leaves',
     actors: [
-      { img: 'lion', anim: 'hop', x: 26, y: 88, h: 40, delay: 0 },
-      { img: 'elephant', anim: 'hop', x: 52, y: 84, h: 50, delay: 0.25 },
-      { img: 'panda', anim: 'hop', x: 77, y: 88, h: 38, delay: 0.5 },
+      { img: 'elephant', anim: 'hop', x: 34, y: 86, h: 52, delay: 0 },
+      { img: 'panda', anim: 'hop', x: 69, y: 88, h: 42, delay: 0.25 },
     ],
   },
   { id: 'astronaute', bg: 'fond_espace', fx: 'stars', actors: [{ img: 'astronaute', anim: 'float', x: 50, y: 84, h: 64 }] },
