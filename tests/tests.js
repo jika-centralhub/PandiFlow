@@ -223,6 +223,21 @@ test('look : visage 3D gardé seulement s\'il est valide', () => {
   ok(!('portrait' in normalizeLook({ portrait: { base, exprs: { joy: marks } } })));
   eq(normalizeLook({ portrait: { base, exprs: { happy: marks }, off: true } }).portrait.off, true);
 });
+test('look : personnage 3D entier, repères du corps gardés seulement s\'ils sont tous valides', () => {
+  const face = { eyeLeftX: 0.4, eyeLeftY: 0.25, eyeRightX: 0.6, eyeRightY: 0.25, chinY: 0.42, topY: 0.04, headLeftX: 0.24, headRightX: 0.76 };
+  const body = {
+    noseY: 0.31, mouthY: 0.36, collarX: 0.5, collarY: 0.48,
+    shoulderLeftX: 0.32, shoulderLeftY: 0.51, shoulderRightX: 0.68, shoulderRightY: 0.51,
+    elbowLeftX: 0.17, elbowLeftY: 0.68, elbowRightX: 0.83, elbowRightY: 0.68,
+    wristLeftX: 0.31, wristLeftY: 0.84, wristRightX: 0.69, wristRightY: 0.84,
+    handLeftX: 0.36, handLeftY: 0.86, handRightX: 0.64, handRightY: 0.86,
+    waistLeftX: 0.33, waistRightX: 0.67, waistY: 0.86,
+  };
+  const base = '11111111-2222-3333-4444-555555555555/66666666-7777-8888-9999-aaaaaaaaaaaa/mabc1234';
+  const all = { ...face, ...body };
+  const look = normalizeLook({ portrait: { base, body: true, exprs: { happy: all, dance: all, joy: { ...all, elbowLeftX: 2 }, encourage: { ...face, noseY: 0.3 } } } });
+  eq(look.portrait, { base, exprs: { happy: all, joy: face, encourage: face, dance: all }, body: true });
+});
 
 // --- Routine du matin ------------------------------------------------------------------------------
 function morningFixture() {

@@ -414,10 +414,12 @@ export async function analyzePhoto(childId, imageBase64, mediaType = 'image/jpeg
 
 export const canMakePortrait = () => getState().mode === 'cloud';
 
-// Visage 3D en 3 expressions : d'abord le sourire à partir de la photo, puis la joie et
-// l'encouragement à partir de ce sourire (même personnage). onFace(expr, url) à chaque visage prêt.
-// Renvoie le portrait à ranger dans le look ; seul le sourire est indispensable.
-export async function makePortrait(childId, imageBase64, mediaType, onFace) {
+// Personnage 3D (tête et haut du corps) en 4 poses : d'abord le sourire mains sur les hanches, à partir
+// de la photo ({ image, mediaType }) ou du visage 3D seul d'une ancienne version ({ fromFace: version }),
+// puis l'encouragement, le bravo et la danse à partir de ce sourire (même personnage).
+// onFace(expr, url) à chaque image prête. Renvoie le portrait à ranger dans le look ; seul le sourire
+// est indispensable.
+export async function makePortrait(childId, source, onFace) {
   const face = async (expr, body) => {
     const res = await repo.makePortrait({ childId, expr, ...body });
     const blob = await (await fetch(`data:image/webp;base64,${res.image}`)).blob();
@@ -425,12 +427,15 @@ export async function makePortrait(childId, imageBase64, mediaType, onFace) {
     onFace?.(expr, entry.url);
     return res;
   };
-  const first = await face('happy', { image: imageBase64, mediaType });
+  const first = await face('happy', source.fromFace ? { fromFace: true, version: source.fromFace } : { image: source.image, mediaType: source.mediaType });
   const exprs = { happy: first.marks };
-  const others = await Promise.allSettled(['joy', 'encourage'].map((expr) => face(expr, { version: first.version })));
+  const others = await Promise.allSettled(['encourage', 'joy', 'dance'].map((expr) => face(expr, { version: first.version })));
   for (const r of others) if (r.status === 'fulfilled') exprs[r.value.expr] = r.value.marks;
-  return { base: first.base, exprs };
+  return { base: first.base, exprs, body: true };
 }
+
+// Version du visage 3D (tête seule) d'un enfant, à qui on peut créer le haut du corps sans nouvelle photo
+export const faceOnlyVersion = (look) => (look?.portrait && !look.portrait.body ? look.portrait.base.split('/')[2] : null);
 
 // --- Compte et famille (cloud) ------------------------------------------------------------------
 // Redirige vers Google ; au retour, boot() retrouve la session

@@ -1,18 +1,31 @@
 // Personnage PandiFlow en SVG : tête "chibi" dessinée ou visage 3D (photo magique), posé sur
-// le haut du corps de body.js. Repère : tête centrée en (100, 100), encolure à y = 182.
-import { html, useMemo } from '../vendor/preact-htm.js';
-import { SKIN_TONES, HAIR_COLORS, EYE_COLORS, OUTFIT_COLORS, GLASSES_COLORS, normalizeLook } from './palette.js';
+// le haut du corps de body.js ; ou personnage 3D entier (tête et haut du corps, body3d.js).
+// Repère : tête centrée en (100, 100), encolure à y = 182.
+import { html, useEffect, useMemo } from '../vendor/preact-htm.js';
+import { SKIN_TONES, HAIR_COLORS, EYE_COLORS, OUTFIT_COLORS, GLASSES_COLORS, PORTRAIT_EXPRS, normalizeLook } from './palette.js';
 import { HAIR } from './hair.js';
 import { getItem } from './items.js';
 import { Body, BodyDefs } from './body.js';
+import { Body3D, bodyGeometry } from './body3d.js';
 import { shade, mix, hashString } from '../lib/util.js';
-import { usePortrait, portraitPath } from '../lib/portraits.js';
+import { usePortrait, portraitPath, loadPortrait, hasBody } from '../lib/portraits.js';
 
 let instance = 0;
 
 // Expression de l'avatar -> visage 3D correspondant
 const PORTRAIT_FOR = { neutral: 'happy', happy: 'happy', joy: 'joy', encourage: 'encourage', focus: 'encourage' };
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+// Image du personnage 3D pour une expression et une pose. Avec le haut du corps : happy et encourage
+// mains sur les hanches, joy bras levés (bravo, et la tête seule en joie), dance.
+function portraitKey(portrait, expr, pose, head) {
+  const has = (k) => Boolean(portrait.exprs[k]);
+  if (!portrait.body) return has(PORTRAIT_FOR[expr]) ? PORTRAIT_FOR[expr] : 'happy';
+  if (!head && pose === 'dance' && has('dance')) return 'dance';
+  if ((pose === 'cheer' || pose === 'dance' || (head && expr === 'joy')) && has('joy')) return 'joy';
+  if ((expr === 'encourage' || expr === 'focus') && has('encourage')) return 'encourage';
+  return 'happy';
+}
 
 // Taille du visage 3D par rapport au cadrage moyen : proportions d'enfant de film d'animation
 const HEAD_3D = 0.86;
@@ -21,41 +34,55 @@ const CHIN_3D = 168;
 // Bas du nez du visage 3D sous la ligne des yeux, en écarts entre les yeux (0,41 sur la tête dessinée) :
 // les visages de film d'animation ont le nez plus bas, la moustache s'y accroche
 const NOSE_3D = 0.56;
+// Personnage 3D entier : sommet du crâne et hanches (là où sont posées les mains) dans le cadre
+const BODY_CROWN = 14;
+const BODY_WAIST = 242;
 
-// Place le visage 3D dans le repère du personnage : yeux centrés, menton juste au-dessus du col.
-// Donne aussi le haut de la tête et la largeur (chapeaux), la transformation qui amène les yeux
-// du dessin (78 et 122, 106) sur ceux du visage (masques, lunettes amusantes), et la découpe :
+// Place le visage 3D dans le repère du personnage : yeux centrés, menton juste au-dessus du col
+// (ou, pour le personnage entier, du sommet du crâne aux hanches). Donne aussi le haut de la tête et
+// la largeur (chapeaux), la transformation qui amène les yeux du dessin (78 et 122, 106) sur ceux du
+// visage (masques, lunettes amusantes) et le nez dessiné sur le sien (moustache), et la découpe :
 // la tête entière, puis seulement le cou sous le menton (ni col ni épaules de la photo).
-function placePortrait(m) {
+// ratio : hauteur / largeur de l'image.
+function placePortrait(m, ratio = 1, body = false) {
   const eyeX = (m.eyeLeftX + m.eyeRightX) / 2;
   const eyeY = (m.eyeLeftY + m.eyeRightY) / 2;
   const gap = m.eyeRightX - m.eyeLeftX;
-  const size = HEAD_3D * clamp((46 / gap + 56 / (m.chinY - eyeY)) / 2, 160, 300);
-  const x = 100 - eyeX * size;
-  const y = CHIN_3D - m.chinY * size;
-  const k = (gap * size) / 44;
-  const at = (fx, fy) => [x + fx * size, y + fy * size];
-  const headW = (m.headRightX - m.headLeftX) * size;
+  const W = body
+    ? (BODY_WAIST - BODY_CROWN) / ((m.waistY - m.topY) * ratio)
+    : HEAD_3D * clamp((46 / gap + 56 / ((m.chinY - eyeY) * ratio)) / 2, 160, 300);
+  const H = W * ratio;
+  const x = 100 - eyeX * W;
+  const y = body ? BODY_CROWN - m.topY * H : CHIN_3D - m.chinY * H;
+  const k = (gap * W) / 44;
+  const at = (fx, fy) => [x + fx * W, y + fy * H];
+  const headW = (m.headRightX - m.headLeftX) * W;
   const [cx, chin] = at(eyeX, m.chinY);
-  const cut = chin + 0.03 * size;
+  const cut = chin + 0.03 * H;
   const neck = headW * 0.3;
-  const top = y + m.topY * size;
-  const eyeLine = y + eyeY * size;
+  const top = y + m.topY * H;
+  const eyeLine = y + eyeY * H;
+  const nose = Number.isFinite(m.noseY) ? y + m.noseY * H : eyeLine + NOSE_3D * gap * W;
+  const headX = x + ((m.headLeftX + m.headRightX) / 2) * W;
   return {
     x,
     y,
-    size,
+    W,
+    H,
     cx,
+    chin,
     headW,
     crown: top,
     hatScale: clamp(headW / 124, 0.8, 1.4),
     face: `translate(100 ${eyeLine}) scale(${k}) translate(-100 -106)`,
     // Objets accrochés sous le nez (anchor: 'nose') : même échelle, bas du nez dessiné (y = 124) sur celui du visage
-    nose: `translate(100 ${eyeLine + NOSE_3D * gap * size}) scale(${k}) translate(-100 -124)`,
-    clip: `M${x - 40} ${y - 40} H${x + size + 40} V${cut} H${cx + neck} V${y + size} H${cx - neck} V${cut} H${x - 40} Z`,
+    nose: `translate(100 ${nose}) scale(${k}) translate(-100 -124)`,
+    clip: `M${x - 40} ${y - 40} H${x + W + 40} V${cut} H${cx + neck} V${y + H} H${cx - neck} V${cut} H${x - 40} Z`,
     // Fond impossible à retirer : ovale doux autour de la tête (cheveux compris), coupé au menton ;
     // le cou dessiné prend le relais, pour ne rien montrer du vêtement de la photo
-    oval: { cx: x + ((m.headLeftX + m.headRightX) / 2) * size, cy: (top + chin) / 2, rx: headW * 0.54, ry: (chin - top) * 0.56 },
+    oval: { cx: headX, cy: (top + chin) / 2, rx: headW * 0.54, ry: (chin - top) * 0.56 },
+    // Tête seule du personnage entier : ovale large autour de la tête et du haut du cou
+    headOval: { cx: headX, cy: (top + chin) / 2 + (chin - top) * 0.04, rx: headW * 0.6, ry: (chin - top) * 0.6 },
   };
 }
 
@@ -160,12 +187,12 @@ function Glasses({ shape, color }) {
 // et même couleur que le bas du cou de l'image, mesurés au chargement. Inutile si le cou de l'image
 // descend déjà sous le col.
 function portraitNeck(pic, measured, skin) {
-  const at = (f) => pic.y + f * pic.size;
-  const bottom = measured ? at(measured.bottom) : pic.y + pic.size;
+  const at = (f) => pic.y + f * pic.H;
+  const bottom = measured ? at(measured.bottom) : pic.y + pic.H;
   if (bottom > 194) return null;
   // Un peu plus étroit que le cou de l'image, pour ne jamais dépasser sur les côtés
-  const x0 = (measured ? pic.x + measured.left * pic.size : pic.cx - pic.headW * 0.16) + 0.8;
-  const x1 = (measured ? pic.x + measured.right * pic.size : pic.cx + pic.headW * 0.16) - 0.8;
+  const x0 = (measured ? pic.x + measured.left * pic.W : pic.cx - pic.headW * 0.16) + 0.8;
+  const x1 = (measured ? pic.x + measured.right * pic.W : pic.cx + pic.headW * 0.16) - 0.8;
   // Le haut du cou dessiné reste caché sous la partie opaque de l'image (le fondu fait 9 unités)
   const top = Math.min(measured ? at(measured.top) : bottom, bottom - 14);
   const mid = (top + 197) / 2;
@@ -181,12 +208,12 @@ function portraitNeck(pic, measured, skin) {
 // sinon ovale doux coupé au menton
 function PortraitDefs({ id, pic, keyed, neck }) {
   const o = pic.oval;
-  const fade = neck ? neck.bottom : pic.y + pic.size;
+  const fade = neck ? neck.bottom : pic.y + pic.H;
   return keyed
     ? html`<linearGradient id=${`${id}-pfade`} gradientUnits="userSpaceOnUse" x1="0" x2="0" y1=${fade - 9} y2=${fade - 1}>
         <stop offset="0" stop-color="#fff" /><stop offset="1" stop-color="#000" />
       </linearGradient>
-      <mask id=${`${id}-pmask`} maskUnits="userSpaceOnUse" x=${pic.x - 40} y=${pic.y - 40} width=${pic.size + 80} height=${pic.size + 80}>
+      <mask id=${`${id}-pmask`} maskUnits="userSpaceOnUse" x=${pic.x - 40} y=${pic.y - 40} width=${pic.W + 80} height=${pic.H + 80}>
         <path d=${pic.clip} fill=${neck ? `url(#${id}-pfade)` : '#fff'} />
       </mask>
       <linearGradient id=${`${id}-pneck`} x1="0" x2="1" y1="0" y2="0">
@@ -196,7 +223,7 @@ function PortraitDefs({ id, pic, keyed, neck }) {
         <stop offset="1" stop-color="#000" stop-opacity=".2" />
       </linearGradient>`
     : html`<radialGradient id=${`${id}-poval`}><stop offset="0.82" stop-color="#fff" /><stop offset="1" stop-color="#000" /></radialGradient>
-      <mask id=${`${id}-pmask`} maskUnits="userSpaceOnUse" x=${pic.x - 40} y=${pic.y - 40} width=${pic.size + 80} height=${pic.size + 80}>
+      <mask id=${`${id}-pmask`} maskUnits="userSpaceOnUse" x=${pic.x - 40} y=${pic.y - 40} width=${pic.W + 80} height=${pic.H + 80}>
         <ellipse cx=${o.cx} cy=${o.cy} rx=${o.rx} ry=${o.ry} fill=${`url(#${id}-poval)`} />
       </mask>`;
 }
@@ -216,11 +243,24 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
   const id = useMemo(() => `av${++instance}`, []);
   const look = normalizeLook(rawLook);
   const portrait = look.portrait && !look.portrait.off ? look.portrait : null;
-  const pExpr = portrait?.exprs[PORTRAIT_FOR[expr]] ? PORTRAIT_FOR[expr] : 'happy';
-  const pMarks = portrait?.exprs[pExpr];
-  const pImg = usePortrait(portrait ? portraitPath(portrait.base, pExpr) : null, pMarks);
-  // Tant que le visage 3D n'est pas chargé, la tête dessinée s'affiche
-  const pic = pImg ? placePortrait(pMarks) : null;
+  const head = mode === 'head';
+  const pExpr = portrait ? portraitKey(portrait, expr, pose, head) : null;
+  const wanted = usePortrait(portrait ? portraitPath(portrait.base, pExpr) : null, portrait?.exprs[pExpr]);
+  // Image de cette pose pas encore chargée : celle du sourire en attendant (même personnage)
+  const backup = usePortrait(portrait && !wanted && pExpr !== 'happy' ? portraitPath(portrait.base, 'happy') : null, portrait?.exprs.happy);
+  const pImg = wanted || backup;
+  const pKey = wanted ? pExpr : 'happy';
+  const pMarks = portrait?.exprs[pKey];
+  // Les autres poses se chargent en arrière-plan, pour passer de l'une à l'autre sans attendre
+  useEffect(() => {
+    if (!portrait) return;
+    for (const k of PORTRAIT_EXPRS) if (portrait.exprs[k]) loadPortrait(portraitPath(portrait.base, k), portrait.exprs[k]);
+  }, [portrait?.base]);
+  // Tant que le visage 3D n'est pas chargé, la tête dessinée s'affiche. Personnage 3D entier : l'image
+  // remplace aussi le corps dessiné (sans repères du corps, seule sa tête est posée sur le corps dessiné)
+  const whole = Boolean(pImg?.body && hasBody(pMarks));
+  const pic = pImg ? placePortrait(pMarks, pImg.ratio, whole) : null;
+  const geo = whole ? bodyGeometry(pic, pMarks, pImg.body.arms) : null;
   const skin = (pic && (pImg.skin || portrait.skin)) || SKIN_TONES[look.skin].color;
   const pNeck = pic && pImg.keyed ? portraitNeck(pic, pImg.neck, skin) : null;
   const hairColor = HAIR_COLORS[look.hairColor].color;
@@ -239,9 +279,8 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
   // Costume complet : il prend la place du haut, du chapeau, du masque, du cou et du dos
   const costume = items.skin || null;
   if (costume) for (const slot of COVERED_BY_SKIN) delete items[slot];
-  const head = mode === 'head';
   const shirt = costume?.shirt || items.outfit?.color || outfit;
-  const sleeve = costume?.sleeve || shirt;
+  const sleeve = costume?.bareArms ? skin : costume?.sleeve || shirt;
   const showHair = !costume?.hideHair;
   const ctx = {
     id,
@@ -256,6 +295,8 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
     hairFill: `url(#${id}-hair)`,
     hairLine: shade(hairColor, -0.35),
   };
+  // Personnage 3D entier : la tête fait partie de l'image, ses accessoires ne se balancent donc pas seuls
+  // (groupe av-head-fixed)
   const hatTransform = `translate(100 ${ctx.crown}) scale(${ctx.hatScale}) translate(-100 -26)`;
   const faceTransform = pic?.face;
 
@@ -272,7 +313,7 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
 
   const headBox = () => {
     const top = pic.crown - 22;
-    const h = Math.max(164, CHIN_3D + 12 - top);
+    const h = Math.max(164, pic.chin + 12 - top);
     return `${100 - h / 2} ${top} ${h} ${h}`;
   };
   const viewBox = head ? (pic ? headBox() : '18 4 164 164') : '-20 -44 240 298';
@@ -283,7 +324,7 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
   const browR = expr === 'focus' ? 'M132 85 Q121 86 112 91' : BROWS[look.brows](1);
   const funFace = items.face;
 
-  return html`<svg class=${`avatar ${still ? 'still' : ''} pose-${pose} ${cls}`} viewBox=${viewBox} xmlns="http://www.w3.org/2000/svg" style=${style} role="img" aria-label="Avatar">
+  return html`<svg class=${`avatar ${still ? 'still' : ''} ${geo ? 'whole3d' : ''} pose-${pose} ${cls}`} viewBox=${viewBox} xmlns="http://www.w3.org/2000/svg" style=${style} role="img" aria-label="Avatar">
     <defs>
       <radialGradient id=${`${id}-skin`} cx="42%" cy="34%" r="70%">
         <stop offset="0%" stop-color=${shade(skin, 0.2)} />
@@ -306,7 +347,11 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
       </linearGradient>
       ${showBody && html`<${BodyDefs} id=${id} />`}
       <clipPath id=${`${id}-head`}><path d=${face.d} /></clipPath>
-      ${pic && html`<${PortraitDefs} id=${id} pic=${pic} keyed=${pImg.keyed} neck=${pNeck} />`}
+      ${pic && !geo && html`<${PortraitDefs} id=${id} pic=${pic} keyed=${pImg.keyed} neck=${pNeck} />`}
+      ${geo && head && html`<mask id=${`${id}-hcut`} maskUnits="userSpaceOnUse" x=${pic.x} y=${pic.y} width=${pic.W} height=${pic.H}>
+        <ellipse cx=${pic.headOval.cx} cy=${pic.headOval.cy} rx=${pic.headOval.rx} ry=${pic.headOval.ry} fill="#fff" />
+        ${geo.arms.map((a) => html`<path key=${a.key} d=${`${a.sleeve} ${a.fore}`} fill="#000" />`)}
+      </mask>`}
       ${pic && costume?.tint3d && html`<filter id=${`${id}-tint`} color-interpolation-filters="sRGB">
         <feFlood flood-color=${costume.tint3d} result="c" />
         <feComposite in="c" in2="SourceAlpha" operator="in" result="m" />
@@ -318,19 +363,24 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
 
     <g class="av-char" style=${{ animationDelay: delay(3) }}>
       ${!pic && hair.back && showHair && html`<g class="av-hair-back">${hair.back(hairC)}</g>`}
-      ${pic && html`<g class="av-head" style=${{ animationDelay: delay(7) }}>
+      ${pic && !geo && html`<g class="av-head" style=${{ animationDelay: delay(7) }}>
         <g filter=${costume?.tint3d ? `url(#${id}-tint)` : undefined}>
           ${pNeck && html`<path d=${pNeck.d} fill=${pNeck.color} /><path d=${pNeck.d} fill=${`url(#${id}-pneck)`} />`}
-          <image class="av-portrait" href=${pImg.url} x=${pic.x} y=${pic.y} width=${pic.size} height=${pic.size} mask=${`url(#${id}-pmask)`} />
+          <image class="av-portrait" href=${pImg.url} x=${pic.x} y=${pic.y} width=${pic.W} height=${pic.H} mask=${`url(#${id}-pmask)`} />
         </g>
       </g>`}
+      ${geo && html`<${Body3D} id=${id} pic=${pic} geo=${geo} img=${pImg} shirt=${shirt} sleeve=${sleeve} gloves=${costume?.gloves}
+        costume=${costume} outfit=${items.outfit} ctx=${ctx} neckItem=${showBody ? items.neck : null}
+        backs=${showBody ? [items.back?.render(ctx), costume?.back?.(ctx)].filter(Boolean) : []}
+        articulated=${showBody && (pKey === 'joy' || pKey === 'dance')} cut=${head ? `url(#${id}-hcut)` : undefined}
+        tint=${costume?.tint3d ? `url(#${id}-tint)` : undefined} />`}
 
-      ${showBody && items.back && html`<g class="av-back">${items.back.render(ctx)}</g>`}
-      ${showBody && costume?.back && html`<g class="av-back">${costume.back(ctx)}</g>`}
-      ${showBody && html`<${Body} id=${id} skin=${skin} shirt=${shirt} sleeve=${sleeve} costume=${costume} outfit=${items.outfit}
+      ${showBody && !geo && items.back && html`<g class="av-back">${items.back.render(ctx)}</g>`}
+      ${showBody && !geo && costume?.back && html`<g class="av-back">${costume.back(ctx)}</g>`}
+      ${showBody && !geo && html`<${Body} id=${id} skin=${skin} shirt=${shirt} sleeve=${sleeve} costume=${costume} outfit=${items.outfit}
         neckItem=${items.neck} ctx=${ctx} neck=${pImg?.keyed ? false : pic ? 158 : 150} />`}
 
-      <g class="av-head" style=${{ animationDelay: delay(7) }}>
+      <g class=${geo ? 'av-head-fixed' : 'av-head'} style=${{ animationDelay: delay(7) }}>
         ${!pic && html`
         ${!hair.coversEars && html`<g>
           <circle cx=${face.ear} cy="110" r="11" fill=${shade(skin, -0.05)} />
@@ -379,7 +429,7 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
       </g>
 
       ${showBody && items.pet && html`<g class="av-pet" style=${{ animationDelay: delay(5) }}>${items.pet.render(ctx)}</g>`}
-      ${showBody && costume?.prop && html`<g class="av-prop" style=${{ animationDelay: delay(9) }}>${costume.prop(ctx)}</g>`}
+      ${showBody && costume?.prop && html`<g transform=${geo?.torso}><g class="av-prop" style=${{ animationDelay: delay(9) }}>${costume.prop(ctx)}</g></g>`}
     </g>
     ${showBody && items.fx && html`<g class="av-fx">${items.fx.render(ctx)}</g>`}
     ${showBody && items.magic && html`<g class="av-magic">${items.magic.render(ctx)}</g>`}

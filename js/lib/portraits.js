@@ -86,7 +86,14 @@ function remember(path, blob) {
 
 const cacheKey = (path) => new Request(`${location.origin}/__portraits/${path}`);
 
-// Détourage + couleur de peau, en une seule lecture de l'image
+// Image avec le haut du corps : les repères des bras sont là
+export const hasBody = (m) => Boolean(m && Number.isFinite(m.elbowLeftX) && Number.isFinite(m.waistY));
+
+const toUrl = (canvas, fallback = null) =>
+  new Promise((resolve) => canvas.toBlob((b) => resolve(b || fallback ? URL.createObjectURL(b || fallback) : ''), 'image/png'));
+
+// Détourage + couleur de peau, en une seule lecture de l'image ; pour un personnage avec le haut du corps,
+// aussi les masques du t-shirt et de la peau, l'ombrage du tissu et l'épaisseur des bras (bodyMaps)
 async function prepare(blob, marks) {
   try {
     const bitmap = await createImageBitmap(blob);
@@ -100,13 +107,122 @@ async function prepare(blob, marks) {
     const img = ctx.getImageData(0, 0, w, h);
     const keyed = clearBackground(img.data, w, h);
     const skin = marks ? sampleSkin(img.data, w, h, marks) : null;
-    const neck = keyed && marks ? measureNeck(img.data, w, h, (marks.eyeLeftX + marks.eyeRightX) / 2, marks.chinY) : null;
+    const withBody = keyed && hasBody(marks);
+    const neck = keyed && marks && !withBody ? measureNeck(img.data, w, h, (marks.eyeLeftX + marks.eyeRightX) / 2, marks.chinY) : null;
+    const body = withBody ? await bodyMaps(img.data, w, h, marks) : null;
     if (keyed !== 'already') ctx.putImageData(img, 0, 0);
-    const out = keyed === 'already' ? blob : await new Promise((resolve) => canvas.toBlob((b) => resolve(b || blob), 'image/png'));
-    return { url: URL.createObjectURL(out), skin, neck, keyed: keyed !== false };
+    const url = keyed === 'already' ? URL.createObjectURL(blob) : await toUrl(canvas, blob);
+    return { url, skin, neck, keyed: keyed !== false, ratio: h / w, body };
   } catch {
-    return { url: URL.createObjectURL(blob), skin: null, neck: null, keyed: false };
+    return { url: URL.createObjectURL(blob), skin: null, neck: null, keyed: false, ratio: 1, body: null };
   }
+}
+
+// Haut du corps en t-shirt blanc : trois images à demi-résolution, tirées des pixels du personnage
+//  - cloth : le t-shirt (blanc opaque là où c'est du tissu), pour le colorer et y poser les costumes
+//  - skinMask : la peau (les gants ne couvrent que les mains)
+//  - shade : la lumière du tissu et de la peau (gris, 1 = le plus éclairé), posée en « produit » sur
+//    les couleurs : le costume garde les plis, les ombres et le volume de l'image
+// et l'épaisseur de chaque segment de bras (rayons en fraction de la largeur de l'image).
+async function bodyMaps(px, w, h, m) {
+  const mw = Math.round(w / 2);
+  const mh = Math.round(h / 2);
+  const n = mw * mh;
+  const lum = new Float32Array(n);
+  const cloth = new Float32Array(n);
+  const skinW = new Float32Array(n);
+  const chin = m.chinY - 0.004;
+  const ramp = (v, a, b) => Math.min(1, Math.max(0, (v - a) / (b - a)));
+  // La tête (cheveux compris) n'est jamais du tissu : le blanc des yeux et des dents reste intact,
+  // mais les manches levées à côté de la tête restent du tissu
+  const hx = (m.headLeftX + m.headRightX) / 2;
+  const hy = (m.topY + m.chinY) / 2;
+  const rx = ((m.headRightX - m.headLeftX) / 2) * 1.04;
+  const ry = (m.chinY - m.topY) / 2;
+  for (let y = 0; y < mh; y++) {
+    const fy = ((y / mh - hy) / ry) ** 2;
+    for (let x = 0; x < mw; x++) {
+      const i = ((y * 2) * w + x * 2) * 4;
+      const a = px[i + 3] / 255;
+      const p = y * mw + x;
+      if (a < 0.03) continue;
+      const clothZone = y / mh > chin || fy + ((x / mw - hx) / rx) ** 2 > 1;
+      const r = px[i];
+      const g = px[i + 1];
+      const b = px[i + 2];
+      const l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      // Teinte chaude de la peau : (rouge - bleu) rapporté à la luminosité ; le blanc, même sous une
+      // lumière chaude, reste bien plus neutre que la peau la plus claire
+      const warm = (r - b) / Math.max(r, g, 1);
+      // Reste de fond vert au bord du personnage : ni tissu ni peau
+      const green = ramp(g - Math.max(r, b), 24, 10);
+      lum[p] = l;
+      if (clothZone) cloth[p] = a * green * ramp(0.17 - warm, 0, 0.06) * ramp(l, 0.14, 0.26);
+      skinW[p] = a * green * ramp(warm, 0.12, 0.18) * ramp(l, 0.1, 0.2);
+    }
+  }
+  // Lumière de référence (le plus éclairé, hors reflets) du tissu et de la peau sous le menton
+  const ref = (weights, from) => {
+    const vals = [];
+    for (let p = from; p < n; p += 3) if (weights[p] > 0.8) vals.push(lum[p]);
+    if (vals.length < 50) return 0.9;
+    vals.sort((a, b) => a - b);
+    return Math.max(0.3, vals[Math.floor(vals.length * 0.92)]);
+  };
+  const from = Math.floor(chin * mh) * mw;
+  const clothRef = ref(cloth, from);
+  const skinRef = ref(skinW, from);
+  const make = (fill) => {
+    const c = document.createElement('canvas');
+    c.width = mw;
+    c.height = mh;
+    const cx = c.getContext('2d');
+    const out = cx.createImageData(mw, mh);
+    for (let p = 0; p < n; p++) fill(out.data, p * 4, p);
+    cx.putImageData(out, 0, 0);
+    return c;
+  };
+  const white = (weights) => (d, i, p) => {
+    d[i] = d[i + 1] = d[i + 2] = 255;
+    d[i + 3] = Math.round(weights[p] * 255);
+  };
+  const shade = make((d, i, p) => {
+    const c = cloth[p];
+    const s = skinW[p];
+    const k = c + s > 0 ? (c * Math.min(1, lum[p] / clothRef) + s * Math.min(1, lum[p] / skinRef)) / (c + s) : 1;
+    d[i] = d[i + 1] = d[i + 2] = Math.round(k * 255);
+    d[i + 3] = c + s > 0 ? 255 : 0;
+  });
+  const [clothUrl, skinUrl, shadeUrl] = await Promise.all([toUrl(make(white(cloth))), toUrl(make(white(skinW))), toUrl(shade)]);
+  return { cloth: clothUrl, skinMask: skinUrl, shade: shadeUrl, arms: { l: armWidths(px, w, h, m, 'Left'), r: armWidths(px, w, h, m, 'Right') } };
+}
+
+// Demi-épaisseur du bras et de l'avant-bras, mesurée en travers du milieu de chaque segment : jusqu'au
+// fond des deux côtés, ou du seul côté libre quand le bras touche le buste
+function armWidths(px, w, h, m, side) {
+  const pt = (k) => [m[`${k}${side}X`] * w, m[`${k}${side}Y`] * h];
+  const across = (a, b) => {
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    const nx = -(b[1] - a[1]) / L;
+    const ny = (b[0] - a[0]) / L;
+    const mx = (a[0] + b[0]) / 2;
+    const my = (a[1] + b[1]) / 2;
+    const reach = (dir) => {
+      for (let d = 1; d < w * 0.2; d++) {
+        const x = Math.round(mx + nx * d * dir);
+        const y = Math.round(my + ny * d * dir);
+        if (x < 0 || y < 0 || x >= w || y >= h || px[(y * w + x) * 4 + 3] < 128) return d;
+      }
+      return Infinity;
+    };
+    const d1 = reach(1);
+    const d2 = reach(-1);
+    const lo = Math.min(d1, d2);
+    const hi = Math.max(d1, d2);
+    const r = hi < lo * 2.2 ? (d1 + d2) / 2 : lo;
+    return Math.min(0.09, Math.max(0.025, (Number.isFinite(r) ? r : w * 0.05) / w));
+  };
+  return { upper: across(pt('shoulder'), pt('elbow')), fore: across(pt('elbow'), pt('wrist')) };
 }
 
 // Cou dans l'image (fractions) : bas du cou, largeur et couleur à mi-hauteur entre le menton et
@@ -182,10 +298,19 @@ function keyGreen(px, w, h) {
       return k >= HIGH ? 0 : 1 - (k - LOW) / (HIGH - LOW);
     },
   );
+  const n = w * h;
+  // Fond enfermé dans le personnage (entre un bras et le buste, mains sur les hanches) : pas relié aux
+  // bords, il est retiré seulement s'il est franchement vert
+  for (let p = 0; p < n; p++) {
+    if (seen[p]) continue;
+    const k = px[p * 4 + 1] - Math.max(px[p * 4], px[p * 4 + 2]);
+    if (k < 80) continue;
+    px[p * 4 + 3] = Math.round(px[p * 4 + 3] * (k >= 120 ? 0 : 1 - (k - 80) / 40));
+    seen[p] = 1;
+  }
   // Liseré vert dans les cheveux : on retire le vert des pixels proches du fond (jusqu'à 7 px),
   // franchement sur les 3 premiers, plus doucement ensuite
   const RING = 7;
-  const n = w * h;
   const dist = new Uint8Array(n);
   let front = [];
   for (let p = 0; p < n; p++) if (seen[p]) {

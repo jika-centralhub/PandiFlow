@@ -1,5 +1,6 @@
 // Photo -> avatar : Claude règle le personnage dessiné (Edge Function analyze-photo) et OpenAI crée
-// le visage façon film d'animation 3D en 3 expressions (Edge Function make-portrait).
+// le personnage façon film d'animation 3D, tête et haut du corps, en 4 poses (Edge Function make-portrait).
+// Un enfant qui a déjà un visage 3D (tête seule) peut recevoir son corps sans nouvelle photo.
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js';
 import { useStore } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
@@ -22,10 +23,12 @@ const MESSAGES = [
   'Presque fini…',
 ];
 
+// Les 4 poses créées, et comment l'avatar les montre
 const FACES = [
-  { expr: 'happy', label: 'Sourire', emoji: '😊' },
-  { expr: 'joy', label: 'Joie', emoji: '😄' },
-  { expr: 'encourage', label: 'Courage', emoji: '💪' },
+  { expr: 'happy', label: 'Sourire', emoji: '😊', show: { expr: 'happy', pose: 'idle' } },
+  { expr: 'encourage', label: 'Courage', emoji: '💪', show: { expr: 'encourage', pose: 'idle' } },
+  { expr: 'joy', label: 'Bravo', emoji: '🙌', show: { expr: 'joy', pose: 'cheer' } },
+  { expr: 'dance', label: 'Danse', emoji: '💃', show: { expr: 'joy', pose: 'dance' } },
 ];
 
 export function PhotoAvatar({ child, onClose, onEdit }) {
@@ -41,6 +44,7 @@ export function PhotoAvatar({ child, onClose, onEdit }) {
   const fileInput = useRef(null);
   const resultRef = useRef(null);
   const cloud = actions.canMakePortrait();
+  const faceVersion = cloud ? actions.faceOnlyVersion(child.look) : null;
 
   useEffect(() => {
     if (step !== 'magic') return;
@@ -63,19 +67,20 @@ export function PhotoAvatar({ child, onClose, onEdit }) {
     }
   }
 
-  async function runMagic() {
+  // fromFace : corps créé à partir du visage 3D déjà enregistré, sans photo (l'avatar dessiné ne change pas)
+  async function runMagic(fromFace = false) {
     setStep('magic');
     setMsg(0);
     setFaces({});
     sfx.whoosh();
-    const { base64, mediaType } = photo;
     const onFace = (expr, url) => {
       setFaces((f) => ({ ...f, [expr]: url }));
       sfx.sparkle();
     };
+    const source = fromFace ? { fromFace: faceVersion } : { image: photo.base64, mediaType: photo.mediaType };
     const [analysis, portrait] = await Promise.allSettled([
-      actions.analyzePhoto(child.id, base64, mediaType),
-      cloud ? actions.makePortrait(child.id, base64, mediaType, onFace) : Promise.resolve(null),
+      fromFace ? Promise.resolve({ look: child.look }) : actions.analyzePhoto(child.id, photo.base64, photo.mediaType),
+      cloud ? actions.makePortrait(child.id, source, onFace) : Promise.resolve(null),
       new Promise((r) => setTimeout(r, 2800)),
     ]);
     if (analysis.status === 'rejected' && portrait.status !== 'fulfilled') {
@@ -90,7 +95,9 @@ export function PhotoAvatar({ child, onClose, onEdit }) {
     const warning = cloud && !face ? portrait.reason?.message || "La magie n'a pas marché cette fois-ci." : null;
     if (!warning) setPhoto(null);
     const { portrait: _old, ...look } = drawn.look;
-    setResult({ ...drawn, look: face ? { ...look, portrait: face } : look, warning, in3d: Boolean(face) });
+    // Corps à partir du visage qui échoue : l'enfant garde son visage 3D actuel
+    const fallback = fromFace ? drawn.look : look;
+    setResult({ ...drawn, look: face ? { ...look, portrait: face } : fallback, warning, in3d: Boolean(face), fromFace });
     setStep('result');
     if (warning) return;
     sfx.sparkle();
@@ -109,8 +116,8 @@ export function PhotoAvatar({ child, onClose, onEdit }) {
       ${step === 'consent' && html`
         <h2>Avatar magique 📸</h2>
         <div class="consent">
-          <p>La photo de ${child.name} est envoyée une seule fois à deux IA : Claude (Anthropic) repère sa coiffure, ses couleurs et ses lunettes, et OpenAI crée son visage façon film d'animation 3D, en 3 expressions.</p>
-          <p style="margin-top:8px"><strong>La photo n'est jamais enregistrée</strong> : PandiFlow ne garde que le personnage créé (les 3 visages, visibles seulement par votre famille), que tu peux remplacer ou retirer quand tu veux.</p>
+          <p>La photo de ${child.name} est envoyée une seule fois à deux IA : Claude (Anthropic) repère sa coiffure, ses couleurs et ses lunettes, et OpenAI crée son personnage façon film d'animation 3D (visage et haut du corps), en 4 poses.</p>
+          <p style="margin-top:8px"><strong>La photo n'est jamais enregistrée</strong> : PandiFlow ne garde que le personnage créé (les 4 images, visibles seulement par votre famille), que tu peux remplacer ou retirer quand tu veux.</p>
           <label><input type="checkbox" checked=${agree} onChange=${(e) => setAgree(e.target.checked)} /> Je suis parent de ${child.name} et j'accepte l'envoi de la photo à Claude et à OpenAI.</label>
         </div>
         <div class="sheet-actions">
@@ -130,37 +137,41 @@ export function PhotoAvatar({ child, onClose, onEdit }) {
         <div class="sheet-actions">
           ${photo
             ? html`<button class="btn btn-ghost" style="color:var(--ink)" onClick=${() => setPhoto(null)}>Reprendre</button>
-                <button class="btn btn-pink btn-big" onClick=${runMagic}>✨ Lancer la magie</button>`
+                <button class="btn btn-pink btn-big" onClick=${() => runMagic()}>✨ Lancer la magie</button>`
             : html`<button class="btn btn-blue" onClick=${() => camInput.current.click()}>📸 Prendre la photo</button>
                 <button class="btn btn-ghost" style="color:var(--ink)" onClick=${() => fileInput.current.click()}>🖼️ Choisir une photo</button>`}
-        </div>`}
+        </div>
+        ${!photo && faceVersion && html`<div class="body-from-face">
+          <p class="hint" style="color:var(--ink-soft)">${child.name} a déjà son visage 3D : Pandi peut lui créer son corps, sans nouvelle photo.</p>
+          <button class="btn btn-pink" onClick=${() => runMagic(true)}>🧍 Créer le corps 3D</button>
+        </div>`}`}
 
       ${step === 'magic' && html`
         <h2>Transformation en cours…</h2>
         <div class="photo-frame magic">
-          ${photo && html`<img src=${photo.dataUrl} alt="" />`}
+          ${photo ? html`<img src=${photo.dataUrl} alt="" />` : html`<${Avatar} look=${child.look} mode="head" seed=${child.id} />`}
           <div class="magic-swirl">${['✨', '⭐', '💫', '🌟', '✨', '⭐'].map((e, i) => html`<span key=${i} style=${{ animationDelay: `${-i * 0.4}s` }}>${e}</span>`)}</div>
         </div>
         <div class="magic-msg">${MESSAGES[msg]}</div>
         ${cloud && html`<div class="face-row">
           ${FACES.map((f) => html`<div key=${f.expr} class="face-slot">
-            <div class=${`pic ${faces[f.expr] ? '' : 'wait'}`}>${faces[f.expr] ? html`<img src=${faces[f.expr]} alt="" />` : html`<span>${f.emoji}</span>`}</div>
+            <div class=${`pic tall ${faces[f.expr] ? '' : 'wait'}`}>${faces[f.expr] ? html`<img src=${faces[f.expr]} alt="" />` : html`<span>${f.emoji}</span>`}</div>
             ${f.label}
           </div>`)}
         </div>
-        <p class="hint" style="color:var(--ink-soft)">Le studio prend environ une minute.</p>`}`}
+        <p class="hint" style="color:var(--ink-soft)">Le studio prend environ deux minutes.</p>`}`}
 
       ${step === 'result' && result?.warning && html`
         <h2>Pas de personnage 3D cette fois 😕</h2>
         <p style="color:#b42536;font-weight:600">${result.warning}</p>
-        <p class="hint" style="color:var(--ink-soft)">En attendant, Pandi a réglé l'avatar dessiné d'après la photo :</p>
+        <p class="hint" style="color:var(--ink-soft)">${result.fromFace ? `${child.name} garde son personnage actuel en attendant :` : "En attendant, Pandi a réglé l'avatar dessiné d'après la photo :"}</p>
         <div class="photo-result" style="height:calc(var(--u) * 44)">
           <${Avatar} look=${result.look} equipped=${child.equipped} expr="happy" mode="full" seed=${child.id} />
         </div>
         <div class="sheet-actions">
-          <button class="btn btn-ghost" style="color:var(--ink)" onClick=${() => save(false)}>Garder le dessin</button>
-          ${photo
-            ? html`<button class="btn btn-pink btn-big" onClick=${runMagic}>✨ Réessayer la 3D</button>`
+          <button class="btn btn-ghost" style="color:var(--ink)" onClick=${() => (result.fromFace ? onClose() : save(false))}>${result.fromFace ? 'Plus tard' : 'Garder le dessin'}</button>
+          ${photo || faceVersion
+            ? html`<button class="btn btn-pink btn-big" onClick=${() => runMagic(!photo)}>✨ Réessayer la 3D</button>`
             : html`<button class="btn btn-pink btn-big" onClick=${() => { setResult(null); setStep('capture'); }}>📸 Une autre photo</button>`}
         </div>`}
 
@@ -170,8 +181,8 @@ export function PhotoAvatar({ child, onClose, onEdit }) {
           <${Avatar} look=${result.look} equipped=${child.equipped} expr="joy" pose="cheer" mode="full" seed=${child.id} />
         </div>
         ${result.in3d && html`<div class="face-row">
-          ${FACES.map((f) => html`<div key=${f.expr} class="face-slot">
-            <div class="pic"><${Avatar} look=${result.look} expr=${f.expr} mode="head" seed=${child.id} /></div>
+          ${FACES.filter((f) => result.look.portrait?.exprs[f.expr]).map((f) => html`<div key=${f.expr} class="face-slot">
+            <div class="pic tall"><${Avatar} look=${result.look} equipped=${child.equipped} expr=${f.show.expr} pose=${f.show.pose} mode="full" seed=${child.id} /></div>
             ${f.label}
           </div>`)}
         </div>`}

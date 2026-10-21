@@ -21,7 +21,7 @@ const FOLD_L = 'M64 205 C67 214 68 222 66 232';
 const f = (n) => Math.round(n * 10) / 10;
 
 // Contour d'un segment arrondi, plus fin à un bout qu'à l'autre ; bulge arrondit les côtés (muscle)
-function capsule(a, ra, b, rb, bulge = 0) {
+export function capsule(a, ra, b, rb, bulge = 0) {
   const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
   const v = [(b[0] - a[0]) / L, (b[1] - a[1]) / L];
   const n = [-v[1], v[0]];
@@ -88,7 +88,7 @@ function skeleton(side) {
 const SK = { l: skeleton('l'), r: skeleton('r') };
 
 // Place un morceau de l'ancienne manche (x..x+20, y0..y1) sur le segment a -> b, de largeur width
-function sleeveMatrix(oldX, y0, y1, a, b, width, side) {
+export function sleeveMatrix(oldX, y0, y1, a, b, width, side) {
   const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
   const v = [(b[0] - a[0]) / L, (b[1] - a[1]) / L];
   let u = [-v[1], v[0]];

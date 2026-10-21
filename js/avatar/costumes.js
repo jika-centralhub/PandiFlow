@@ -3,7 +3,7 @@
 // bras en x 43-63 et 137-157. Les chapeaux sont dessinés pour un haut de crâne à y = 26.
 //
 // Champs possibles d'un costume :
-//   shirt, sleeve, gloves : couleurs du haut, des manches, des mains (gants)
+//   shirt, sleeve, gloves : couleurs du haut, des manches, des mains (gants) ; bareArms : bras nus (manches couleur de peau)
 //   torso(ctx)    motif sur le buste (découpé à sa forme)
 //   collar(ctx)   col (remplace le col par défaut)
 //   sleeves(ctx,x) détail sur chaque manche (x = bord gauche de la manche)
@@ -709,7 +709,7 @@ const superman = {
 };
 
 const wonderWoman = {
-  id: 'wonder_woman', name: 'Wonder Woman', price: 300, shirt: '#C8102E',
+  id: 'wonder_woman', name: 'Wonder Woman', price: 300, shirt: '#C8102E', bareArms: true,
   torso: ({ id, skin }) => html`<g>
     <defs>${grad(`${id}-ww`, GOLD)}</defs>
     <path d="M40 176 L160 176 L160 196 C130 188 70 188 40 196 Z" fill=${skin} />

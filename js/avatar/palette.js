@@ -144,24 +144,39 @@ export function normalizeLook(input) {
   return out;
 }
 
-// Visage 3D (Edge Function make-portrait) : images rangées sous <famille>/<enfant>/<version>/<expression>.webp,
-// avec, pour chaque expression, les repères des yeux, du menton et de la tête (fractions de l'image).
-export const PORTRAIT_EXPRS = ['happy', 'joy', 'encourage'];
+// Personnage 3D (Edge Function make-portrait) : images rangées sous <famille>/<enfant>/<version>/<expression>.webp,
+// avec, pour chaque image, les repères des yeux, du menton et de la tête (fractions de l'image). Les anciennes
+// versions ne montrent que la tête (happy, joy, encourage) ; les nouvelles montrent aussi le haut du corps,
+// avec les repères du nez, de la bouche, du buste et des bras (BODY_MARKS) : happy et encourage mains sur
+// les hanches, joy bras levés, dance.
+export const PORTRAIT_EXPRS = ['happy', 'joy', 'encourage', 'dance'];
 export const PORTRAIT_MARKS = ['eyeLeftX', 'eyeLeftY', 'eyeRightX', 'eyeRightY', 'chinY', 'topY', 'headLeftX', 'headRightX'];
+export const BODY_MARKS = [
+  'noseY', 'mouthY', 'collarX', 'collarY',
+  'shoulderLeftX', 'shoulderLeftY', 'shoulderRightX', 'shoulderRightY',
+  'elbowLeftX', 'elbowLeftY', 'elbowRightX', 'elbowRightY',
+  'wristLeftX', 'wristLeftY', 'wristRightX', 'wristRightY',
+  'handLeftX', 'handLeftY', 'handRightX', 'handRightY',
+  'waistLeftX', 'waistRightX', 'waistY',
+];
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const PORTRAIT_BASE = new RegExp(`^${UUID}/${UUID}/[a-z0-9]{6,20}$`);
 
 function normalizePortrait(p) {
   if (!p || typeof p !== 'object' || typeof p.base !== 'string' || !PORTRAIT_BASE.test(p.base)) return null;
   const exprs = {};
+  const valid = (m, keys) => keys.every((k) => Number.isFinite(m[k]) && m[k] >= 0 && m[k] <= 1);
   for (const expr of PORTRAIT_EXPRS) {
     const m = p.exprs?.[expr];
-    if (m && PORTRAIT_MARKS.every((k) => Number.isFinite(m[k]) && m[k] >= 0 && m[k] <= 1)) {
-      exprs[expr] = Object.fromEntries(PORTRAIT_MARKS.map((k) => [k, m[k]]));
+    if (m && valid(m, PORTRAIT_MARKS)) {
+      const keys = valid(m, BODY_MARKS) ? [...PORTRAIT_MARKS, ...BODY_MARKS] : PORTRAIT_MARKS;
+      exprs[expr] = Object.fromEntries(keys.map((k) => [k, m[k]]));
     }
   }
   if (!exprs.happy) return null;
   const out = { base: p.base, exprs };
+  // Personnage avec le haut du corps (nouvelles versions)
+  if (p.body === true) out.body = true;
   if (typeof p.skin === 'string' && /^#[0-9a-f]{6}$/i.test(p.skin)) out.skin = p.skin;
   if (p.off === true) out.off = true;
   return out;

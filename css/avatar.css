@@ -30,6 +30,19 @@
 @keyframes fore-cheer-r { from { transform: rotate(-112deg); } to { transform: rotate(-104deg); } }
 .avatar.pose-cheer .av-crease, .avatar.pose-dance .av-crease { opacity: 0; }
 
+/* Personnage 3D entier (body3d.js) : chaque pose est une image ; dans les poses levées, l'avant-bras et
+   la main découpés bougent autour du coude, par petits angles pour rester naturels */
+.avatar.pose-cheer .av-fore3d-l { animation: fore3d-cheer-l .5s ease-in-out infinite alternate; }
+.avatar.pose-cheer .av-fore3d-r { animation: fore3d-cheer-r .5s ease-in-out infinite alternate; }
+.avatar.pose-dance .av-fore3d-l { animation: fore3d-wave-l 1s ease-in-out infinite; }
+.avatar.pose-dance .av-fore3d-r { animation: fore3d-wave-r 1s ease-in-out infinite; }
+@keyframes fore3d-cheer-l { from { transform: rotate(-7deg); } to { transform: rotate(4deg); } }
+@keyframes fore3d-cheer-r { from { transform: rotate(7deg); } to { transform: rotate(-4deg); } }
+@keyframes fore3d-wave-l { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(6deg); } }
+@keyframes fore3d-wave-r { 0%, 100% { transform: rotate(9deg); } 50% { transform: rotate(-6deg); } }
+.avatar.whole3d.pose-cheer .av-char { animation: whole3d-hop .5s ease-in-out infinite alternate; }
+@keyframes whole3d-hop { from { transform: translateY(0) scale(1, 1); } to { transform: translateY(-4px) scale(1.01, 1.015); } }
+
 /* Danse de fin de soirée : un bras levé pendant que l'autre fait coucou à hauteur d'épaule */
 .avatar.pose-dance .av-char { animation: av-dance 1s ease-in-out infinite; }
 .avatar.pose-dance .av-arm-l { animation: arm-wave-l 1s ease-in-out infinite; }
