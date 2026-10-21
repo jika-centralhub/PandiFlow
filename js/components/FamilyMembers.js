@@ -4,6 +4,9 @@ import { useStore, toast } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import { sfx } from '../lib/sounds.js';
 
+// L'adresse du site telle que le parent l'utilise (https dès qu'il est actif)
+const SITE = /(^|\.)pandiflow\.com$/.test(location.hostname) ? location.origin.replace('//pandiflow.com', '//www.pandiflow.com') : 'https://www.pandiflow.com';
+
 const MAX_PARENTS = 6;
 const fmtCode = (c) => `${c.slice(0, 4)}-${c.slice(4)}`;
 const fmtDate = (iso) =>
@@ -49,7 +52,7 @@ export function FamilyMembers() {
   }
 
   async function share(inv) {
-    const text = `Rejoins notre famille sur PandiFlow 🐼 : va sur https://pandiflow.com, crée ton compte parent, puis choisis « Rejoindre une famille » avec le code ${fmtCode(inv.code)} (valable 48 h, une seule fois).`;
+    const text = `Rejoins notre famille sur PandiFlow 🐼 : va sur ${SITE}, crée ton compte parent, puis choisis « Rejoindre une famille » avec le code ${fmtCode(inv.code)} (valable 48 h, une seule fois).`;
     try {
       if (navigator.share) await navigator.share({ title: 'Invitation PandiFlow', text });
       else {

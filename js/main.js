@@ -42,7 +42,11 @@ function App() {
 initSky(document.getElementById('sky'));
 unlockAudio();
 render(html`<${App} />`, document.getElementById('app'));
-actions.boot().then(() => actions.watchVisibility());
+// Le relais (js/relais.js) range d'abord une connexion venue d'une autre adresse (8 s au plus)
+const relayed = window.PandiRelais?.ready || Promise.resolve();
+Promise.race([relayed, new Promise((done) => setTimeout(done, 8000))])
+  .then(() => actions.boot())
+  .then(() => actions.watchVisibility());
 
 if (!location.hash) navigate('soiree', { replace: true });
 

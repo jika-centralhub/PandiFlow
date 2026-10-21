@@ -417,6 +417,69 @@ test('relais : seules les clés de PandiFlow et de Supabase passent', () => {
   eq(R.decode(R.encode({ 'pandiflow-timers': '[]', autre: 'x', 'sb-x-auth-token': 'y' }, now), now), { 'pandiflow-timers': '[]', 'sb-x-auth-token': 'y' });
 });
 
+// --- Pont pandiflow.com -> www (cookie /relais/) -------------------------------------------------------
+function fakeStorage(init = {}) {
+  const m = new Map(Object.entries(init));
+  return {
+    get length() { return m.size; },
+    key: (i) => [...m.keys()][i] ?? null,
+    getItem: (k) => (m.has(k) ? m.get(k) : null),
+    setItem: (k, v) => m.set(k, String(v)),
+    removeItem: (k) => m.delete(k),
+    dump: () => Object.fromEntries(m),
+  };
+}
+const SESSION = 'sb-kyhhkhmwdostzdaksxzw-auth-token';
+const sessionValue = JSON.stringify({ access_token: 'x'.repeat(1200), refresh_token: 'r1', expires_at: 1, user: { id: 'u', email: 'léa@exemple.fr' } });
+function asCookies(parts) {
+  return [`pf_pont=${parts.length}`, ...parts.map((p, i) => `pf_pont${i}=${p}`), 'autre=1'].join('; ');
+}
+test('pont : la connexion et les réglages passent par le cookie', () => {
+  const from = fakeStorage({ [SESSION]: sessionValue, 'pandiflow-prefs': '{"sound":true}', 'pandiflow-outbox': '[]', 'pandiflow-demo-v1': '{}', autre: 'x' });
+  const parts = R.bridgeParts(from, Date.now());
+  ok(parts.length >= 1 && parts.every((p) => /^[A-Za-z0-9_-]+$/.test(p) && p.length <= 3000), 'morceaux utilisables dans un cookie');
+  eq(R.readParts(asCookies(parts), Date.now()), { [SESSION]: sessionValue, 'pandiflow-outbox': '[]', 'pandiflow-prefs': '{"sound":true}' });
+});
+test('pont : rien sans connexion, rien si un morceau manque', () => {
+  eq(R.bridgeParts(fakeStorage({ 'pandiflow-prefs': '{}' }), Date.now()), null);
+  const parts = R.bridgeParts(fakeStorage({ [SESSION]: sessionValue }), Date.now());
+  eq(R.readParts(asCookies(parts).replace('pf_pont0=', 'pf_pontX='), Date.now()), null);
+  eq(R.readParts('pf_pont=9', Date.now()), null);
+});
+test('pont : un réglage trop gros reste, la connexion passe quand même', () => {
+  const parts = R.bridgeParts(fakeStorage({ [SESSION]: sessionValue, 'pandiflow-timers': 'z'.repeat(20000) }), Date.now());
+  eq(Object.keys(R.readParts(asCookies(parts), Date.now())), [SESSION]);
+});
+test('pont : refusé au-delà de 30 jours', () => {
+  const parts = R.bridgeParts(fakeStorage({ [SESSION]: sessionValue }), Date.now() - 31 * 86400000);
+  eq(R.readParts(asCookies(parts), Date.now()), null);
+});
+
+// Pour de vrai dans ce navigateur : cookie écrit, lu par la page cachée /relais/, rangé, effacé
+const bridgeRun = await new Promise((resolve) => {
+  const from = fakeStorage({ [SESSION]: sessionValue, 'pandiflow-email': 'léa@exemple.fr' });
+  R.setBridge(R.bridgeParts(from, Date.now()), '');
+  const hiddenHere = !document.cookie.includes('pf_pont');
+  const to = fakeStorage({ 'pandiflow-email': 'deja@la.fr' });
+  R.readBridge(to, '', (n) => {
+    const probe = document.createElement('iframe');
+    probe.style.display = 'none';
+    probe.onload = () => {
+      const left = probe.contentDocument.cookie;
+      probe.remove();
+      resolve({ n, hiddenHere, stored: to.dump(), left });
+    };
+    probe.src = '/relais/?verif';
+    document.body.appendChild(probe);
+  });
+});
+test('pont : la page cachée lit le cookie, range sans écraser, puis l’efface', () => {
+  ok(bridgeRun.hiddenHere, 'le cookie ne doit pas être visible hors de /relais/');
+  eq(bridgeRun.n, 1);
+  eq(bridgeRun.stored, { 'pandiflow-email': 'deja@la.fr', [SESSION]: sessionValue });
+  ok(!bridgeRun.left.includes('pf_pont'), `cookie encore là : ${bridgeRun.left}`);
+});
+
 // --- Affichage ------------------------------------------------------------------------------------
 const passed = results.filter((r) => r.ok).length;
 document.getElementById('summary').textContent = `${passed} / ${results.length} tests réussis`;

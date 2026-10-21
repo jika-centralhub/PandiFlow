@@ -67,7 +67,7 @@ Chaque parent crée son compte avec **e-mail + mot de passe** (8 caractères min
 2. **Google Auth Platform → Get started** : nom de l'app `PandiFlow`, ton e-mail d'assistance, audience **External**, ton e-mail de contact.
 3. **Branding → Authorized domains** : ajouter `pandiflow.com` et `supabase.co`.
 4. **Clients → Create client** : type *Web application*, nom `PandiFlow`.
-   - *Authorized JavaScript origins* : `https://pandiflow.com` et `http://localhost:8080`
+   - *Authorized JavaScript origins* : `https://www.pandiflow.com`, `https://pandiflow.com` et `http://localhost:8080`
    - *Authorized redirect URIs* : `https://kyhhkhmwdostzdaksxzw.supabase.co/auth/v1/callback`
 5. Copier le **Client ID** et le **Client secret**.
 6. **Audience** : cliquer sur *Publish app* (les autorisations demandées, e-mail et profil, ne demandent pas de validation par Google), ou ajouter les adresses Gmail des deux parents comme *Test users*.
@@ -93,9 +93,9 @@ Coût indicatif : quelques centimes par visage, donc 3 visages par photo. L'app 
 
 ### Étape C — GitHub Pages (déjà fait)
 
-Le code est sur [github.com/jika-psia/PandiFlow](https://github.com/jika-psia/PandiFlow) (dépôt public, commits signés avec l'adresse privée GitHub). GitHub Pages publie la branche `main` (dossier racine) avec le domaine `pandiflow.com` (fichier `CNAME`). Chaque `git push` sur `main` met le site à jour en moins d'une minute.
+Le code est sur [github.com/jika-psia/PandiFlow](https://github.com/jika-psia/PandiFlow) (dépôt public, commits signés avec l'adresse privée GitHub). GitHub Pages publie la branche `main` (dossier racine) avec le domaine `www.pandiflow.com` (fichier `CNAME`) ; `pandiflow.com` renvoie automatiquement vers `www`. Chaque `git push` sur `main` met le site à jour en moins d'une minute.
 
-Une fois le DNS en place (étape D) et le certificat émis par GitHub, activer *Enforce HTTPS* dans *Settings → Pages*.
+Une fois le DNS en place (étape D) et le certificat émis par GitHub, activer *Enforce HTTPS* dans *Settings → Pages*, mais seulement quand chaque appareil des parents a ouvert l'app une fois en https : `js/relais.js` fait suivre la connexion de http vers https, et de `pandiflow.com` vers `www`, pour que personne n'ait à se reconnecter.
 
 ### Étape D — DNS chez Hostinger
 
@@ -112,11 +112,11 @@ Dans **Hostinger → Domaines → pandiflow.com → DNS / Nameservers** :
 | A | @ | 185.199.111.153 |
 | CNAME | www | `jika-psia.github.io` |
 
-La propagation prend de quelques minutes à quelques heures. Ensuite, https://pandiflow.com affiche l'app.
+La propagation prend de quelques minutes à quelques heures. Ensuite, https://www.pandiflow.com affiche l'app.
 
 ### Étape E — Sur le téléphone et la télé
 
-1. Ouvrir https://pandiflow.com sur le téléphone, créer son compte parent (ou **Continuer avec Google** si activé), puis créer la famille.
+1. Ouvrir https://www.pandiflow.com sur le téléphone, créer son compte parent (ou **Continuer avec Google** si activé), puis créer la famille.
 2. L'installer comme une app : *Ajouter à l'écran d'accueil* (Safari) ou *Installer l'application* (Chrome).
 3. Dans *Espace parent → Réglages → Parents de la famille*, créer une invitation et l'envoyer. Le second parent crée son propre compte et choisit **Rejoindre une famille** avec ce code.
    Sur iPhone, connecte-toi dans Safari **avant** d'ajouter l'app à l'écran d'accueil : la connexion Google peut s'ouvrir hors de l'app installée.
