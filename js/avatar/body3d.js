@@ -58,7 +58,8 @@ export function bodyGeometry(pic, m, arms) {
     const Hd = P(`hand${s}`);
     const ru = (arms?.[key]?.upper || 0.045) * pic.W;
     const rf = (arms?.[key]?.fore || 0.038) * pic.W;
-    const rh = Math.max(rf * 1.9, Math.hypot(Hd[0] - Wr[0], Hd[1] - Wr[1]) * 1.5);
+    // La main va du poignet au bout des doigts, de part et d'autre de son centre
+    const rh = Math.max(rf * 1.6, Math.hypot(Hd[0] - Wr[0], Hd[1] - Wr[1]) * 0.95);
     // Le haut de la manche couvre aussi l'épaule
     const v = unit(sub(E, S));
     const top = [S[0] - v[0] * ru * 0.9, S[1] - v[1] * ru * 0.9];

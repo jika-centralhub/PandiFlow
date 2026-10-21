@@ -436,7 +436,7 @@ function checkMarks(raw: Record<string, unknown>): Found {
   checks.hanches = m.waistLeftX < m.collarX && m.collarX < m.waistRightX && m.waistY > m.chinY + 0.1;
   for (const s of ["Left", "Right"]) {
     // Main levée doigts écartés : son centre peut être loin du poignet
-    checks[`bras ${s}`] = len(`shoulder${s}`, `elbow${s}`) > 0.04 && len(`elbow${s}`, `wrist${s}`) > 0.04 && len(`wrist${s}`, `hand${s}`) < 0.2 &&
+    checks[`bras ${s}`] = len(`shoulder${s}`, `elbow${s}`) > 0.04 && len(`elbow${s}`, `wrist${s}`) > 0.04 && len(`wrist${s}`, `hand${s}`) < 0.25 &&
       m[`shoulder${s}Y`] > m.chinY - 0.02 && m[`shoulder${s}Y`] < m.waistY;
   }
   const failed = Object.keys(checks).filter((k) => !checks[k]);
