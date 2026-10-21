@@ -241,10 +241,15 @@
   .departure { margin-left: calc(var(--u) * 2); margin-right: calc(var(--u) * 2); }
   .d-time { display: none; }
 }
+/* Paysage : la barre du haut de la routine rétrécit avec la largeur de l'écran pour tenir sur une
+   ligne (en plein écran l'écran gagne en hauteur, donc --u grandit, mais pas en largeur) */
+@media (orientation: landscape) {
+  .evening .topbar { --u: clamp(3.6px, min(1vh, 0.46vw), 12px); }
+}
 /* Écrans peu allongés (tablette 4:3, fenêtre étroite) : la barre du haut garde juste les icônes */
 @media (orientation: landscape) and (max-aspect-ratio: 3/2) {
   .evening .topbar .rs-label, .evening .topbar .brand span { display: none; }
-  .evening .topbar { gap: calc(var(--u) * 2); }
+  .evening .topbar { --u: clamp(3.6px, min(1vh, 0.66vw), 12px); gap: calc(var(--u) * 2); }
   .evening .topbar .date-switch button, .evening .topbar .routine-switch button { padding-left: calc(var(--u) * 2.6); padding-right: calc(var(--u) * 2.6); }
 }
 @media (orientation: landscape) and (max-height: 520px) {
