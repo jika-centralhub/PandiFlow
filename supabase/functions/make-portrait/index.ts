@@ -211,7 +211,10 @@ Deno.serve(async (req) => {
   // 4. Limite quotidienne (pour maîtriser le coût), rendue si la création échoue
   const { data: allowed, error: quotaError } = await admin.rpc("take_portrait_quota", { p_child: child.id, p_family: child.family_id, p_limit: DAILY_IMAGES });
   if (quotaError) return fail("La magie n'a pas marché cette fois-ci. Réessaie dans un instant.", 500, `quota: ${quotaError.message}`);
-  if (!allowed) return reply({ error: "3 séances photo par jour au maximum. On réessaie demain !" }, 429);
+  if (!allowed) {
+    await log(false, { detail: `limite du jour atteinte (${DAILY_IMAGES} images)` });
+    return reply({ error: "3 séances photo par jour au maximum. On réessaie demain !" }, 429);
+  }
   const refund = () => admin.rpc("refund_portrait_quota", { p_child: child.id });
 
   // 5. Création du visage par OpenAI

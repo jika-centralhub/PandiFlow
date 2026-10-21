@@ -186,6 +186,9 @@ export function PhotoAvatar({ child, onClose, onEdit }) {
             ${f.label}
           </div>`)}
         </div>`}
+        ${result.look.portrait?.missing?.length > 0 && html`<p class="hint" style="color:var(--ink-soft)">
+          ${result.look.portrait.missing.map((m) => FACES.find((f) => f.expr === m.expr)?.label).join(' et ')} : pas cette fois${result.look.portrait.missing[0].message ? ` (${result.look.portrait.missing[0].message})` : ''}.
+          Pandi les créera tout seul à un prochain lancement de l'app.</p>`}
         ${result.demo && html`<p class="hint" style="color:var(--ink-soft)">Mode démo : avatar imaginé au hasard. Avec Supabase, la photo devient un vrai personnage 3D.</p>`}
         ${result.notes && html`<p class="hint" style="color:var(--ink-soft)">${result.notes}</p>`}
         <div class="sheet-actions">
