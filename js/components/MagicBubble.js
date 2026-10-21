@@ -2,10 +2,11 @@
 // saynètes façon film d'animation 3D défilent dans la bulle (princesse, cowboy, super-héros,
 // animaux, astronaute, pirate). Images créées une fois avec OpenAI (tools/make-scene-art.ps1),
 // détourées par tools/make_scene_art.py, rangées dans assets/scenes/.
-// Une saynète dont les images manquent est simplement sautée.
+// Une saynète sans son décor ou sans aucun acteur est sautée ; un acteur manquant est laissé de côté.
 import { html, useEffect, useState } from '../vendor/preact-htm.js';
 
-const SRC = (name) => `assets/scenes/${name}.webp`;
+// Chemin relatif à ce fichier : il marche depuis l'app comme depuis les pages de test
+const SRC = (name) => new URL(`../../assets/scenes/${name}.webp`, import.meta.url).href;
 
 // Chaque acteur : image, animation, position du bas-centre (x, y en % de la bulle) et hauteur (% de la bulle)
 export const SCENES = [
@@ -25,17 +26,23 @@ export const SCENES = [
 ];
 const SCENE_MS = 5200;
 
-// Précharge les images d'une saynète ; résout à false si l'une manque
+// Précharge les images d'une saynète. Résout à la saynète jouable (sans les acteurs dont l'image
+// manque, les autres répartis dans la bulle), ou à null s'il manque le décor ou tous les acteurs.
 const loaded = new Map();
+const load = (name) => new Promise((ok) => {
+  const img = new Image();
+  img.onload = () => ok(true);
+  img.onerror = () => ok(false);
+  img.src = SRC(name);
+});
 function preload(scene) {
   if (!loaded.has(scene.id)) {
-    const names = [scene.bg, ...scene.actors.map((a) => a.img)];
-    loaded.set(scene.id, Promise.all(names.map((n) => new Promise((ok) => {
-      const img = new Image();
-      img.onload = () => ok(true);
-      img.onerror = () => ok(false);
-      img.src = SRC(n);
-    }))).then((all) => all.every(Boolean)));
+    loaded.set(scene.id, Promise.all([load(scene.bg), ...scene.actors.map((a) => load(a.img))]).then(([bg, ...ok]) => {
+      const actors = scene.actors.filter((_, i) => ok[i]);
+      if (!bg || !actors.length) return null;
+      if (actors.length === scene.actors.length) return scene;
+      return { ...scene, actors: actors.map((a, i) => ({ ...a, x: Math.round(((i + 1) / (actors.length + 1)) * 100), delay: i * 0.25 })) };
+    }));
   }
   return loaded.get(scene.id);
 }
@@ -76,7 +83,7 @@ export function MagicBubble({ delay = 2600 }) {
     // Ordre de départ au hasard, pour ne pas toujours commencer par la même
     const start = Math.floor(Math.random() * SCENES.length);
     const order = [...SCENES.slice(start), ...SCENES.slice(0, start)];
-    order.forEach((s) => preload(s).then((ok) => alive && ok && setReady((r) => (r.some((x) => x.id === s.id) ? r : [...r, s]))));
+    order.forEach((s) => preload(s).then((p) => alive && p && setReady((r) => (r.some((x) => x.id === p.id) ? r : [...r, p]))));
     const t = setTimeout(() => alive && setStarted(true), delay);
     return () => {
       alive = false;

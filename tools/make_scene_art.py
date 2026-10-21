@@ -26,11 +26,17 @@ def key_green(img):
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
     dom = g - np.maximum(r, b)
     # 0 (personnage) -> 1 (fond) entre deux seuils : bords doux
-    t = np.clip((dom - 40) / 70, 0, 1)
+    t = np.clip((dom - 18) / 62, 0, 1)
     alpha = (1 - t) * 255
-    # Reflets verts sur les bords : on ramène G au niveau de R et B
-    spill = np.clip(dom, 0, None)
-    g2 = np.where(spill > 0, g - spill * np.clip(1 - alpha / 255 + 0.35, 0, 1), g)
+    # Bords à moitié transparents (cheveux, crinières) : on retire la part du fond vert mélangée à la
+    # couleur (couleur = a x personnage + (1 - a) x fond), puis, les personnages n'ayant pas de vert,
+    # on ramène partout G au niveau du plus fort de R et B
+    key = np.median(a[t >= 1], axis=0) if (t >= 1).any() else np.array([0, 255, 0], np.float32)
+    k = np.clip(alpha / 255, 0.05, 1)[..., None]
+    edge = ((alpha > 0) & (alpha < 255))[..., None]
+    rgb = np.where(edge, (a - (1 - k) * key) / k, a).clip(0, 255)
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    g2 = np.minimum(g, np.maximum(r, b))
     out = np.dstack([r, g2, b, alpha]).clip(0, 255).astype(np.uint8)
     res = Image.fromarray(out, "RGBA")
     # Petites taches de fond isolées : on efface ce qui est presque transparent

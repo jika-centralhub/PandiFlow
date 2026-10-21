@@ -13,10 +13,10 @@
 @keyframes mb-twirl { 0% { transform: rotateY(0) translateY(0); } 40% { transform: rotateY(180deg) translateY(-4%); } 80%, 100% { transform: rotateY(360deg) translateY(0); } }
 @keyframes mb-pop { from { transform: scale(.2) translateY(30%); opacity: 0; } to { transform: none; opacity: 1; } }
 
-/* Cowboy au galop : il traverse la bulle */
-.mb-gallop { animation: mb-travel 5.2s linear both; }
+/* Cowboy au galop : il arrive, galope un moment au milieu de la bulle, puis repart */
+.mb-gallop { animation: mb-travel 5.2s ease-in-out both; }
 .mb-gallop img { animation: mb-gallop .34s ease-in-out infinite alternate; }
-@keyframes mb-travel { from { left: -45%; } to { left: 145%; } }
+@keyframes mb-travel { 0% { left: -45%; } 28% { left: 46%; } 72% { left: 56%; } 100% { left: 150%; } }
 @keyframes mb-gallop { from { transform: translateY(0) rotate(-2deg); } to { transform: translateY(-7%) rotate(3deg); } }
 
 /* Super-héros qui s'envole en diagonale */
