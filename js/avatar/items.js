@@ -192,7 +192,7 @@ const faces = [
     </g>`,
   },
   {
-    id: 'moustache', name: 'Moustache rigolote', price: 15,
+    id: 'moustache', name: 'Moustache rigolote', price: 15, anchor: 'nose',
     render: () => html`<path class="wiggle" d="M100 127 C92 121 80 123 74 131 C70 137 62 135 60 129 C62 141 76 143 86 135 C92 131 96 131 100 133 C104 131 108 131 114 135 C124 143 138 141 140 129 C138 135 130 137 126 131 C120 123 108 121 100 127 Z" fill="#3A2A22" />`,
   },
 ];

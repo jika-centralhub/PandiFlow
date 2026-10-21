@@ -155,11 +155,17 @@ const CYL = html`
 
 function Arm({ id, side, sleeve, hand, handLine, costume, ctx }) {
   const k = SK[side];
+  // Le coude est une articulation : l'avant-bras (sous le bras) et la main (dessus) tournent autour de lui
+  // ensemble pour les poses levées (avatar.css), pendant que tout le bras tourne autour de l'épaule
+  const fore = `av-fore av-fore-${side}`;
+  const elbow = { transformBox: 'view-box', transformOrigin: `${k.e[0]}px ${k.e[1]}px` };
   return html`<g class=${`av-arm av-arm-${side}`} style=${{ transformBox: 'view-box', transformOrigin: `${k.s[0]}px ${k.s[1] - 4}px` }}>
-    <path d=${k.fore} fill=${shade(sleeve, -0.03)} />
-    <g clip-path=${`url(#${id}-fo-${side})`}>
-      ${costume?.sleeves && html`<g transform=${sleeveMatrix(k.oldX, 214, 234, k.e, k.w, 15, side)}>${costume.sleeves(ctx, k.oldX)}</g>`}
-      <path d=${k.fore} fill=${`url(#${id}-gf-${side})`} />
+    <g class=${fore} style=${elbow}>
+      <path d=${k.fore} fill=${shade(sleeve, -0.03)} />
+      <g clip-path=${`url(#${id}-fo-${side})`}>
+        ${costume?.sleeves && html`<g transform=${sleeveMatrix(k.oldX, 214, 234, k.e, k.w, 15, side)}>${costume.sleeves(ctx, k.oldX)}</g>`}
+        <path d=${k.fore} fill=${`url(#${id}-gf-${side})`} />
+      </g>
     </g>
     <path d=${k.upper} fill=${sleeve} />
     <g clip-path=${`url(#${id}-up-${side})`}>
@@ -167,8 +173,8 @@ function Arm({ id, side, sleeve, hand, handLine, costume, ctx }) {
       <path d=${k.upper} fill=${`url(#${id}-gu-${side})`} />
       <ellipse cx=${k.s[0] + (side === 'l' ? -2 : 2)} cy=${k.s[1] - 3} rx="8" ry="6" fill=${`url(#${id}-gd)`} />
     </g>
-    <path d=${k.crease} stroke="#000" stroke-opacity=".2" stroke-width="1.6" fill="none" stroke-linecap="round" />
-    <g class="av-hand">
+    <path class="av-crease" d=${k.crease} stroke="#000" stroke-opacity=".2" stroke-width="1.6" fill="none" stroke-linecap="round" />
+    <g class=${fore} style=${elbow}><g class="av-hand">
       <path d=${k.thumb} fill=${hand} stroke=${handLine} stroke-width="0.7" />
       <path d=${k.thumb} fill="#000" opacity="0.14" />
       <path d=${k.palm} fill=${hand} stroke=${handLine} stroke-width="0.7" />
@@ -177,7 +183,7 @@ function Arm({ id, side, sleeve, hand, handLine, costume, ctx }) {
         <path d=${p} fill=${`url(#${id}-gh-${side})`} opacity="0.8" />
       </g>`)}
       <path d=${k.palm} fill=${`url(#${id}-gh-${side})`} opacity="0.85" />
-    </g>
+    </g></g>
   </g>`;
 }
 

@@ -11,29 +11,41 @@
 .avatar .av-head { transform-origin: 50% 92%; animation: av-sway 5.4s ease-in-out infinite; }
 .avatar .av-eyes { transform-origin: 50% 50%; animation: av-blink 4.8s infinite; }
 .avatar .av-arm-l, .avatar .av-arm-r { transform-origin: 50% 8%; transition: transform .4s cubic-bezier(.3, 1.5, .5, 1); }
+.avatar .av-fore-l, .avatar .av-fore-r { transition: transform .4s cubic-bezier(.3, 1.5, .5, 1); }
 
 @keyframes av-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.012, 1.024); } }
 @keyframes av-sway { 0%, 100% { transform: rotate(-1.8deg); } 50% { transform: rotate(1.8deg); } }
 @keyframes av-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.08); } }
 
-/* Bras levés (note verte, célébration) */
+/* Bras levés (note verte, célébration). Au repos les mains sont sur les hanches : l'épaule lève le bras
+   (.av-arm) et le coude redresse l'avant-bras et la main (.av-fore), coude vers l'extérieur et main
+   vers la tête. Le pli du coude, dessiné pour les mains sur les hanches, disparaît dans ces poses. */
 .avatar.pose-cheer .av-arm-l { animation: arm-cheer-l .5s ease-in-out infinite alternate; }
 .avatar.pose-cheer .av-arm-r { animation: arm-cheer-r .5s ease-in-out infinite alternate; }
-@keyframes arm-cheer-l { from { transform: rotate(125deg); } to { transform: rotate(155deg); } }
-@keyframes arm-cheer-r { from { transform: rotate(-125deg); } to { transform: rotate(-155deg); } }
+.avatar.pose-cheer .av-fore-l { animation: fore-cheer-l .5s ease-in-out infinite alternate; }
+.avatar.pose-cheer .av-fore-r { animation: fore-cheer-r .5s ease-in-out infinite alternate; }
+@keyframes arm-cheer-l { from { transform: rotate(88deg); } to { transform: rotate(102deg); } }
+@keyframes arm-cheer-r { from { transform: rotate(-88deg); } to { transform: rotate(-102deg); } }
+@keyframes fore-cheer-l { from { transform: rotate(112deg); } to { transform: rotate(104deg); } }
+@keyframes fore-cheer-r { from { transform: rotate(-112deg); } to { transform: rotate(-104deg); } }
+.avatar.pose-cheer .av-crease, .avatar.pose-dance .av-crease { opacity: 0; }
 
-/* Danse de fin de soirée */
+/* Danse de fin de soirée : un bras levé pendant que l'autre fait coucou à hauteur d'épaule */
 .avatar.pose-dance .av-char { animation: av-dance 1s ease-in-out infinite; }
 .avatar.pose-dance .av-arm-l { animation: arm-wave-l 1s ease-in-out infinite; }
 .avatar.pose-dance .av-arm-r { animation: arm-wave-r 1s ease-in-out infinite; }
+.avatar.pose-dance .av-fore-l { animation: fore-wave-l 1s ease-in-out infinite; }
+.avatar.pose-dance .av-fore-r { animation: fore-wave-r 1s ease-in-out infinite; }
 @keyframes av-dance {
   0%, 100% { transform: translateY(0) rotate(-5deg); }
   25% { transform: translateY(-12px) rotate(0deg) scale(1.02, .98); }
   50% { transform: translateY(0) rotate(5deg); }
   75% { transform: translateY(-12px) rotate(0deg) scale(1.02, .98); }
 }
-@keyframes arm-wave-l { 0%, 100% { transform: rotate(150deg); } 50% { transform: rotate(40deg); } }
-@keyframes arm-wave-r { 0%, 100% { transform: rotate(-40deg); } 50% { transform: rotate(-150deg); } }
+@keyframes arm-wave-l { 0%, 100% { transform: rotate(100deg); } 50% { transform: rotate(40deg); } }
+@keyframes arm-wave-r { 0%, 100% { transform: rotate(-40deg); } 50% { transform: rotate(-100deg); } }
+@keyframes fore-wave-l { 0%, 100% { transform: rotate(105deg); } 50% { transform: rotate(175deg); } }
+@keyframes fore-wave-r { 0%, 100% { transform: rotate(-175deg); } 50% { transform: rotate(-105deg); } }
 
 /* Saut de joie (classe ajoutée un instant) */
 .avatar.av-jump .av-char { animation: av-jump .8s cubic-bezier(.3, 1.4, .5, 1); }

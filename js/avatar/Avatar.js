@@ -18,6 +18,9 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const HEAD_3D = 0.86;
 // Menton du visage 3D : juste au-dessus de l'encolure (y = 183), pour un cou court d'enfant
 const CHIN_3D = 168;
+// Bas du nez du visage 3D sous la ligne des yeux, en écarts entre les yeux (0,41 sur la tête dessinée) :
+// les visages de film d'animation ont le nez plus bas, la moustache s'y accroche
+const NOSE_3D = 0.56;
 
 // Place le visage 3D dans le repère du personnage : yeux centrés, menton juste au-dessus du col.
 // Donne aussi le haut de la tête et la largeur (chapeaux), la transformation qui amène les yeux
@@ -37,6 +40,7 @@ function placePortrait(m) {
   const cut = chin + 0.03 * size;
   const neck = headW * 0.3;
   const top = y + m.topY * size;
+  const eyeLine = y + eyeY * size;
   return {
     x,
     y,
@@ -45,7 +49,9 @@ function placePortrait(m) {
     headW,
     crown: top,
     hatScale: clamp(headW / 124, 0.8, 1.4),
-    face: `translate(100 ${y + eyeY * size}) scale(${k}) translate(-100 -106)`,
+    face: `translate(100 ${eyeLine}) scale(${k}) translate(-100 -106)`,
+    // Objets accrochés sous le nez (anchor: 'nose') : même échelle, bas du nez dessiné (y = 124) sur celui du visage
+    nose: `translate(100 ${eyeLine + NOSE_3D * gap * size}) scale(${k}) translate(-100 -124)`,
     clip: `M${x - 40} ${y - 40} H${x + size + 40} V${cut} H${cx + neck} V${y + size} H${cx - neck} V${cut} H${x - 40} Z`,
     // Fond impossible à retirer : ovale doux autour de la tête (cheveux compris), coupé au menton ;
     // le cou dessiné prend le relais, pour ne rien montrer du vêtement de la photo
@@ -366,7 +372,7 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
         ${!pic && showHair && html`<g class="av-hair-front">${hair.front(hairC)}</g>`}
         ${costume?.faceTop && html`<g class="av-costume-face-top" transform=${faceTransform}>${costume.faceTop(ctx)}</g>`}
         ${!pic && !funFace && !costume?.hidesGlasses && html`<${Glasses} shape=${look.glasses} color=${GLASSES_COLORS[look.glassesColor].color} />`}
-        ${funFace && html`<g class="av-face-item" transform=${faceTransform}>${funFace.render(ctx)}</g>`}
+        ${funFace && html`<g class="av-face-item" transform=${pic && funFace.anchor === 'nose' ? pic.nose : faceTransform}>${funFace.render(ctx)}</g>`}
         ${items.hat && html`<g class="av-hat" transform=${items.hat.free ? faceTransform : hatTransform}>${items.hat.render(ctx)}</g>`}
         ${costume?.hat && html`<g class="av-hat" transform=${hatTransform}>${costume.hat(ctx)}</g>`}
         ${costume?.headFree && html`<g class="av-hat" transform=${faceTransform}>${costume.headFree(ctx)}</g>`}
