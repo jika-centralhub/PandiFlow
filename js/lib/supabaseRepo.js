@@ -1,6 +1,6 @@
 // Stockage cloud : Supabase (base Postgres + connexion par code e-mail + Edge Function photo).
 // Les règles RLS de supabase/schema.sql garantissent que chaque famille ne voit que ses données.
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config.js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, APP_VERSION } from '../config.js';
 import { PRIMARY_KEYS } from './tables.js';
 
 function fail(error, status) {
@@ -198,7 +198,7 @@ export class SupabaseRepo {
 
   // Le personnage 3D dans une pose : { version, base, expr, marks, image (webp en base64) }
   makePortrait({ childId, expr, image, mediaType, version, fromFace, marksOnly }) {
-    return this.invoke('make-portrait', { childId, expr, image, mediaType, version, fromFace, marksOnly });
+    return this.invoke('make-portrait', { app: APP_VERSION, childId, expr, image, mediaType, version, fromFace, marksOnly });
   }
 
   async downloadPortrait(path) {

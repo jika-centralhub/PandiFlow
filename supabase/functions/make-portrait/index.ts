@@ -7,7 +7,8 @@
 // Si OpenAI refuse la photo, Claude la décrit et OpenAI dessine d'après ce texte seul.
 // Chaque demande est notée dans public.portrait_runs (durée, modèle, erreur ; jamais d'image).
 //
-// Requête : { childId, expr: "happy" | "encourage" | "joy" | "dance", image?, mediaType?, version?, fromFace? }
+// Requête : { app, childId, expr: "happy" | "encourage" | "joy" | "dance", image?, mediaType?, version?, fromFace?, marksOnly? }
+//   app : version de l'app (les apps d'avant la v1.4 ne l'envoient pas et sont priées de se mettre à jour)
 //   happy : mains sur les hanches et sourire, crée une nouvelle version, à partir de la photo
 //           (image en base64 + mediaType) ou, avec fromFace, du visage 3D seul d'une version plus ancienne
 //   encourage (repos), joy (bras levés, « bravo »), dance : à partir du « happy » de cette version,
@@ -137,13 +138,17 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return reply({ error: "Méthode non autorisée." }, 405);
 
   // 1. Vérification de la requête
-  let body: { childId?: unknown; expr?: unknown; image?: unknown; mediaType?: unknown; version?: unknown; fromFace?: unknown; marksOnly?: unknown };
+  let body: { childId?: unknown; expr?: unknown; image?: unknown; mediaType?: unknown; version?: unknown; fromFace?: unknown; marksOnly?: unknown; app?: unknown };
   try {
     body = await req.json();
   } catch {
     return reply({ error: "Requête invalide." }, 400);
   }
   const { childId, expr, image, mediaType, version } = body;
+  // Une app d'avant la v1.4 encore ouverte enregistrerait le personnage sans ses repères des bras
+  if (typeof body.app !== "string") {
+    return reply({ error: "Une nouvelle version de PandiFlow est arrivée : ferme complètement l'app (balaie-la des apps récentes), puis rouvre-la." }, 426);
+  }
   const marksOnly = body.marksOnly === true;
   const fromFace = !marksOnly && expr === "happy" && body.fromFace === true;
   if (typeof childId !== "string" || !EXPRS.includes(expr as Expr)) return reply({ error: "Requête invalide." }, 400);
@@ -430,7 +435,8 @@ function checkMarks(raw: Record<string, unknown>): Found {
   checks["épaules"] = m.shoulderLeftX < m.collarX && m.collarX < m.shoulderRightX;
   checks.hanches = m.waistLeftX < m.collarX && m.collarX < m.waistRightX && m.waistY > m.chinY + 0.1;
   for (const s of ["Left", "Right"]) {
-    checks[`bras ${s}`] = len(`shoulder${s}`, `elbow${s}`) > 0.04 && len(`elbow${s}`, `wrist${s}`) > 0.04 && len(`wrist${s}`, `hand${s}`) < 0.12 &&
+    // Main levée doigts écartés : son centre peut être loin du poignet
+    checks[`bras ${s}`] = len(`shoulder${s}`, `elbow${s}`) > 0.04 && len(`elbow${s}`, `wrist${s}`) > 0.04 && len(`wrist${s}`, `hand${s}`) < 0.2 &&
       m[`shoulder${s}Y`] > m.chinY - 0.02 && m[`shoulder${s}Y`] < m.waistY;
   }
   const failed = Object.keys(checks).filter((k) => !checks[k]);

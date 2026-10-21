@@ -2,7 +2,7 @@
 // puis enregistrent les changements dans le stockage (localStorage ou Supabase).
 import { getState, setState, toast } from './store.js';
 import { LocalRepo } from './localRepo.js';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config.js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, APP_VERSION } from '../config.js';
 import * as domain from '../domain.js';
 import { STATE_KEYS, sameKey, matches } from './tables.js';
 import { buildFamilySeed, buildMorningSeed, makeChild, DEMO_CHILDREN } from './seed.js';
@@ -73,11 +73,30 @@ function ensureMorningTasks() {
   updateSettings({ morningSeeded: true });
 }
 
-// Rafraîchit les données quand l'app revient au premier plan (synchro entre parents).
+// Une version plus récente de l'app est-elle en ligne ? (sur téléphone, rouvrir l'app la reprend
+// souvent sans la recharger : l'ancien code reste en mémoire)
+async function newerVersionOnline() {
+  try {
+    const res = await fetch(`./js/config.js?v=${Date.now()}`, { cache: 'no-store' });
+    const online = res.ok ? (await res.text()).match(/APP_VERSION = '([^']+)'/)?.[1] : null;
+    return Boolean(online && online !== APP_VERSION);
+  } catch {
+    return false;
+  }
+}
+
+// Rafraîchit les données quand l'app revient au premier plan (synchro entre parents), et se recharge
+// d'elle-même si une nouvelle version est en ligne (les notes en attente sont envoyées avant).
 export function watchVisibility() {
   document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible') return;
+    if (await newerVersionOnline()) {
+      if (getState().mode === 'cloud') await flush().catch(() => {});
+      location.reload();
+      return;
+    }
     const s = getState();
-    if (document.visibilityState !== 'visible' || s.mode !== 'cloud' || s.status !== 'ready') return;
+    if (s.mode !== 'cloud' || s.status !== 'ready') return;
     await flush();
     if (!outbox.length) reload().catch(() => {});
   });
