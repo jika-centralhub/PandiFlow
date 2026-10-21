@@ -31,7 +31,8 @@ export function forgetPortrait(path) {
   const entry = ready.get(path);
   if (!entry) return;
   ready.delete(path);
-  for (const url of [entry.url, entry.body?.cloth, entry.body?.skinMask, entry.body?.shade]) if (url) URL.revokeObjectURL(url);
+  const b = entry.body || {};
+  for (const url of [entry.url, b.cloth, b.skinMask, b.shade, b.hood, b.hair, b.headShade]) if (url) URL.revokeObjectURL(url);
 }
 
 export function loadPortrait(path, marks) {
@@ -126,11 +127,18 @@ async function prepare(blob, marks) {
   }
 }
 
-// Haut du corps en t-shirt blanc : trois images à demi-résolution, tirées des pixels du personnage
+// Force de la lumière de l'image sur les couleurs posées : un peu adoucie, pour garder le volume
+// sans marquer le tissu de taches claires et sombres
+const CLOTH_LIGHT = 0.7;
+const HEAD_LIGHT = 0.6;
+
+// Haut du corps en t-shirt blanc : images à demi-résolution, tirées des pixels du personnage
 //  - cloth : le t-shirt (blanc opaque là où c'est du tissu), pour le colorer et y poser les costumes
 //  - skinMask : la peau (les gants ne couvrent que les mains)
 //  - shade : la lumière du tissu et de la peau (gris, 1 = le plus éclairé), posée en « produit » sur
 //    les couleurs : le costume garde les plis, les ombres et le volume de l'image
+//  - hood, hair : toute la tête (cheveux compris), ses cheveux seuls ; headShade : sa lumière, adoucie
+//    et floutée, pour les masques et cagoules des costumes
 // et l'épaisseur de chaque segment de bras (rayons en fraction de la largeur de l'image).
 async function bodyMaps(px, w, h, m) {
   const mw = Math.round(w / 2);
@@ -139,6 +147,8 @@ async function bodyMaps(px, w, h, m) {
   const lum = new Float32Array(n);
   const cloth = new Float32Array(n);
   const skinW = new Float32Array(n);
+  const head = new Float32Array(n);
+  const skinLike = new Float32Array(n);
   const chin = m.chinY - 0.004;
   const ramp = (v, a, b) => Math.min(1, Math.max(0, (v - a) / (b - a)));
   // La tête (cheveux compris) n'est jamais du tissu : le blanc des yeux et des dents reste intact,
@@ -147,14 +157,39 @@ async function bodyMaps(px, w, h, m) {
   const hy = (m.topY + m.chinY) / 2;
   const rx = ((m.headRightX - m.headLeftX) / 2) * 1.04;
   const ry = (m.chinY - m.topY) / 2;
+  // Sous le menton, la peau n'est possible qu'aux mains et au cou : partout ailleurs c'est le t-shirt,
+  // même là où une lumière chaude le teinte (sinon il resterait des taches blanches sous le costume)
+  const k = h / w;
+  const hands = ['Left', 'Right'].map((s) => {
+    const hxs = m[`hand${s}X`];
+    const hys = m[`hand${s}Y`];
+    const r = Math.max(0.07, Math.hypot(hxs - m[`wrist${s}X`], (hys - m[`wrist${s}Y`]) * k) * 1.3);
+    return [hxs, hys, r];
+  });
+  const neckHalf = (m.headRightX - m.headLeftX) * 0.3;
+  // Visage (des sourcils au menton) : ni le blanc des yeux ni la bouche ne sont des cheveux
+  const gap = m.eyeRightX - m.eyeLeftX;
+  const eyeY = (m.eyeLeftY + m.eyeRightY) / 2;
+  const faceTop = eyeY - (gap / k) * 0.6;
+  const fcx = (m.eyeLeftX + m.eyeRightX) / 2;
+  const fcy = (faceTop + m.chinY + 0.01) / 2;
+  const frx = gap * 1.1;
+  const fry = (m.chinY + 0.01 - faceTop) / 2;
+  const hair = new Float32Array(n);
+  const skinAllowed = (fx, fy) =>
+    fy < m.chinY || (fy < m.collarY + 0.015 && Math.abs(fx - m.collarX) < neckHalf) ||
+    hands.some(([cx, cy, r]) => (fx - cx) ** 2 + ((fy - cy) * k) ** 2 < r * r);
   for (let y = 0; y < mh; y++) {
-    const fy = ((y / mh - hy) / ry) ** 2;
+    const fy = y / mh;
+    const ey = ((fy - hy) / ry) ** 2;
     for (let x = 0; x < mw; x++) {
       const i = ((y * 2) * w + x * 2) * 4;
       const a = px[i + 3] / 255;
       const p = y * mw + x;
       if (a < 0.03) continue;
-      const clothZone = y / mh > chin || fy + ((x / mw - hx) / rx) ** 2 > 1;
+      const fx = x / mw;
+      const e = ey + ((fx - hx) / rx) ** 2;
+      const inHead = e <= 1;
       const r = px[i];
       const g = px[i + 1];
       const b = px[i + 2];
@@ -164,22 +199,39 @@ async function bodyMaps(px, w, h, m) {
       const warm = (r - b) / Math.max(r, g, 1);
       // Reste de fond vert au bord du personnage : ni tissu ni peau
       const green = ramp(g - Math.max(r, b), 24, 10);
+      const sk = green * ramp(warm, 0.12, 0.18) * ramp(l, 0.1, 0.2);
       lum[p] = l;
-      if (clothZone) cloth[p] = a * green * ramp(0.17 - warm, 0, 0.06) * ramp(l, 0.14, 0.26);
-      skinW[p] = a * green * ramp(warm, 0.12, 0.18) * ramp(l, 0.1, 0.2);
+      skinLike[p] = sk;
+      // Cagoule : toute la tête, et juste autour la peau seule (les oreilles, jamais une manche levée)
+      if (fy <= m.chinY + 0.012) head[p] = inHead ? a * green : e <= 1.2 ? a * sk : 0;
+      const inFace = ((fx - fcx) / frx) ** 2 + ((fy - fcy) / fry) ** 2 < 1;
+      if (inHead && !inFace) hair[p] = head[p] * (1 - sk);
+      if (inHead && fy <= chin) {
+        skinW[p] = a * sk;
+      } else {
+        const s = skinAllowed(fx, fy) ? sk : 0;
+        skinW[p] = a * s;
+        cloth[p] = a * green * (1 - s);
+      }
     }
   }
-  // Lumière de référence (le plus éclairé, hors reflets) du tissu et de la peau sous le menton
-  const ref = (weights, from) => {
+  // Lumière de référence (le plus éclairé, hors reflets) d'une zone
+  const ref = (weight, from = 0) => {
     const vals = [];
-    for (let p = from; p < n; p += 3) if (weights[p] > 0.8) vals.push(lum[p]);
+    for (let p = from; p < n; p += 3) if (weight(p) > 0.8) vals.push(lum[p]);
     if (vals.length < 50) return 0.9;
     vals.sort((a, b) => a - b);
     return Math.max(0.3, vals[Math.floor(vals.length * 0.92)]);
   };
   const from = Math.floor(chin * mh) * mw;
-  const clothRef = ref(cloth, from);
-  const skinRef = ref(skinW, from);
+  const clothRef = ref((p) => cloth[p], from);
+  const skinRef = ref((p) => skinW[p], from);
+  // Tête : la peau et les cheveux ont chacun leur lumière de référence (les cheveux sombres ne doivent
+  // pas assombrir une cagoule)
+  const faceRef = ref((p) => head[p] * skinLike[p]);
+  const hairRef = ref((p) => hair[p]);
+  const soft = (v, strength) => 1 - (1 - Math.min(1, v)) * strength;
+  const HAIR_LIGHT = 0.35;
   const make = (fill) => {
     const c = document.createElement('canvas');
     c.width = mw;
@@ -190,19 +242,44 @@ async function bodyMaps(px, w, h, m) {
     cx.putImageData(out, 0, 0);
     return c;
   };
-  const white = (weights) => (d, i, p) => {
+  const white = (weight) => (d, i, p) => {
     d[i] = d[i + 1] = d[i + 2] = 255;
-    d[i + 3] = Math.round(weights[p] * 255);
+    d[i + 3] = Math.round(weight(p) * 255);
   };
   const shade = make((d, i, p) => {
     const c = cloth[p];
     const s = skinW[p];
-    const k = c + s > 0 ? (c * Math.min(1, lum[p] / clothRef) + s * Math.min(1, lum[p] / skinRef)) / (c + s) : 1;
-    d[i] = d[i + 1] = d[i + 2] = Math.round(k * 255);
+    const v = c + s > 0 ? (c * soft(lum[p] / clothRef, CLOTH_LIGHT) + s * Math.min(1, lum[p] / skinRef)) / (c + s) : 1;
+    d[i] = d[i + 1] = d[i + 2] = Math.round(v * 255);
     d[i + 3] = c + s > 0 ? 255 : 0;
   });
-  const [clothUrl, skinUrl, shadeUrl] = await Promise.all([toUrl(make(white(cloth))), toUrl(make(white(skinW))), toUrl(shade)]);
-  return { cloth: clothUrl, skinMask: skinUrl, shade: shadeUrl, arms: { l: armWidths(px, w, h, m, 'Left'), r: armWidths(px, w, h, m, 'Right') } };
+  // Lumière de la tête : grandes formes seulement (front, joues, nez), sans le détail des mèches
+  // (sous une cagoule, les cheveux ne donnent qu'un léger relief)
+  const headRaw = make((d, i, p) => {
+    const s = skinLike[p];
+    const v = head[p] > 0 ? s * soft(lum[p] / faceRef, HEAD_LIGHT) + (1 - s) * soft(lum[p] / hairRef, HAIR_LIGHT) : 1;
+    d[i] = d[i + 1] = d[i + 2] = Math.round(v * 255);
+    d[i + 3] = 255;
+  });
+  const headShade = document.createElement('canvas');
+  headShade.width = mw;
+  headShade.height = mh;
+  const hs = headShade.getContext('2d');
+  hs.filter = `blur(${Math.max(3, Math.round(mw / 60))}px)`;
+  hs.drawImage(headRaw, 0, 0);
+  const urls = await Promise.all([
+    toUrl(make(white((p) => cloth[p]))),
+    toUrl(make(white((p) => skinW[p]))),
+    toUrl(shade),
+    toUrl(make(white((p) => head[p]))),
+    toUrl(make(white((p) => hair[p]))),
+    toUrl(headShade),
+  ]);
+  const [clothUrl, skinUrl, shadeUrl, hoodUrl, hairUrl, headShadeUrl] = urls;
+  return {
+    cloth: clothUrl, skinMask: skinUrl, shade: shadeUrl, hood: hoodUrl, hair: hairUrl, headShade: headShadeUrl,
+    arms: { l: armWidths(px, w, h, m, 'Left'), r: armWidths(px, w, h, m, 'Right') },
+  };
 }
 
 // Demi-épaisseur du bras et de l'avant-bras, mesurée en travers du milieu de chaque segment : jusqu'au

@@ -78,6 +78,34 @@ export function bodyGeometry(pic, m, arms) {
 }
 
 /**
+ * <HeadCover> : masque, cagoule, bandeau ou barbe d'un costume sur la tête de l'image.
+ * Le dessin du costume est ajusté à la tête (pic.headFit) ; une cagoule (costume.hood) colore toute la
+ * tête (hood.face) ou seulement les cheveux, à leur forme exacte ; puis la lumière du visage (headShade)
+ * est remise par-dessus en « produit » : le masque prend le relief du nez, des joues et du front.
+ */
+export function HeadCover({ id, pic, img, costume, ctx }) {
+  const box = { x: pic.x, y: pic.y, width: pic.W, height: pic.H };
+  const region = { maskUnits: 'userSpaceOnUse', x: f(pic.x - 2), y: f(pic.y - 2), width: f(pic.W + 4), height: f(pic.H + 4), style: 'mask-type:alpha' };
+  const maps = img.body;
+  const hood = costume.hood;
+  const fill = hood ? (hood.face ? maps.hood : maps.hair) : null;
+  // Copie du dessin dans le masque de lumière, avec ses propres identifiants
+  const drawing = (c) => costume.face && html`<g transform=${pic.headFit}>${costume.face(c)}</g>`;
+  return html`<g class="av-costume-face">
+    <defs>
+      ${fill && html`<mask id=${`${id}-hc`} ...${region}><image href=${fill} ...${box} /></mask>`}
+      <mask id=${`${id}-hl`} ...${region}>
+        ${fill && html`<image href=${fill} ...${box} />`}
+        ${drawing({ ...ctx, id: `${ctx.id}-hl` })}
+      </mask>
+    </defs>
+    ${fill && html`<rect ...${box} fill=${hood.color} mask=${`url(#${id}-hc)`} />`}
+    ${drawing(ctx)}
+    <image href=${maps.headShade} ...${box} mask=${`url(#${id}-hl)`} style="mix-blend-mode:multiply" />
+  </g>`;
+}
+
+/**
  * <Body3D> : le personnage de l'image, habillé.
  *  pic, geo : place de l'image et géométrie (bodyGeometry) ; img : image préparée (portraits.js)
  *  shirt / sleeve / gloves : couleurs ; costume, outfit : costume complet ou pyjama (motifs) ;

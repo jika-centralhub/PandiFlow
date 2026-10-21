@@ -6,7 +6,7 @@ import { SKIN_TONES, HAIR_COLORS, EYE_COLORS, OUTFIT_COLORS, GLASSES_COLORS, POR
 import { HAIR } from './hair.js';
 import { getItem } from './items.js';
 import { Body, BodyDefs } from './body.js';
-import { Body3D, bodyGeometry } from './body3d.js';
+import { Body3D, HeadCover, bodyGeometry } from './body3d.js';
 import { shade, mix, hashString } from '../lib/util.js';
 import { usePortrait, portraitPath, loadPortrait, hasBody } from '../lib/portraits.js';
 
@@ -71,6 +71,17 @@ function placePortrait(m, ratio = 1, body = false) {
   const hcy = (top + chin) / 2;
   const headOnly = `M${headX - hx} ${hcy} a${hx} ${hy} 0 1 0 ${2 * hx} 0 a${hx} ${hy} 0 1 0 ${-2 * hx} 0 Z ` +
     `M${cx - neck} ${chin - 6} V${y + H} H${cx + neck} V${chin - 6} Z`;
+  // Masques, bandeaux et barbes des costumes, dessinés pour la tête dessinée (yeux en 78 et 122, 106 ;
+  // cheveux de 36 à 164 ; sommet 26, menton 158) : ajustés à la tête 3D, en largeur par les yeux et les
+  // côtés de la tête, en hauteur par le sommet, les yeux et le menton
+  const fit = (pairs) => {
+    const mx = pairs.reduce((s, [a]) => s + a, 0) / pairs.length;
+    const my = pairs.reduce((s, [, b]) => s + b, 0) / pairs.length;
+    const s = pairs.reduce((t, [a, b]) => t + (a - mx) * (b - my), 0) / pairs.reduce((t, [a]) => t + (a - mx) ** 2, 0);
+    return [s, my - s * mx];
+  };
+  const [ax, bx] = fit([[78, x + m.eyeLeftX * W], [122, x + m.eyeRightX * W], [36, x + m.headLeftX * W], [164, x + m.headRightX * W]]);
+  const [ay, by] = fit([[26, top], [106, eyeLine], [158, chin]]);
   return {
     x,
     y,
@@ -82,6 +93,7 @@ function placePortrait(m, ratio = 1, body = false) {
     crown: top,
     hatScale: clamp(headW / 124, 0.8, 1.4),
     face: `translate(100 ${eyeLine}) scale(${k}) translate(-100 -106)`,
+    headFit: `matrix(${ax} 0 0 ${ay} ${bx} ${by})`,
     // Objets accrochés sous le nez (anchor: 'nose') : même échelle, bas du nez dessiné (y = 124) sur celui du visage
     nose: `translate(100 ${nose}) scale(${k}) translate(-100 -124)`,
     clip: ratio > 1.2 && !body ? headOnly : `M${x - 40} ${y - 40} H${x + W + 40} V${cut} H${cx + neck} V${y + H} H${cx - neck} V${cut} H${x - 40} Z`,
@@ -425,14 +437,15 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
 
         `}
 
-        ${costume?.face && !(pic && costume.tint3d) && html`<g class="av-costume-face" transform=${faceTransform}>${costume.face(ctx)}</g>`}
+        ${costume?.face && !(pic && costume.tint3d) && !geo && html`<g class="av-costume-face" transform=${pic?.headFit}>${costume.face(ctx)}</g>`}
+        ${geo && costume && (costume.face || costume.hood) && !costume.tint3d && html`<${HeadCover} id=${id} pic=${pic} img=${pImg} costume=${costume} ctx=${ctx} />`}
         ${!pic && showHair && html`<g class="av-hair-front">${hair.front(hairC)}</g>`}
-        ${costume?.faceTop && html`<g class="av-costume-face-top" transform=${faceTransform}>${costume.faceTop(ctx)}</g>`}
+        ${costume?.faceTop && html`<g class="av-costume-face-top" transform=${pic?.headFit}>${costume.faceTop(ctx)}</g>`}
         ${!pic && !funFace && !costume?.hidesGlasses && html`<${Glasses} shape=${look.glasses} color=${GLASSES_COLORS[look.glassesColor].color} />`}
         ${funFace && html`<g class="av-face-item" transform=${pic && funFace.anchor === 'nose' ? pic.nose : faceTransform}>${funFace.render(ctx)}</g>`}
         ${items.hat && html`<g class="av-hat" transform=${items.hat.free ? faceTransform : hatTransform}>${items.hat.render(ctx)}</g>`}
         ${costume?.hat && html`<g class="av-hat" transform=${hatTransform}>${costume.hat(ctx)}</g>`}
-        ${costume?.headFree && html`<g class="av-hat" transform=${faceTransform}>${costume.headFree(ctx)}</g>`}
+        ${costume?.headFree && html`<g class="av-hat" transform=${pic ? pic.headFit : faceTransform}>${costume.headFree(ctx)}</g>`}
       </g>
 
       ${showBody && items.pet && html`<g class="av-pet" style=${{ animationDelay: delay(5) }}>${items.pet.render(ctx)}</g>`}

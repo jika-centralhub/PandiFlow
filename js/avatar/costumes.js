@@ -14,6 +14,9 @@
 //   hat(ctx)      couvre-chef recalé selon la coiffure ; headFree(ctx) : sans recalage
 //   prop(ctx)     objet tenu en bas à gauche
 //   hideHair, hidesGlasses
+//   hood : { color, face } cagoule sur le personnage 3D entier, à la forme de sa tête : couleur des
+//          cheveux cachés, et de tout le visage si face (Spider-Man) ; les dessins face/faceTop/headFree
+//          sont ajustés à la tête 3D
 // Les maillots reprennent les couleurs des équipes, sans logo officiel.
 import { html } from '../vendor/preact-htm.js';
 import { starPath, mirror, grad, GOLD, SILVER, sparkle } from './draw.js';
@@ -398,7 +401,7 @@ const chef = {
 };
 
 const chevalier = {
-  id: 'chevalier', name: 'Chevalier', price: 180, shirt: '#C9D1DE', sleeve: '#B7C1D2', gloves: '#9AA6BA', hideHair: true,
+  id: 'chevalier', name: 'Chevalier', price: 180, shirt: '#C9D1DE', sleeve: '#B7C1D2', gloves: '#9AA6BA', hideHair: true, hood: { color: '#9AA6BA' },
   torso: () => html`<g>
     <path d="M74 184 L126 184 L122 264 L78 264 Z" fill="#2F5FC4" />
     <rect x="96" y="198" width="8" height="42" fill="#FFD23F" /><rect x="84" y="210" width="32" height="8" fill="#FFD23F" />
@@ -542,7 +545,7 @@ const belt = (fill, y = 246, h = 7, buckle = null) => html`<g><rect x="40" y=${y
 const plainCollar = (fill, stroke) => () => html`<path d="M86 181 Q100 194 114 181" fill=${fill} stroke=${stroke} stroke-width="3" />`;
 
 const spiderman = {
-  id: 'spiderman', name: 'Spider-Man', price: 300, shirt: '#D62B2B', sleeve: '#2253B5', gloves: '#D62B2B', hideHair: true, hidesGlasses: true,
+  id: 'spiderman', name: 'Spider-Man', price: 300, shirt: '#D62B2B', sleeve: '#2253B5', gloves: '#D62B2B', hideHair: true, hood: { color: '#D62B2B', face: true }, hidesGlasses: true,
   torso: () => html`<g>
     <path d="M40 196 C56 206 64 232 62 270 L40 270 Z" fill="#2253B5" /><path d=${mirror('M40 196 C56 206 64 232 62 270 L40 270 Z')} fill="#2253B5" />
     ${web(100, 206, '#7A1414', [12, 24, 38, 54])}
@@ -561,7 +564,7 @@ const spiderman = {
 };
 
 const ironman = {
-  id: 'ironman', name: 'Iron Man', price: 300, shirt: '#B3202A', sleeve: '#B3202A', gloves: '#E3B341', hideHair: true, hidesGlasses: true,
+  id: 'ironman', name: 'Iron Man', price: 300, shirt: '#B3202A', sleeve: '#B3202A', gloves: '#E3B341', hideHair: true, hood: { color: '#B3202A', face: true }, hidesGlasses: true,
   torso: () => html`<g>
     <path d="M58 200 C76 192 124 192 142 200" stroke="#7E1119" stroke-width="2.4" fill="none" />
     <path d="M82 226 L118 226 L114 258 L86 258 Z" fill="#E3B341" stroke="#B8860B" stroke-width="1.6" />
@@ -646,7 +649,7 @@ const thor = {
 };
 
 const blackPanther = {
-  id: 'black_panther', name: 'Black Panther', price: 300, shirt: '#1B1B22', sleeve: '#1B1B22', gloves: '#1B1B22', hideHair: true, hidesGlasses: true,
+  id: 'black_panther', name: 'Black Panther', price: 300, shirt: '#1B1B22', sleeve: '#1B1B22', gloves: '#1B1B22', hideHair: true, hood: { color: '#1B1B22', face: true }, hidesGlasses: true,
   torso: () => html`<g fill="none" stroke-linejoin="round">
     <path d="M64 184 L100 214 L136 184 M74 184 L100 206 L126 184" stroke="#C9C6E8" stroke-width="2" />
     <path d="M84 194 L88 200 L92 194 M108 194 L112 200 L116 194" stroke="#C9C6E8" stroke-width="1.6" />
@@ -679,7 +682,7 @@ const captainMarvel = {
 };
 
 const batman = {
-  id: 'batman', name: 'Batman', price: 300, shirt: '#525866', sleeve: '#525866', gloves: '#1B1B22', hideHair: true, hidesGlasses: true,
+  id: 'batman', name: 'Batman', price: 300, shirt: '#525866', sleeve: '#525866', gloves: '#1B1B22', hideHair: true, hood: { color: '#1B1B22' }, hidesGlasses: true,
   back: ({ id }) => capeBack(id, ['#3A3D47', '#22242B', '#111216']),
   torso: () => html`<g>
     ${bat(100, 206, 46, '#1B1B22')}
@@ -733,7 +736,7 @@ const wonderWoman = {
 };
 
 const flash = {
-  id: 'flash', name: 'Flash', price: 300, shirt: '#D61F26', sleeve: '#D61F26', gloves: '#D61F26', hideHair: true,
+  id: 'flash', name: 'Flash', price: 300, shirt: '#D61F26', sleeve: '#D61F26', gloves: '#D61F26', hideHair: true, hood: { color: '#D61F26' },
   torso: () => html`<g>
     <circle cx="100" cy="211" r="15" fill="#FFFFFF" stroke="#F2C230" stroke-width="3" />
     ${bolt()}
