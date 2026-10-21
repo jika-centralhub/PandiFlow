@@ -420,19 +420,3 @@ create table if not exists public.portrait_runs (
 
 alter table public.portrait_runs enable row level security;
 revoke all on public.portrait_runs from anon, authenticated;
-
--- Provisoire (passage à www.pandiflow.com) : un signe par connexion dont le cookie de relais est écrit
-create table if not exists public.relay_pings (
-  session_id uuid primary key,
-  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  host text,
-  at timestamptz not null default now()
-);
-
-alter table public.relay_pings enable row level security;
-revoke all on public.relay_pings from anon, authenticated;
-grant insert on public.relay_pings to authenticated;
-
-drop policy if exists relay_pings_insert on public.relay_pings;
-create policy relay_pings_insert on public.relay_pings
-  for insert to authenticated with check (user_id = auth.uid() and session_id = (auth.jwt() ->> 'session_id')::uuid);

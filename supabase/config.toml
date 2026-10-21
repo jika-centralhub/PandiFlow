@@ -8,8 +8,7 @@ project_id = "pandiflow"
 
 [auth]
 site_url = "https://www.pandiflow.com"
-# Les adresses http restent permises tant que le https de GitHub Pages n'est pas actif
-additional_redirect_urls = ["https://www.pandiflow.com/**", "https://pandiflow.com/**", "http://www.pandiflow.com/**", "http://pandiflow.com/**", "http://localhost:8080/**"]
+additional_redirect_urls = ["https://www.pandiflow.com/**", "https://pandiflow.com/**", "http://localhost:8080/**"]
 minimum_password_length = 8
 
 # Connexion par e-mail et mot de passe. Pas d'e-mail de confirmation : le service d'e-mail

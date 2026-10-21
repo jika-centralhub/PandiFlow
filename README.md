@@ -95,7 +95,7 @@ Coût indicatif : quelques centimes par visage, donc 3 visages par photo. L'app 
 
 Le code est sur [github.com/jika-psia/PandiFlow](https://github.com/jika-psia/PandiFlow) (dépôt public, commits signés avec l'adresse privée GitHub). GitHub Pages publie la branche `main` (dossier racine) avec le domaine `www.pandiflow.com` (fichier `CNAME`) ; `pandiflow.com` renvoie automatiquement vers `www`. Chaque `git push` sur `main` met le site à jour en moins d'une minute.
 
-Une fois le DNS en place (étape D) et le certificat émis par GitHub, activer *Enforce HTTPS* dans *Settings → Pages*, mais seulement quand chaque appareil des parents a ouvert l'app une fois en https : `js/relais.js` fait suivre la connexion de http vers https, et de `pandiflow.com` vers `www`, pour que personne n'ait à se reconnecter.
+Le certificat HTTPS de GitHub couvre `www.pandiflow.com` et `pandiflow.com`, et *Enforce HTTPS* est actif (depuis le 21/10/2026) : toute visite en http part en https. `js/relais.js` a fait suivre la connexion lors du passage de http à https et de `pandiflow.com` à `www`, pour que personne n'ait à se reconnecter.
 
 ### Étape D — DNS chez Hostinger
 

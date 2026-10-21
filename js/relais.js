@@ -19,8 +19,9 @@
 //    noms (domain=pandiflow.com), limité au dossier /relais/ pour qu'il ne parte pas avec chaque
 //    fichier de l'app. Sur www, si l'appareil n'a pas encore de connexion, une page cachée
 //    /relais/ lit ce cookie ; on range les données, puis on l'efface : il ne sert qu'une fois.
-//    Chaque connexion qui a écrit son cookie le signale à Supabase (table relay_pings), pour
-//    savoir quand tous les appareils sont prêts à changer d'adresse.
+//
+// Depuis le 21/10/2026, GitHub force https://www.pandiflow.com : les passerelles ne servent plus
+// qu'à un appareil qui garderait de vieilles données ou un vieux cookie.
 //
 // Script classique (pas un module) chargé en premier dans index.html ; l'app attend
 // PandiRelais.ready avant de démarrer.
@@ -32,7 +33,6 @@
   var AUTH = /^sb-(.+)-auth-token$/;
   var FROM = /^http:\/\/(www\.)?pandiflow\.com\//;
   var MOVED = 'pandiflow-relais-parti';
-  var SIGNALED = 'pandiflow-relais-signale';
   var MAX_CHARS = 150000;
   var MAX_AGE_MS = 120000;
 
@@ -43,7 +43,6 @@
   var CHUNK = 3000;
   var MAX_PARTS = 3;
   var BRIDGE_MS = 30 * 86400000;
-  var ANON_KEY = 'sb_publishable__E61F1zKiN431iU2AlKySQ_PZOsOtgi';
 
   function toB64url(str) {
     var bytes = new TextEncoder().encode(str);
@@ -249,33 +248,9 @@
     (document.body || document.documentElement).appendChild(frame);
   }
 
-  // Un signe par connexion, une fois son cookie écrit (le jeton doit être encore valable)
-  function signal(storage) {
-    var key = authKey(storage);
-    if (!key || !window.fetch) return;
-    try {
-      var s = JSON.parse(storage.getItem(key));
-      var claims = JSON.parse(fromB64url(s.access_token.split('.')[1]));
-      if (!claims.session_id || storage.getItem(SIGNALED) === claims.session_id) return;
-      if (!(s.expires_at * 1000 > Date.now() + 60000)) return;
-      fetch('https://' + AUTH.exec(key)[1] + '.supabase.co/rest/v1/relay_pings', {
-        method: 'POST',
-        headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + s.access_token, 'Content-Type': 'application/json', Prefer: 'resolution=ignore-duplicates,return=minimal' },
-        body: JSON.stringify({ session_id: claims.session_id, host: location.protocol + '//' + location.host }),
-      })
-        .then(function (res) { if (res.ok) storage.setItem(SIGNALED, claims.session_id); })
-        .catch(function () {});
-    } catch (e) { /* pas de connexion lisible : rien à signaler */ }
-  }
-
-  var signaledAt = 0;
   function keepBridge() {
     if (leaving || localStorage.getItem(MOVED)) return;
-    var changed = writeBridge(localStorage, APEX);
-    if (changed || Date.now() - signaledAt > 60000) {
-      signaledAt = Date.now();
-      signal(localStorage);
-    }
+    writeBridge(localStorage, APEX);
   }
 
   // --- Démarrage ------------------------------------------------------------------------------------
