@@ -270,6 +270,37 @@ export function potBuy(buyerId, itemId) {
   return { ok: true };
 }
 
+// --- Tsedaka ---------------------------------------------------------------------------
+export function tsedakaGive(childId, amount, association) {
+  const s = getState();
+  const child = s.children.find((c) => c.id === childId);
+  const res = domain.applyTsedaka(s, { familyId: familyId(), child, amount, association, id: uid() });
+  if (res.amount) {
+    setState({ ledger: res.ledger });
+    commit(res.ops);
+  }
+  return res;
+}
+
+// Les parents ont versé les dons d'une association (to : l'association choisie pour « Les parents choisiront »)
+export function tsedakaPaid(association, to = null) {
+  const res = domain.applyTsedakaPaid(getState(), { familyId: familyId(), association, to });
+  if (res.count) {
+    setState({ ledger: res.ledger });
+    commit(res.ops);
+  }
+  return res;
+}
+
+export function tsedakaCancel(id) {
+  const res = domain.applyTsedakaCancel(getState(), { id });
+  if (res.row) {
+    setState({ ledger: res.ledger });
+    commit(res.ops);
+  }
+  return res;
+}
+
 // Nouveau trésor de la fratrie (après en avoir ouvert un, ou pour changer de récompense)
 export function newTreasure({ goal, reward }) {
   updateSettings({ treasure: { goal, reward, start: toISODate(new Date()), done: null } });
@@ -302,9 +333,9 @@ export function saveLook(childId, look) {
 }
 
 // --- Enfants -------------------------------------------------------------------------
-export function addChild({ name, age, color, look }) {
+export function addChild({ name, age, sex = null, color, look }) {
   const s = getState();
-  const child = makeChild(familyId(), { name, age, color, look: look || randomLook() }, s.children.length);
+  const child = makeChild(familyId(), { name, age, sex, color, look: look || randomLook() }, s.children.length);
   put('children', [child]);
   const links = s.tasks.filter((t) => !t.archived).map((t) => ({ family_id: familyId(), child_id: child.id, task_id: t.id }));
   if (links.length) put('child_tasks', links);

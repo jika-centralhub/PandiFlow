@@ -5,6 +5,7 @@ import { useStore } from '../lib/store.js';
 import { sfx } from '../lib/sounds.js';
 import { prefersReducedMotion } from '../lib/util.js';
 import { KID_PALETTE } from '../avatar/palette.js';
+import { SEXES } from '../domain.js';
 
 // Compteur de pandi : le nombre défile comme un compteur kilométrique
 export function PandiCounter({ value, big = false, counterRef, id }) {
@@ -102,6 +103,13 @@ export function ColorPicker({ value, onChange }) {
       <input type="color" aria-label="Choisir une autre couleur" value=${valid ? value : '#ff7eb6'} onChange=${(e) => { sfx.pop(); onChange(e.target.value); }} />
     </label>
   </div>`;
+}
+
+// Sexe de l'enfant : Garçon, Fille, ou rien (on retouche le choix pour l'enlever)
+export function SexPicker({ value, onChange }) {
+  return html`<span class="sex-picker">
+    ${Object.entries(SEXES).map(([k, o]) => html`<button key=${k} class=${`p-btn ${value === k ? 'primary' : ''}`} aria-pressed=${value === k} onClick=${() => { sfx.pop(); onChange(value === k ? null : k); }}>${o.icon} ${o.label}</button>`)}
+  </span>`;
 }
 
 export function Loading() {

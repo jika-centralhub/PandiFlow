@@ -228,6 +228,20 @@ export const garageSfx = {
     tone(200, { dur: 0.22, type: 'sine', vol: 0.25, slide: 600 });
     tone(520, { at: 0.22, dur: 0.3, type: 'sine', vol: 0.2, slide: -320 });
   },
+  // Pages qui tournent, puis une petite note claire
+  page: () => {
+    [0, 0.32, 0.6].forEach((at) => noise({ at, dur: 0.16, vol: 0.12, freq: 4200, q: 0.7 }));
+    tone(1319, { at: 0.8, dur: 0.6, type: 'sine', vol: 0.1 });
+  },
+  // Harpe du roi David : un arpège qui monte
+  harp: () => [587, 740, 880, 1175, 1480].forEach((f, i) => tone(f, { at: i * 0.09, dur: 1.1, type: 'triangle', vol: 0.08 })),
+  // Bougies de Chabbat : un carillon doux
+  chime: () => [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, { at: i * 0.18, dur: 1.2, type: 'sine', vol: 0.08 })),
+  // Clochettes des rimonim du Sefer Torah
+  bells: () => {
+    for (let i = 0; i < 9; i++) tone(i % 2 ? 2794 : 3136, { at: i * 0.11, dur: 0.35, type: 'sine', vol: 0.07 });
+    tone(1568, { at: 0.2, dur: 1.4, type: 'sine', vol: 0.06 });
+  },
 };
 
 // --- Musique du minuteur -------------------------------------------------------------------

@@ -37,22 +37,22 @@ export const EMOTIONS = [
     color: '#9b7bff',
     validate: 'Avoir peur, ça arrive à tout le monde, même aux super-héros. Ensemble, on va faire revenir le calme.',
     techniques: ['ballon', 'sens', 'bulle'],
-    tip: 'Évitez « ce n’est rien » : la peur est bien réelle pour lui. Restez tout près, parlez doucement, rassurez avec des faits simples.',
+    tip: 'Évitez « ce n’est rien » : la peur est bien réelle pour {lui|elle}. Restez tout près, parlez doucement, rassurez avec des faits simples.',
   },
   {
     id: 'inquiet',
-    label: 'Inquiet',
+    label: '{Inquiet|Inquiète}',
     weather: 'Nuages',
     sky: '☁️',
     face: '😟',
     color: '#6fb0c9',
     validate: 'Quand on s’inquiète, la tête tourne vite comme un manège. On va la ralentir tout doucement.',
     techniques: ['fleur', 'sens', 'citron'],
-    tip: 'Aidez-le à dire ce qui l’inquiète, puis faites un tout petit plan ensemble (« Demain matin, on en parle à la maîtresse »).',
+    tip: 'Aidez-{le|la} à dire ce qui l’inquiète, puis faites un tout petit plan ensemble (« Demain matin, on en parle à la maîtresse »).',
   },
   {
     id: 'excite',
-    label: 'Trop excité',
+    label: 'Trop {excité|excitée}',
     weather: 'Tornade',
     sky: '🌪️',
     face: '🤪',
@@ -64,7 +64,7 @@ export const EMOTIONS = [
 ];
 
 export const PARENT_TIPS = [
-  'Restez calme vous-même : votre calme est contagieux. Respirez lentement avec lui.',
+  'Restez calme vous-même : votre calme est contagieux. Respirez lentement avec {lui|elle}.',
   'Mettez-vous à sa hauteur, parlez doucement, avec peu de mots.',
   'Nommez l’émotion : « Je vois que tu es très en colère. » Mettre un mot dessus aide déjà à l’apaiser.',
   'Accueillez d’abord, les solutions viennent après la crise.',
@@ -175,7 +175,7 @@ export const TECHNIQUES = {
     kind: 'steps',
     intro: 'On va aller chercher un joli souvenir dans ta tête.',
     steps: [
-      { text: 'Ferme les yeux. Pense à un moment où tu étais très heureux.', icon: '😌', anim: 'breathe', secs: 7 },
+      { text: 'Ferme les yeux. Pense à un moment où tu étais très {heureux|heureuse}.', icon: '😌', anim: 'breathe', secs: 7 },
       { text: 'Où étais-tu ? Avec qui ?', icon: '🏖️', anim: 'pop', secs: 6 },
       { text: 'Qu’est-ce que tu entendais ? Qu’est-ce que tu sentais ?', icon: '👂', anim: 'pop', secs: 7 },
       { text: 'Garde ce souvenir bien au chaud dans ton cœur.', icon: '💖', anim: 'breathe', secs: 6 },

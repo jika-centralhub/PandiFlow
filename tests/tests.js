@@ -3,6 +3,7 @@ import { eveningDate, addDays, weekday, currentRoutine, routineDate, atTime } fr
 import * as cd from '../js/lib/countdown.js';
 import { sha256Bytes, hashPin } from '../js/lib/pin.js';
 import { normalizeLook, DEFAULT_LOOK, randomLook } from '../js/avatar/palette.js';
+import { getItem, offeredTo, starredFor, rayonOf } from '../js/avatar/items.js';
 
 const results = [];
 function test(name, fn) {
@@ -493,6 +494,56 @@ test('pont : la page cachée lit le cookie, range sans écraser, puis l’efface
   eq(bridgeRun.n, 1);
   eq(bridgeRun.stored, { 'pandiflow-email': 'deja@la.fr', [SESSION]: sessionValue });
   ok(!bridgeRun.left.includes('pf_pont'), `cookie encore là : ${bridgeRun.left}`);
+});
+
+// --- Sexe de l'enfant et boutique ------------------------------------------------------------------
+test('accords : féminin pour une fille, masculin sinon', () => {
+  eq(d.accorder('Tu étais très {heureux|heureuse}', { sex: 'fille' }), 'Tu étais très heureuse');
+  eq(d.accorder('Tu étais très {heureux|heureuse}', { sex: 'garcon' }), 'Tu étais très heureux');
+  eq(d.accorder('{Prêt|Prête} ?', {}), 'Prêt ?');
+  eq(d.accordDeep({ a: ['{le|la}'], n: 3 }, { sex: 'fille' }), { a: ['la'], n: 3 });
+});
+test('boutique : kippas et talit katan proposés aux garçons seulement, mis en avant pour eux', () => {
+  const kippa = getItem('kippa_velours');
+  ok(kippa && rayonOf(kippa) === 'judaica' && kippa.slot === 'hat');
+  ok(!offeredTo(kippa, 'fille') && offeredTo(kippa, 'garcon') && offeredTo(kippa, null));
+  ok(starredFor(kippa, 'garcon') && !starredFor(kippa, null));
+  ok(starredFor(getItem('bougies_chabbat'), 'fille') && offeredTo(getItem('bougies_chabbat'), 'garcon'));
+});
+
+// --- Tsedaka ----------------------------------------------------------------------------------------
+function tsedakaFixture() {
+  const s = { ...fixture(), ledger: [{ id: 'b1', child_id: 'c1', kind: 'manual', amount: 40 }, { id: 'b2', child_id: 'c2', kind: 'manual', amount: 10 }] };
+  return s;
+}
+test('tsedaka : un don retire les pandi, sans dépasser la cagnotte', () => {
+  const s = tsedakaFixture();
+  const r = d.applyTsedaka(s, { familyId: 'f', child: { id: 'c1' }, amount: 25, association: 'Kollel', id: 'z1' });
+  eq(r.amount, 25);
+  eq(d.balance('c1', { ...s, ledger: r.ledger }), 15);
+  eq(d.tsedakaGiven('c1', { ledger: r.ledger }), 25);
+  eq(d.applyTsedaka({ ...s, ledger: r.ledger }, { familyId: 'f', child: { id: 'c1' }, amount: 99, id: 'z2' }).amount, 15);
+});
+test('tsedaka : à verser par association, en euros au taux des parents, puis versé', () => {
+  let s = { ...tsedakaFixture(), settings: d.mergeSettings({ tsedaka: { rate: 10, associations: ['Kollel'] } }) };
+  s = { ...s, ledger: d.applyTsedaka(s, { familyId: 'f', child: { id: 'c1' }, amount: 25, association: 'Kollel', id: 'z1' }).ledger };
+  s = { ...s, ledger: d.applyTsedaka(s, { familyId: 'f', child: { id: 'c2' }, amount: 5, association: null, id: 'z2' }).ledger };
+  const due = d.tsedakaDue(s);
+  eq(due.map((g) => [g.association, g.pandi, g.euros]), [['Kollel', 25, 2.5], [d.TSEDAKA_LATER, 5, 0.5]]);
+  const paid = d.applyTsedakaPaid(s, { familyId: 'f', association: d.TSEDAKA_LATER, to: 'Hôpital' });
+  s = { ...s, ledger: paid.ledger };
+  eq(d.tsedakaDue(s).map((g) => g.association), ['Kollel']);
+  eq(d.tsedakaPaidTotals(s), { 'Hôpital': 5 });
+  eq(d.balance('c2', s), 5, 'le versement ne touche pas la cagnotte');
+  // Un don versé ne s'annule plus ; un don en attente, si
+  eq(d.applyTsedakaCancel(s, { id: 'z2' }).ops.length, 0);
+  eq(d.applyTsedakaCancel(s, { id: 'z1' }).ops.length, 1);
+});
+test('tsedaka : badges de mitsva accordés', () => {
+  const s = { ledger: [{ id: 'z', child_id: 'c1', kind: 'tsedaka', amount: -260 }] };
+  const b = d.tsedakaBadges({ id: 'c1', sex: 'fille' }, s);
+  eq(b.filter((x) => x.got).length, 4);
+  eq(b[3].label, 'Petite tsadéket');
 });
 
 // --- Affichage ------------------------------------------------------------------------------------

@@ -5,6 +5,7 @@ import { REWARDS } from './rewards.js';
 import { COSTUMES } from './costumes.js';
 import { GARAGE_ITEMS, GARAGE_SLOTS } from './garage.js';
 import { starPath, heartPath, grad, GOLD, sparkle, mirror } from './draw.js';
+import { JUDAICA_WEAR } from './judaica.js';
 
 export { starPath, heartPath };
 
@@ -508,11 +509,11 @@ const withSlot = (slot, list) => list.map((it) => ({ ...it, slot }));
 
 export const ITEMS = [
   ...withSlot('skin', COSTUMES),
-  ...withSlot('hat', hats),
+  ...withSlot('hat', [...hats, ...JUDAICA_WEAR.hats]),
   ...withSlot('face', faces),
   ...withSlot('neck', necks),
   ...withSlot('back', backs),
-  ...withSlot('outfit', outfits),
+  ...withSlot('outfit', [...outfits, ...JUDAICA_WEAR.outfits]),
   ...withSlot('pet', pets),
   ...withSlot('bg', backgrounds),
   ...withSlot('fx', effects),
@@ -527,3 +528,9 @@ export const shopItems = () => ITEMS.filter((i) => !i.exclusive);
 export const rewardItems = () => ITEMS.filter((i) => i.exclusive && !i.pot);
 export const potItems = () => ITEMS.filter((i) => i.pot);
 export const isGarageSlot = (slot) => slot in GARAGE_SLOTS;
+// Rayon de la boutique où se range un objet (les kippas et le talit katan vont au rayon Judaïsme)
+export const rayonOf = (item) => item?.rayon || item?.slot;
+// Boutique adaptée au sexe de l'enfant : certains objets ne sont proposés qu'aux garçons (only),
+// d'autres sont mis en avant (star). Sans sexe précisé, tout est proposé, rien n'est mis en avant.
+export const offeredTo = (item, sex) => !item.only || !sex || item.only === sex;
+export const starredFor = (item, sex) => Boolean(sex) && (item.star === sex || item.only === sex);

@@ -257,8 +257,9 @@ export const COVERED_BY_SKIN = ['back', 'outfit', 'neck', 'face', 'hat'];
  *  - expr : neutral | happy | joy | encourage | focus
  *  - tryOn : { slot, itemId } pour essayer un objet en boutique
  *  - pose : idle | dance | cheer (bras levés)
+ *  - nest : { x, y, w, h } pour se dessiner à l'intérieur d'une autre image SVG (la scène de l'enfant)
  */
-export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'full', tryOn = null, pose = 'idle', seed = '', still = false, class: cls = '', style }) {
+export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'full', tryOn = null, pose = 'idle', seed = '', still = false, class: cls = '', style, nest = null }) {
   const id = useMemo(() => `av${++instance}`, []);
   const look = normalizeLook(rawLook);
   const portrait = look.portrait && !look.portrait.off ? look.portrait : null;
@@ -343,7 +344,10 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
   const browR = expr === 'focus' ? 'M132 85 Q121 86 112 91' : BROWS[look.brows](1);
   const funFace = items.face;
 
-  return html`<svg class=${`avatar ${still ? 'still' : ''} ${geo ? 'whole3d' : ''} pose-${pose} ${cls}`} viewBox=${viewBox} xmlns="http://www.w3.org/2000/svg" style=${style} role="img" aria-label="Avatar">
+  // Dans une autre image SVG, la taille CSS en px vaut des unités de cette image
+  const box = nest ? { x: nest.x, y: nest.y, width: nest.w, height: nest.h } : {};
+  const css = nest ? { ...(style || {}), width: `${nest.w}px`, height: `${nest.h}px` } : style;
+  return html`<svg class=${`avatar ${still ? 'still' : ''} ${geo ? 'whole3d' : ''} pose-${pose} ${cls}`} viewBox=${viewBox} xmlns="http://www.w3.org/2000/svg" style=${css} ...${box} role="img" aria-label="Avatar">
     <defs>
       <radialGradient id=${`${id}-skin`} cx="42%" cy="34%" r="70%">
         <stop offset="0%" stop-color=${shade(skin, 0.2)} />

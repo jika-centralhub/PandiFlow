@@ -9,6 +9,7 @@ import { sfx } from '../lib/sounds.js';
 import { burst, confettiBurst } from '../anim/fx.js';
 import { rand } from '../lib/util.js';
 import { heartPath } from '../avatar/draw.js';
+import { accordDeep } from '../domain.js';
 
 function Bubble({ children, k }) {
   return html`<div class="cc-bubble" key=${k}>${children}</div>`;
@@ -123,7 +124,7 @@ function Breath({ tech, color, onDone }) {
   const big = phase === 'in' || phase === 'hold';
   const last = cycle === tech.cycles - 1;
   const anger = Math.max(0, 1 - cycle / Math.max(1, tech.cycles - 1));
-  const text = phase === 'ready' ? 'Prêt ? On commence dans…' : phase === 'calm' ? tech.endText : phase === 'in' ? tech.inText : phase === 'hold' ? tech.holdText : last && tech.lastOutText ? tech.lastOutText : tech.outText;
+  const text = phase === 'ready' ? tech.readyText || 'Prêt ? On commence dans…' : phase === 'calm' ? tech.endText : phase === 'in' ? tech.inText : phase === 'hold' ? tech.holdText : last && tech.lastOutText ? tech.lastOutText : tech.outText;
   return html`<div class=${`cc-breath v-${tech.visual} b-${phase}`} style=${{ '--c': color, '--secs': `${secs}s` }}>
     <div class="cc-visual">
       <div class=${`cc-orb ${big ? 'big' : ''}`} />
@@ -274,7 +275,10 @@ export function CalmCorner({ kids, onClose }) {
 
   const color = emotion?.color || '#9b7bff';
   const techId = emotion ? emotion.techniques[techIndex % emotion.techniques.length] : null;
-  const tech = techId ? TECHNIQUES[techId] : null;
+  // Textes accordés au sexe de l'enfant (« Prête ? », « Inquiète »…)
+  const tech = techId ? accordDeep({ readyText: '{Prêt|Prête} ? On commence dans…', ...TECHNIQUES[techId] }, child) : null;
+  const emotions = accordDeep(EMOTIONS, child);
+  const emo = emotion ? emotions.find((e) => e.id === emotion.id) : null;
   const name = child?.name || '';
   const Runner = tech ? RUNNERS[tech.kind] : null;
 
@@ -310,7 +314,7 @@ export function CalmCorner({ kids, onClose }) {
   let bubble = '';
   if (step === 'who') bubble = 'Qui a besoin d’un moment calme ?';
   else if (step === 'feel') bubble = `Comment tu te sens, ${name || 'mon ami'} ?`;
-  else if (step === 'validate') bubble = ending ? (ending === 'same' ? 'C’est d’accord, ça arrive. On essaie autre chose ensemble ?' : 'On continue un petit peu ? Encore une idée :') : emotion.validate;
+  else if (step === 'validate') bubble = ending ? (ending === 'same' ? 'C’est d’accord, ça arrive. On essaie autre chose ensemble ?' : 'On continue un petit peu ? Encore une idée :') : emo.validate;
   else if (step === 'do') bubble = tech.intro;
   else if (step === 'after') bubble = 'Comment tu te sens maintenant ?';
   else if (step === 'end') bubble = `Bravo ${name} ! Tu as calmé ${emotion.id === 'colere' ? 'ton orage' : emotion.id === 'tristesse' ? 'ta pluie' : emotion.id === 'excite' ? 'ta tornade' : 'tes nuages'}. Tu veux un câlin ou en parler ?`;
@@ -338,7 +342,7 @@ export function CalmCorner({ kids, onClose }) {
         </div>`}
 
         ${step === 'feel' && html`<div class="cc-weather">
-          ${EMOTIONS.map((e, i) => html`<button key=${e.id} class="cc-emotion" style=${{ '--e': e.color, '--i': i }} onClick=${() => chooseEmotion(e)}>
+          ${emotions.map((e, i) => html`<button key=${e.id} class="cc-emotion" style=${{ '--e': e.color, '--i': i }} onClick=${() => chooseEmotion(e)}>
             <span class="sky">${e.sky}</span><span class="face">${e.face}</span><b>${e.label}</b><em>${e.weather}</em>
           </button>`)}
         </div>`}
@@ -381,8 +385,8 @@ export function CalmCorner({ kids, onClose }) {
       <div class="sheet" onClick=${(e) => e.stopPropagation()}>
         <button class="close" aria-label="Fermer" onClick=${() => setTips(false)}>✕</button>
         <h2>💡 Pendant la crise</h2>
-        ${emotion && html`<p class="cc-tip-emotion" style=${{ '--e': emotion.color }}>${emotion.face} <b>${emotion.label} :</b> ${emotion.tip}</p>`}
-        <ul>${PARENT_TIPS.map((t) => html`<li key=${t}>${t}</li>`)}</ul>
+        ${emo && html`<p class="cc-tip-emotion" style=${{ '--e': emo.color }}>${emo.face} <b>${emo.label} :</b> ${emo.tip}</p>`}
+        <ul>${accordDeep(PARENT_TIPS, child).map((t) => html`<li key=${t}>${t}</li>`)}</ul>
         <p class="hint">Si les crises sont très fréquentes ou très fortes, parlez-en à votre médecin ou à un psychologue pour enfants.</p>
       </div>
     </div>`}

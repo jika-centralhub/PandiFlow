@@ -27,6 +27,8 @@ export const DEFAULT_SETTINGS = {
   team: { threshold: 80, bonus: 10 },
   helpBonus: 2,
   treasure: { goal: 60, reward: 'Une sortie au cinéma 🎬', start: null, done: null },
+  // Tsedaka : combien de pandi font 1 € à verser, et les associations proposées aux enfants
+  tsedaka: { rate: 10, associations: [] },
 };
 
 // Deux routines : le soir et le matin avant l'école. Même barème, même cagnotte, mêmes défis.
@@ -46,8 +48,24 @@ export function mergeSettings(settings) {
     behaviorPoints: { ...DEFAULT_SETTINGS.behaviorPoints, ...(s.behaviorPoints || {}) },
     team: { ...DEFAULT_SETTINGS.team, ...(s.team || {}) },
     treasure: { ...DEFAULT_SETTINGS.treasure, ...(s.treasure || {}) },
+    tsedaka: { ...DEFAULT_SETTINGS.tsedaka, ...(s.tsedaka || {}) },
   };
 }
+
+// Sexe de l'enfant (facultatif) : accorde les textes, aide le personnage 3D, adapte la boutique
+export const SEXES = { garcon: { label: 'Garçon', icon: '👦' }, fille: { label: 'Fille', icon: '👧' } };
+export const sexOf = (child) => (child?.sex === 'fille' || child?.sex === 'garcon' ? child.sex : null);
+// accord(enfant, 'champion', 'championne') ; sans sexe précisé : le masculin, comme avant
+export const accord = (child, masc, fem) => (sexOf(child) === 'fille' ? fem : masc);
+// Texte avec des accords « {masculin|féminin} » : « Tu étais très {heureux|heureuse} »
+// Même chose dans tout un objet (textes d'une technique du coin calme…)
+export function accordDeep(value, child) {
+  if (typeof value === 'string') return accorder(value, child);
+  if (Array.isArray(value)) return value.map((v) => accordDeep(v, child));
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, accordDeep(v, child)]));
+  return value;
+}
+export const accorder = (text, child) => String(text ?? '').replace(/\{([^{}|]*)\|([^{}|]*)\}/g, (_, m, f) => accord(child, m, f));
 
 const bySort = (a, b) => (a.sort ?? 0) - (b.sort ?? 0) || String(a.title || a.name).localeCompare(String(b.title || b.name));
 
@@ -447,3 +465,90 @@ export function applyPotPurchase(state, { familyId, buyer, item, id, now = new D
     ops: [{ op: 'put', table: 'ledger', rows: [ledgerRow] }, { op: 'put', table: 'owned_items', rows: ownedRows }],
   };
 }
+
+// --- Tsedaka ----------------------------------------------------------------------------------------
+// L'enfant donne des pandi (kind 'tsedaka', montant négatif, note = association choisie) ; les parents
+// versent l'équivalent en euros à l'association, puis le notent (kind 'tsedakapaid', montant 0,
+// id = 'tsedakapaid-' + id du don). Sans association choisie, ce sont les parents qui décideront.
+export const TSEDAKA_LATER = 'Les parents choisiront';
+export const tsedakaPaidId = (donationId) => `tsedakapaid-${donationId}`;
+
+export function tsedakaRate(settings) {
+  return Math.max(1, Math.round(Number(mergeSettings(settings).tsedaka.rate) || 10));
+}
+
+// Montant en euros (nombre) de pandi donnés, au taux actuel
+export const tsedakaEuros = (pandi, settings) => Math.round((pandi / tsedakaRate(settings)) * 100) / 100;
+export const formatEuros = (n) => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: n % 1 ? 2 : 0 });
+
+export function tsedakaGiven(childId, { ledger }) {
+  let sum = 0;
+  for (const l of ledger) if (l.child_id === childId && l.kind === 'tsedaka') sum -= Number(l.amount) || 0;
+  return sum;
+}
+
+export function applyTsedaka(state, { familyId, child, amount, association, id, now = new Date().toISOString() }) {
+  const value = Math.min(Math.max(0, Math.round(Number(amount) || 0)), Math.max(0, balance(child.id, state)));
+  if (!value) return { error: 'Il n’y a pas assez de pandi.', ledger: state.ledger, ops: [], amount: 0 };
+  const note = String(association || '').trim().slice(0, 60) || TSEDAKA_LATER;
+  const row = { id, family_id: familyId, child_id: child.id, kind: 'tsedaka', amount: -value, evening_date: null, note, created_at: now };
+  return { ledger: [...state.ledger, row], ops: [{ op: 'put', table: 'ledger', rows: [row] }], amount: value, row };
+}
+
+// Dons pas encore versés, regroupés par association : { association, pandi, euros, rows, kids: { childId: pandi } }
+export function tsedakaDue(state) {
+  const paid = new Set(state.ledger.filter((l) => l.kind === 'tsedakapaid').map((l) => l.id));
+  const by = new Map();
+  for (const l of state.ledger) {
+    if (l.kind !== 'tsedaka' || paid.has(tsedakaPaidId(l.id))) continue;
+    const key = l.note || TSEDAKA_LATER;
+    const g = by.get(key) || { association: key, pandi: 0, rows: [], kids: {} };
+    const p = -(Number(l.amount) || 0);
+    g.pandi += p;
+    g.kids[l.child_id] = (g.kids[l.child_id] || 0) + p;
+    g.rows.push(l);
+    by.set(key, g);
+  }
+  return [...by.values()].map((g) => ({ ...g, euros: tsedakaEuros(g.pandi, state.settings) })).sort((a, b) => b.pandi - a.pandi);
+}
+
+// Total déjà versé par association (en pandi), pour l'historique des parents
+export function tsedakaPaidTotals(state) {
+  const paid = new Set(state.ledger.filter((l) => l.kind === 'tsedakapaid').map((l) => l.id));
+  const by = {};
+  for (const l of state.ledger) if (l.kind === 'tsedaka' && paid.has(tsedakaPaidId(l.id))) by[l.note || TSEDAKA_LATER] = (by[l.note || TSEDAKA_LATER] || 0) - (Number(l.amount) || 0);
+  return by;
+}
+
+// Les parents ont versé les dons de cette association (to : autre association si l'enfant a laissé choisir)
+export function applyTsedakaPaid(state, { familyId, association, to = null, now = new Date().toISOString() }) {
+  const group = tsedakaDue(state).find((g) => g.association === association);
+  if (!group) return { ledger: state.ledger, ops: [], count: 0 };
+  const name = String(to || '').trim().slice(0, 60);
+  const moved = name && name !== association ? group.rows.map((l) => ({ ...l, note: name })) : [];
+  const paidRows = group.rows.map((l) => ({ id: tsedakaPaidId(l.id), family_id: familyId, child_id: l.child_id, kind: 'tsedakapaid', amount: 0, evening_date: null, note: name || association, created_at: now }));
+  const movedIds = new Set(moved.map((l) => l.id));
+  const ledger = [...state.ledger.map((l) => (movedIds.has(l.id) ? moved.find((m) => m.id === l.id) : l)), ...paidRows];
+  const ops = [...(moved.length ? [{ op: 'put', table: 'ledger', rows: moved }] : []), { op: 'put', table: 'ledger', rows: paidRows }];
+  return { ledger, ops, count: paidRows.length };
+}
+
+// Un don pas encore versé peut être annulé par les parents : les pandi reviennent à l'enfant
+export function applyTsedakaCancel(state, { id }) {
+  const row = state.ledger.find((l) => l.id === id && l.kind === 'tsedaka');
+  if (!row || state.ledger.some((l) => l.id === tsedakaPaidId(id))) return { ledger: state.ledger, ops: [] };
+  return { ledger: state.ledger.filter((l) => l.id !== id), ops: [{ op: 'del', table: 'ledger', match: { id } }], row };
+}
+
+// Badges de mitsva, selon le total donné (en pandi)
+export const TSEDAKA_BADGES = [
+  { min: 1, icon: '🌱', label: 'Première mitsva' },
+  { min: 30, icon: '💛', label: 'Cœur généreux' },
+  { min: 100, icon: '🤲', label: 'Main tendue' },
+  { min: 250, icon: '⭐', label: '{Petit tsadik|Petite tsadéket}' },
+  { min: 500, icon: '🕯️', label: 'Lumière du monde' },
+];
+export const tsedakaBadges = (child, state) => {
+  const given = tsedakaGiven(child.id, state);
+  return TSEDAKA_BADGES.map((b) => ({ ...b, label: accorder(b.label, child), got: given >= b.min }));
+};

@@ -62,10 +62,14 @@ const SAME_CHARACTER =
   "This is a Pixar-style 3D animated film character on a flat chroma-key green background. Keep exactly the same character: same face, hair, body, " +
   "white t-shirt, colors, art style, lighting and green background, with the same framing, the same head size and the head at the same position in the image. ";
 
-const PROMPTS: Record<Expr, string> = {
-  happy:
-    `Transform the child in this photo into a ${LOOK} Keep a strong, recognizable likeness of this child: same hairstyle and hair color, face shape, ` +
-    `eye shape and color, skin tone, eyebrows, nose, ears, and freckles or glasses if any. ${FRAMING} ${POSES.rest} ${SMILE}`,
+// Sexe de l'enfant indiqué par les parents (children.sex) : il aide le modèle à garder la ressemblance
+type Sex = "garcon" | "fille" | null;
+const kid = (sex: Sex) => (sex === "fille" ? "little girl" : sex === "garcon" ? "little boy" : "child");
+const happyPrompt = (sex: Sex) =>
+  `Transform the ${kid(sex)} in this photo into a ${LOOK} Keep a strong, recognizable likeness of this ${kid(sex)}: same hairstyle and hair color, face shape, ` +
+  `eye shape and color, skin tone, eyebrows, nose, ears, and freckles or glasses if any. ${FRAMING} ${POSES.rest} ${SMILE}`;
+
+const PROMPTS: Record<Exclude<Expr, "happy">, string> = {
   encourage:
     SAME_CHARACTER + "Keep the same pose, with the hands on the hips. " +
     "Change only the facial expression: determined and encouraging, a small confident half-smile with the mouth closed, " +
@@ -82,7 +86,7 @@ const FROM_FACE =
 const DESCRIBE_PROMPT = `Describe the child in this photo for a character artist who will recreate them as a 3D animated film character.
 Write one paragraph in English, 60 to 90 words: hairstyle, hair length and color, face shape, skin tone, eye shape and color, eyebrows, nose, ears,
 smile and teeth, freckles, glasses, and any other distinctive visible feature. Describe only what is visible; do not name, identify or speculate about the person.`;
-const fromDescription = (description: string) => `A young child as a ${LOOK} ${description} ${FRAMING} ${POSES.rest} ${SMILE}`;
+const fromDescription = (description: string, sex: Sex) => `A young ${kid(sex)} as a ${LOOK} ${description} ${FRAMING} ${POSES.rest} ${SMILE}`;
 
 // Repères, en fraction de la largeur (x) ou de la hauteur (y) de l'image. « Left » = côté gauche de l'image.
 const FACE_KEYS = ["eyeLeftX", "eyeLeftY", "eyeRightX", "eyeRightY", "chinY", "topY", "headLeftX", "headRightX"] as const;
@@ -220,8 +224,9 @@ Deno.serve(async (req) => {
   // 5. Création du visage par OpenAI
   let face: Face;
   try {
-    const prompt = fromFace ? FROM_FACE : PROMPTS[expr as Expr];
-    face = await createFace(apiKey, prompt, input, deadline, expr === "happy" && !fromFace ? { image: image as string, mediaType: mediaType as string } : null);
+    const sex = (child.sex === "fille" || child.sex === "garcon" ? child.sex : null) as Sex;
+    const prompt = fromFace ? FROM_FACE : expr === "happy" ? happyPrompt(sex) : PROMPTS[expr as Exclude<Expr, "happy">];
+    face = await createFace(apiKey, prompt, input, deadline, expr === "happy" && !fromFace ? { image: image as string, mediaType: mediaType as string, sex } : null);
   } catch (e) {
     await refund();
     const { message, status, detail } = explain(e);
@@ -251,7 +256,7 @@ Deno.serve(async (req) => {
 type Face = { b64: string; model: string; via: "photo" | "description" };
 type OpenAIError = Error & { status?: number; code?: string; type?: string };
 
-async function createFace(apiKey: string, prompt: string, input: Blob, deadline: number, photo: { image: string; mediaType: string } | null): Promise<Face> {
+async function createFace(apiKey: string, prompt: string, input: Blob, deadline: number, photo: { image: string; mediaType: string; sex: Sex } | null): Promise<Face> {
   try {
     return { ...(await withModels((model) => openai(apiKey, model, prompt, input, deadline))), via: "photo" };
   } catch (e) {
@@ -259,7 +264,7 @@ async function createFace(apiKey: string, prompt: string, input: Blob, deadline:
     if (!photo || !isModeration(e as OpenAIError)) throw e;
     const description = await describe(photo.image, photo.mediaType, deadline);
     if (!description) throw e;
-    return { ...(await withModels((model) => openai(apiKey, model, fromDescription(description), null, deadline))), via: "description" };
+    return { ...(await withModels((model) => openai(apiKey, model, fromDescription(description, photo.sex), null, deadline))), via: "description" };
   }
 }
 

@@ -1,0 +1,58 @@
+/* ===== Tsedaka : la boîte de l'enfant, ses dons et ses badges de mitsva ; la section des parents ===== */
+.tsedaka { display: flex; flex-direction: column; gap: calc(var(--u) * 2.4); padding: calc(var(--u) * 1); }
+.tsedaka h4 { font-size: calc(var(--u) * 4); margin-top: calc(var(--u) * 1); }
+.tz-hero { display: flex; align-items: center; gap: calc(var(--u) * 3); padding: calc(var(--u) * 3); border-radius: calc(var(--u) * 5); background: linear-gradient(135deg, #eaf0ff, #ffffff); color: var(--ink); }
+.tz-hero h3 { font-size: calc(var(--u) * 4.2); color: #1F45A8; line-height: 1.1; }
+.tz-hero p { font-size: calc(var(--u) * 3.3); color: var(--ink-soft); line-height: 1.3; margin-top: calc(var(--u) * .6); }
+.tz-box { flex: none; width: calc(var(--u) * 12); height: calc(var(--u) * 13); animation: tz-float 3.4s ease-in-out infinite; }
+.tz-box.sm { width: calc(var(--u) * 18); height: calc(var(--u) * 20); margin: 0 auto; }
+.tz-box svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.tz-box.tz-hop { animation: tz-hop .4s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes tz-float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-4px) rotate(2deg); } }
+@keyframes tz-hop { 0% { transform: scale(1); } 40% { transform: scale(1.12, .9); } 100% { transform: scale(1); } }
+.tz-form { display: flex; flex-direction: column; gap: calc(var(--u) * 1.6); }
+.tz-chip { display: inline-flex; align-items: center; gap: calc(var(--u) * .8); }
+.tz-chip .coin { width: calc(var(--u) * 4); height: calc(var(--u) * 4); }
+.tz-assocs { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 34), 1fr)); gap: calc(var(--u) * 1.6); }
+.tz-assoc { display: flex; align-items: center; gap: calc(var(--u) * 1.6); padding: calc(var(--u) * 2.4); border-radius: calc(var(--u) * 3.4); background: rgba(255, 255, 255, .12); box-shadow: inset 0 0 0 2px var(--line);
+  font-weight: 600; font-size: calc(var(--u) * 3.5); text-align: left; line-height: 1.15; transition: transform .15s, background .2s, box-shadow .2s; }
+.tz-assoc span { font-size: calc(var(--u) * 5.4); }
+.tz-assoc.on { background: #fff; color: #1F45A8; box-shadow: inset 0 0 0 3px #3D6FE0, 0 calc(var(--u) * 1) calc(var(--u) * 3) rgba(61, 111, 224, .35); transform: scale(1.03); }
+.tz-assoc.later:not(.on) { opacity: .85; }
+.tz-give { align-self: center; margin-top: calc(var(--u) * 1); }
+.tsedaka .hint { text-align: center; font-size: calc(var(--u) * 3.3); opacity: .9; }
+.tz-empty { padding: calc(var(--u) * 3); }
+.tz-done { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 1.6); padding: calc(var(--u) * 4); border-radius: calc(var(--u) * 5); background: linear-gradient(180deg, #ffffff, #e6eeff); color: var(--ink); text-align: center;
+  animation: stage-in .7s cubic-bezier(.3, 1.5, .5, 1); }
+.tz-done-title { font-size: calc(var(--u) * 7); font-weight: 700; color: #1F45A8; }
+.tz-done p { font-size: calc(var(--u) * 4); line-height: 1.35; }
+.tz-new-badge { display: flex; align-items: center; gap: calc(var(--u) * 1.4); padding: calc(var(--u) * 1.4) calc(var(--u) * 3); border-radius: 999px; background: #fff3b0; color: #8a5a00; font-size: calc(var(--u) * 3.6); animation: tm-clap 1.2s ease-in-out 3; }
+.tz-new-badge span { font-size: calc(var(--u) * 6); }
+.tz-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 24), 1fr)); gap: calc(var(--u) * 1.6); }
+.tz-badge { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * .4); padding: calc(var(--u) * 2); border-radius: calc(var(--u) * 3.4); background: rgba(255, 255, 255, .08); text-align: center; opacity: .55;
+  animation: fade-up .5s ease both; animation-delay: calc(var(--i) * 70ms); }
+.tz-badge .ico { font-size: calc(var(--u) * 8); line-height: 1; }
+.tz-badge b { font-size: calc(var(--u) * 3.2); line-height: 1.1; }
+.tz-badge em { font-style: normal; font-size: calc(var(--u) * 2.8); opacity: .8; }
+.tz-badge.got { opacity: 1; background: linear-gradient(180deg, #fff9e0, #ffe9a0); color: #6b4300; box-shadow: 0 0 0 calc(var(--u) * .5) var(--gold); }
+.tz-badge.got .ico { animation: tz-float 2.6s ease-in-out infinite; }
+.tz-confirm { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 2); text-align: center; }
+.tz-confirm p { font-size: calc(var(--u) * 3.8); line-height: 1.35; }
+
+/* Espace parent */
+.tz-parent .tz-due .title { font-size: calc(var(--u) * 4.2); }
+.tz-parent .tz-due-head .title { font-size: calc(var(--u) * 5); }
+.tz-rows { margin-top: calc(var(--u) * 1); font-size: calc(var(--u) * 3.2); }
+.tz-rows summary { cursor: pointer; color: var(--ink-soft); }
+.tz-row { display: flex; align-items: center; justify-content: space-between; gap: calc(var(--u) * 2); padding: calc(var(--u) * .8) 0; }
+.tz-unit { font-size: calc(var(--u) * 3.4); white-space: nowrap; }
+.tz-tag { display: inline-flex; align-items: center; gap: calc(var(--u) * 1); padding: calc(var(--u) * 1) calc(var(--u) * 1.4) calc(var(--u) * 1) calc(var(--u) * 2.6); border-radius: 999px; background: #e6eeff; color: #1F45A8; font-weight: 600; font-size: calc(var(--u) * 3.3); }
+.tz-tag button { width: calc(var(--u) * 5); height: calc(var(--u) * 5); border-radius: 50%; background: #fff; color: #1F45A8; font-size: calc(var(--u) * 2.8); }
+
+/* Six onglets dans le coin de l'enfant : un peu plus serrés pour tenir sur une ligne */
+.tabs:has(> .tab:nth-child(6)) { font-size: clamp(11px, 2.9cqi, calc(var(--u) * 3.1)); gap: .25em; }
+.tabs:has(> .tab:nth-child(6)) .tab { padding: .45em .4em; }
+
+/* Choix du sexe de l'enfant */
+.sex-picker { display: inline-flex; flex-wrap: wrap; gap: calc(var(--u) * 1.2); }
+.welcome .row:has(.sex-picker) { flex-wrap: wrap; }

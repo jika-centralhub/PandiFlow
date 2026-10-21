@@ -16,12 +16,16 @@ Pensé pour les 5 à 10 ans : grosses tuiles avec émojis, couleurs vives, sons,
 | ⏱️ **Minuteur** | Sur la carte du centre, ⏱️ lance un minuteur de 1 à 15 minutes. L'anneau se vide et change de couleur (vert, jaune, orange, rouge), la carte bat puis tremble ; une petite musique accélère et monte vers la fin, bips des 10 dernières secondes, réveil qui sonne. Touche la carte pour le grand écran (Pandi s'agite de plus en plus), « Fini ! » puis notation avec le temps mis. Plusieurs minuteurs à la fois, gardés sur l'appareil même après un rechargement. |
 | 🌈 **Coin calme** | Pour une colère, une tristesse, une peur, une inquiétude ou trop d'excitation : l'enfant choisit sa « météo », Pandi le guide 1 à 2 minutes (souffle du dragon, fleur et bougie, ballon dans le ventre, la tortue, presser le citron, robot-spaghetti, 5-4-3-2-1, câlin papillon, bulle magique, bocal à paillettes…), puis lui demande comment il se sent. Conseils pour les parents pendant la crise. Rien n'est enregistré. |
 | 🧒 **Avatar** | Personnage dessiné (14 coiffures, 10 teintes de peau, yeux, lunettes, taches de rousseur, dent de lait…), qui cligne des yeux, respire et réagit aux notes. |
-| 📸 **Photo magique** | Une photo de l'enfant est analysée par Claude, qui règle l'avatar pour qu'il lui ressemble. La photo n'est jamais conservée. |
+| 📸 **Photo magique** | Une photo de l'enfant est analysée par Claude, qui règle l'avatar pour qu'il lui ressemble, et OpenAI crée son personnage façon film d'animation 3D. Pendant la transformation, des saynètes 3D défilent dans la bulle (princesse, cowboy à cheval, super-héros, animaux, astronaute, pirate). La photo n'est jamais conservée. |
 | 🛍️ **Boutique** | 40 objets : chapeaux, lunettes, capes et ailes, pyjamas, compagnons animés, décors, effets magiques. |
 | 🎭 **Costumes complets** | 38 tenues qui habillent tout le personnage : pompier, police, médecin, super-héros, 12 héros Marvel et DC (Spider-Man, Iron Man, Captain America, Hulk, Thor, Black Panther, Captain Marvel, Batman, Superman, Wonder Woman, Flash, Aquaman — emblèmes dessinés maison, pas les logos officiels), tortues ninja (4 couleurs), maillots de foot (PSG, OM, OL, France, Israël, Real Madrid, Barça, Brésil — couleurs des équipes, sans logo officiel ; PSG, France et Israël à 500 pandi), rabbin (chapeau, barbe, péot, tsitsit), dompteur de lions, dresseur de dragons, astronaute, chef, chevalier, capitaine pirate, magicien, prince et princesse. |
 | 💰 **Cagnotte** | En touchant le compteur de pandi (code parent), on offre ou retire des pandi hors des routines, avec une raison. Pandi la mascotte saute de joie ou pleure sous son petit nuage. Un retrait ne fait jamais passer la cagnotte sous zéro. |
 | 🏆 **Défis** | Défis cumulatifs (les soirs ratés ne remettent pas à zéro) avec 4 trésors exclusifs animés. |
-| 🚗 **Garage** | À côté de l'avatar, une petite scène animée : 18 véhicules et montures (vélo, kart, voiture de course, de police, camion de pompiers, moto, tracteur, voilier, avion, hélicoptère, fusée, soucoupe, poney, licorne, dragon…), 18 drapeaux sur un mât (France, Israël, Espagne, Italie, Portugal, Belgique, Allemagne, Royaume-Uni, États-Unis, Brésil, Japon, Maroc, Algérie, Tunisie, pirate, arc-en-ciel, damier, PandiFlow) et 10 accessoires (ballons, skate, trophée, guitare, cerf-volant, robot, télescope, batterie…). |
+| 🎬 **Ma scène** | Dans le coin de l'enfant, une seule grande carte : l'enfant vit dans son décor animé (paysage de jour ou de nuit, ou le décor acheté) avec ses objets à côté de lui, à l'échelle. Il monte dans son véhicule quand c'est possible (kart, voitures, moto, tracteur, voilier, avion, hélicoptère, hublot de la fusée, bulle de la soucoupe, poney, licorne, dragon, bus) et part avec lui pendant son numéro ; le vélo et la trottinette sont garés à côté de lui ; livres, bougies et Torah sont posés sur une petite table. Il fait la fête quand il reçoit ou met un objet, et la caméra s'approche de lui pendant qu'il choisit son look. |
+| 🚗 **Garage** | Dans la scène : 18 véhicules et montures (vélo, kart, voiture de course, de police, camion de pompiers, moto, tracteur, voilier, avion, hélicoptère, fusée, soucoupe, poney, licorne, dragon…), 18 drapeaux sur un mât (France, Israël, Espagne, Italie, Portugal, Belgique, Allemagne, Royaume-Uni, États-Unis, Brésil, Japon, Maroc, Algérie, Tunisie, pirate, arc-en-ciel, damier, PandiFlow) et 10 accessoires (ballons, skate, trophée, guitare, cerf-volant, robot, télescope, batterie…). |
+| ✡️ **Judaïsme** | Un rayon de la boutique : 5 kippas (velours noir, srouga au crochet, blanche de Chabbat, Maguen David, ballon de foot) et le talit katan aux tsitsit qui se balancent (proposés aux garçons), sidour, tehilim et houmash qui s'ouvrent en laissant s'envoler des lettres, bougies de Chabbat aux flammes vivantes, Sefer Torah (500 pandi) aux clochettes qui tintent. |
+| 💙 **Tsedaka** | L'enfant met des pandi dans sa boîte de tsedaka (pièces qui volent) et choisit l'association parmi celles des parents, ou les laisse choisir. Les parents voient « À verser : X € » par association (taux réglable, 10 pandi = 1 € par défaut), notent quand c'est versé et peuvent annuler un don en attente. Badges de mitsva de 1 à 500 pandi donnés. |
+| 👦👧 **Garçon ou fille** | Facultatif, dans la fiche de l'enfant : les textes s'accordent (« Bravo championne ! », « Prête ? »), OpenAI sait s'il dessine un garçon ou une fille, et la boutique s'adapte (kippas et talit katan pour les garçons, bougies de Chabbat et tenue de princesse mises en avant pour les filles). |
 | 😇 **Comportement** | Dernière carte du carrousel du soir : super comportement +5, bon comportement +2, à revoir 0 (montants réglables, corrigeable dans l'historique). |
 | 🤝 **Équipe** | Défi d'équipe de la semaine (80 % de vert tous ensemble, matin et soir → pandi + cadeau « duo » pour chacun : médaille, talkies-walkies, capes jumelles, tandem, casquette), « tape là » quand toute l'équipe a fini, trésor de la fratrie (chaque vert remplit une jauge commune → récompense en vrai choisie par les parents), cagnotte commune (on y met des pandi pour acheter ensemble une cabane, un trampoline, une piscine, une tente, un château gonflable ou le bus de la fratrie, validé par un parent), cadeaux de pandi entre enfants et coup de main (+2 pour celui qui aide et celui qui est aidé). |
 | 🎨 **Couleur** | Chaque enfant choisit la couleur de sa colonne (16 couleurs ou nuancier libre) dans « Mon look », ou le parent dans l'espace parent. |
@@ -51,7 +55,7 @@ Puis ouvrir http://localhost:8080. Les tests unitaires sont sur http://localhost
 Le projet Supabase **pandiflow** (région Paris, référence `kyhhkhmwdostzdaksxzw`) a été créé et configuré avec l'outil en ligne de commande Supabase :
 
 - tables et règles de sécurité : [`supabase/schema.sql`](supabase/schema.sql), envoyé avec `supabase db query --linked --project-ref kyhhkhmwdostzdaksxzw --file supabase/schema.sql` ;
-- évolutions envoyées de la même façon depuis [`supabase/migrations/`](supabase/migrations/) : invitations des parents, routine du matin (colonne `routine` des tâches), puis comportement et équipe (nouveaux types d'écritures de la cagnotte) ;
+- évolutions envoyées de la même façon depuis [`supabase/migrations/`](supabase/migrations/) : invitations des parents, routine du matin (colonne `routine` des tâches), puis comportement et équipe (nouveaux types d'écritures de la cagnotte), puis sexe de l'enfant et tsedaka ;
 - adresse du site et redirections autorisées : [`supabase/config.toml`](supabase/config.toml), envoyé avec `supabase config push --project-ref kyhhkhmwdostzdaksxzw` ;
 - URL du projet et clé publique (*publishable*) dans [`js/config.js`](js/config.js). Ces deux valeurs sont publiques par conception : la sécurité repose sur les règles RLS du schéma.
 
@@ -146,6 +150,9 @@ js/lib/countdown.js, timers.js             minuteur : calculs purs / sonnerie, b
 js/lib/emotions.js                         émotions et techniques du coin calme
 js/lib/localRepo.js, supabaseRepo.js       stockage démo (localStorage) / cloud (Supabase)
 js/avatar/                                 personnage SVG, coiffures, objets, costumes, garage, trésors animés
+js/avatar/judaica.js                       rayon Judaïsme : kippas, talit katan, livres, bougies, Sefer Torah
+js/components/KidScene.js                  la scène de l'enfant (lui, son décor, ses objets, la caméra)
+js/components/Tsedaka.js                   boîte de tsedaka de l'enfant et section des parents
 js/avatar/body.js                          haut du corps (mains sur les hanches) : bras articulés, mains à 5 doigts, lumière
 css/routine.css, css/calm.css              carrousel, minuteur, départ, ciel du matin / coin calme
 js/anim/                                   ciel du soir, pièces volantes, confettis
@@ -154,7 +161,8 @@ supabase/schema.sql                        tables + règles de sécurité RLS
 supabase/functions/analyze-photo/          Edge Function photo -> avatar (Claude)
 supabase/functions/make-portrait/          Edge Function photo -> visage 3D (OpenAI, repères par Claude)
 tests/                                     tests unitaires et galerie d'avatars
-tools/                                     serveur de dev, génération des icônes
+tools/                                     serveur de dev, icônes, images des saynètes (make-scene-art.ps1 puis make_scene_art.py)
+assets/scenes/                             images des saynètes de la bulle de transformation
 ```
 
 ### Ajouter un objet à la boutique

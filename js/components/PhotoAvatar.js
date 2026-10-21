@@ -6,6 +6,7 @@ import { useStore } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import { Modal } from './ui.js';
 import { Avatar } from '../avatar/Avatar.js';
+import { MagicBubble } from './MagicBubble.js';
 import { resizeImage } from '../lib/photo.js';
 import { confettiBurst } from '../anim/fx.js';
 import { sfx } from '../lib/sounds.js';
@@ -150,6 +151,7 @@ export function PhotoAvatar({ child, onClose, onEdit }) {
         <h2>Transformation en cours…</h2>
         <div class="photo-frame magic">
           ${photo ? html`<img src=${photo.dataUrl} alt="" />` : html`<${Avatar} look=${child.look} mode="head" seed=${child.id} />`}
+          <${MagicBubble} delay=${photo ? 2600 : 600} />
           <div class="magic-swirl">${['✨', '⭐', '💫', '🌟', '✨', '⭐'].map((e, i) => html`<span key=${i} style=${{ animationDelay: `${-i * 0.4}s` }}>${e}</span>`)}</div>
         </div>
         <div class="magic-msg">${MESSAGES[msg]}</div>

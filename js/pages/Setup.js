@@ -3,13 +3,13 @@ import { html, useState } from '../vendor/preact-htm.js';
 import * as actions from '../lib/actions.js';
 import { Pandi } from '../components/Coin.js';
 import { CHILD_COLORS } from '../avatar/palette.js';
-import { NumberInput } from '../components/ui.js';
+import { NumberInput, SexPicker } from '../components/ui.js';
 import { sfx } from '../lib/sounds.js';
 
 export function Setup() {
   const [mode, setMode] = useState('create');
   const [familyName, setFamilyName] = useState('');
-  const [kids, setKids] = useState([{ name: '', age: 6 }]);
+  const [kids, setKids] = useState([{ name: '', age: 6, sex: null }]);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -47,14 +47,15 @@ export function Setup() {
                 <span class="kid-chip on"><i /></span>
                 <input class="input grow" value=${k.name} maxLength="20" onInput=${(e) => setKid(i, { name: e.target.value })} placeholder=${`Prénom de l'enfant ${i + 1}`} />
                 <${NumberInput} value=${k.age} onChange=${(v) => setKid(i, { age: v })} min=${2} max=${14} /> ans
+                <${SexPicker} value=${k.sex} onChange=${(v) => setKid(i, { sex: v })} />
                 ${kids.length > 1 && html`<button class="p-btn icon" onClick=${() => setKids((l) => l.filter((_, j) => j !== i))} aria-label="Retirer">✕</button>`}
               </div>`)}
-              ${kids.length < 6 && html`<button class="p-btn" onClick=${() => setKids((l) => [...l, { name: '', age: 6 }])}>+ Un autre enfant</button>`}
+              ${kids.length < 6 && html`<button class="p-btn" onClick=${() => setKids((l) => [...l, { name: '', age: 6, sex: null }])}>+ Un autre enfant</button>`}
             </div>
             <p class="hint" style="color:var(--ink-soft)">On prépare 8 tâches du soir et 4 défis pour commencer. Tu pourras tout changer ensuite.</p>
             ${error && html`<p style="color:#b42536;font-weight:600">${error}</p>`}
             <button class="btn btn-green btn-big" style="width:100%" disabled=${busy || !validKids.length}
-              onClick=${() => run(() => actions.createFamily({ name: familyName.trim() || 'Ma famille', children: validKids.map((k) => ({ name: k.name.trim(), age: k.age })) }))}>
+              onClick=${() => run(() => actions.createFamily({ name: familyName.trim() || 'Ma famille', children: validKids.map((k) => ({ name: k.name.trim(), age: k.age, sex: k.sex })) }))}>
               ${busy ? 'Préparation…' : 'Créer ma famille'}
             </button>
           </div>`

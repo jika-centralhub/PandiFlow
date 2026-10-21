@@ -39,21 +39,24 @@ export const DEMO_CHILDREN = [
   {
     name: 'Léa',
     age: 7,
+    sex: 'fille',
     look: { face: 'ovale', skin: 'clair', hair: 'couettes', hairColor: 'chatain', eyes: 'grand', eyeColor: 'vert', freckles: true, missingTooth: true, outfit: 'rose' },
   },
   {
     name: 'Sacha',
     age: 5,
+    sex: 'garcon',
     look: { face: 'rond', skin: 'caramel', hair: 'boucle', hairColor: 'brun_fonce', eyes: 'rieur', eyeColor: 'marron', dimples: true, outfit: 'turquoise' },
   },
 ];
 
-export function makeChild(familyId, { name, age = null, color, look }, index = 0) {
+export function makeChild(familyId, { name, age = null, sex = null, color, look }, index = 0) {
   return {
     id: uid(),
     family_id: familyId,
     name,
     age,
+    sex,
     color: color || CHILD_COLORS[index % CHILD_COLORS.length],
     look: normalizeLook(look),
     equipped: {},

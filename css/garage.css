@@ -1,7 +1,13 @@
 /* ===== PandiFlow — le garage : une carte à côté de l'avatar, avec un paysage vivant ===== */
 
-/* Coin de l'enfant : avatar | garage | boutique */
-.child-body { grid-template-columns: minmax(0, .82fr) minmax(0, 1fr) minmax(0, 1.3fr); }
+/* Coin de l'enfant : sa scène (lui, son décor et ses objets) | boutique */
+.child-body { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.3fr); }
+.scene-card { position: relative; min-height: 0; border-radius: var(--radius); overflow: hidden; background: #2b2368;
+  box-shadow: inset 0 0 0 2px var(--line), 0 calc(var(--u) * 2) calc(var(--u) * 6) rgba(5, 3, 30, .3); animation: page-in .6s cubic-bezier(.3, 1.2, .5, 1) both; }
+.scene-card .kid-scene, .buy-scene .kid-scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.scene-card .gc-hint { position: absolute; bottom: calc(var(--u) * 1.6); right: calc(var(--u) * 2); z-index: 1; font-size: calc(var(--u) * 3); font-weight: 600; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .5); pointer-events: none; animation: hint-blink 2.6s ease-in-out infinite; }
+.kid-scene .ks-kid { cursor: pointer; }
+.kid-scene .ks-stand { animation: stage-in .9s cubic-bezier(.3, 1.4, .5, 1) both; transform-box: fill-box; transform-origin: 50% 100%; }
 .garage-card { position: relative; min-height: 0; border-radius: var(--radius); overflow: hidden;
   box-shadow: inset 0 0 0 2px var(--line), 0 calc(var(--u) * 2) calc(var(--u) * 6) rgba(5, 3, 30, .3); animation: page-in .6s cubic-bezier(.3, 1.2, .5, 1) .1s both; }
 .garage-card .garage-scene, .buy-scene .garage-scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
@@ -9,12 +15,11 @@
   background: rgba(255, 255, 255, .78); color: var(--ink); font-weight: 700; font-size: calc(var(--u) * 3.4); box-shadow: 0 calc(var(--u) * .6) calc(var(--u) * 2) rgba(0, 0, 0, .15); pointer-events: none; }
 .garage-card .gc-hint { position: absolute; bottom: calc(var(--u) * 1.6); right: calc(var(--u) * 2); z-index: 1; font-size: calc(var(--u) * 3); font-weight: 600; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .5); pointer-events: none; animation: hint-blink 2.6s ease-in-out infinite; }
 @media (orientation: portrait) {
-  .child-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 32vh minmax(0, 1fr); }
-  .child-body .child-panel { grid-column: 1 / -1; }
+  .child-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: 36vh minmax(0, 1fr); }
 }
 
 /* Essayage en boutique : l'avatar et son garage côte à côte, sans se chevaucher */
-.buy-scene { display: flex; gap: calc(var(--u) * 2); width: calc(var(--u) * 84); height: calc(var(--u) * 50); }
+.buy-scene { position: relative; width: calc(var(--u) * 84); height: calc(var(--u) * 50); border-radius: calc(var(--u) * 5); overflow: hidden; }
 .buy-scene > .bs-avatar { flex: 0 0 38%; border-radius: calc(var(--u) * 5); overflow: hidden; background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--kid), #fff 40%), var(--kid)); }
 .buy-scene > .bs-avatar .avatar { width: 100%; height: 100%; }
 .buy-scene > .bs-garage { position: relative; flex: 1; border-radius: calc(var(--u) * 5); overflow: hidden; }
@@ -92,3 +97,28 @@
 @keyframes gs-bird-out { from { transform: translate(0, 0); opacity: 1; } to { transform: translate(160px, -110px); opacity: 0; } }
 .gs-hearts path { animation: gs-heart 1.8s ease-in both; }
 @keyframes gs-heart { from { transform: translateY(0) scale(.5); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(-70px) scale(1.2); opacity: 0; } }
+
+/* Judaïsme : livres qui s'ouvrent, bougies de Chabbat, clochettes du Sefer Torah */
+.bk-cover, .bk-page, .bk-letter, .candle-flame, .candle-glow, .rimon, .chabbat-sparkles { transform-box: fill-box; }
+.bk-cover, .bk-page { transform-origin: 0 50%; }
+.bk-letter { opacity: 0; }
+.act-page .bk-cover { animation: bk-open 2.2s ease-in-out; }
+.act-page .bk-page.p0 { animation: bk-flip 1.6s ease-in-out .3s; }
+.act-page .bk-page.p1 { animation: bk-flip 1.6s ease-in-out .5s; }
+.act-page .bk-page.p2 { animation: bk-flip 1.6s ease-in-out .7s; }
+@keyframes bk-open { 0%, 100% { transform: scaleX(1); } 22%, 78% { transform: scaleX(-.92); } }
+@keyframes bk-flip { 0%, 10% { transform: scaleX(1); } 45%, 70% { transform: scaleX(-.86); } 100% { transform: scaleX(1); } }
+.act-page .bk-letter { animation: bk-letter 1.8s ease-out .4s both; }
+@keyframes bk-letter { 0% { opacity: 0; transform: translate(0, 0) scale(.6); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), -46px) scale(1.3); } }
+.candle-flame { transform-origin: 50% 100%; animation: candle .9s ease-in-out infinite alternate; }
+@keyframes candle { 0% { transform: scale(1, 1) rotate(-2deg); } 50% { transform: scale(.92, 1.08) rotate(2deg); } 100% { transform: scale(1.04, .95) rotate(-1deg); } }
+.candle-glow { transform-origin: 50% 50%; animation: glow-soft 2.2s ease-in-out infinite; }
+@keyframes glow-soft { 0%, 100% { opacity: .7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.15); } }
+.act-light .candle-glow { animation: glow-big 2.4s ease-in-out; }
+@keyframes glow-big { 0%, 100% { transform: scale(1); } 40%, 70% { transform: scale(2.6); opacity: 1; } }
+.act-light .chabbat-sparkles { transform-origin: 50% 50%; animation: act-shine 2.4s ease-in-out; }
+.rimon { transform-origin: 50% 100%; animation: rimon 3s ease-in-out infinite; }
+@keyframes rimon { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+.act-bells .rimon { animation: rimon-ring .22s ease-in-out 8 alternate; }
+@keyframes rimon-ring { from { transform: rotate(-10deg); } to { transform: rotate(10deg); } }
+.act-bells { animation: act-shine 2s ease-in-out; }

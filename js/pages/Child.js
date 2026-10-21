@@ -1,10 +1,10 @@
 // Le coin de l'enfant : son avatar, ses affaires, la boutique et ses défis.
-import { html, useRef, useState } from '../vendor/preact-htm.js';
+import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js';
 import { useStore } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { balance, isOwned, challengesForChild, activeChildren } from '../domain.js';
+import { balance, isOwned, challengesForChild, activeChildren, accord, sexOf } from '../domain.js';
 import { Avatar, COVERED_BY_SKIN } from '../avatar/Avatar.js';
-import { ITEMS, SLOTS, shopItems, getItem } from '../avatar/items.js';
+import { ITEMS, SLOTS, shopItems, getItem, rayonOf, offeredTo, starredFor } from '../avatar/items.js';
 import { COSTUME_GROUPS } from '../avatar/costumes.js';
 import { ItemThumb } from '../components/ItemThumb.js';
 import { PandiCounter, Modal, ColorPicker } from '../components/ui.js';
@@ -15,8 +15,10 @@ import { PhotoAvatar } from '../components/PhotoAvatar.js';
 import { PandiBank } from '../components/PandiBank.js';
 import { useParentAction } from '../components/PinGate.js';
 import { burst, confettiBurst, flyCoins, replay } from '../anim/fx.js';
-import { GarageScene, hasGarage } from '../components/Garage.js';
+import { hasGarage } from '../components/Garage.js';
+import { KidScene } from '../components/KidScene.js';
 import { TeamPanel } from '../components/Team.js';
+import { TsedakaPanel } from '../components/Tsedaka.js';
 import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
 
@@ -26,9 +28,10 @@ const TABS = [
   { id: 'boutique', label: 'Boutique', icon: '🛍️' },
   { id: 'defis', label: 'Défis', icon: '🏆' },
   { id: 'equipe', label: 'Équipe', icon: '🤝' },
+  { id: 'tsedaka', label: 'Tsedaka', icon: '💙' },
 ];
 
-const SLOT_ORDER = ['skin', 'hat', 'face', 'back', 'neck', 'outfit', 'pet', 'bg', 'fx', 'vehicle', 'flag', 'gear', 'yard', 'magic'];
+const SLOT_ORDER = ['skin', 'judaica', 'hat', 'face', 'back', 'neck', 'outfit', 'pet', 'bg', 'fx', 'vehicle', 'flag', 'gear', 'yard', 'magic'];
 
 function ItemCard({ item, index, state, price, look, note, onClick }) {
   return html`<button class=${`item-card ${state}`} style=${{ '--i': index }} onClick=${onClick}>
@@ -43,7 +46,7 @@ function ItemCard({ item, index, state, price, look, note, onClick }) {
 // Rayons de la boutique et des affaires : une carte par type d'objet, avec sa couleur
 const RAYON_COLORS = {
   skin: '#FF7EB6', hat: '#FFB84D', face: '#5EC8FF', back: '#9B7BFF', neck: '#FF8A5C', outfit: '#48E0A4', pet: '#C98A5B',
-  bg: '#4D9BFF', fx: '#F06BD8', vehicle: '#E2363F', flag: '#3DD6D0', gear: '#A8E05F', yard: '#2FCF74', magic: '#FFD23F',
+  bg: '#4D9BFF', fx: '#F06BD8', vehicle: '#E2363F', flag: '#3DD6D0', gear: '#A8E05F', yard: '#2FCF74', magic: '#FFD23F', judaica: '#3D6FE0',
 };
 
 function RayonCard({ slot, list, index, look, bal = null, onOpen }) {
@@ -68,8 +71,16 @@ function RayonHead({ slot, onBack, extra = null }) {
   </div>`;
 }
 
+// Rayon Judaïsme : kippas, talit katan, puis livres et objets
+const JUDAICA_GROUPS = [
+  { id: 'hat', label: 'Kippas', icon: '🧢' },
+  { id: 'outfit', label: 'Talit katan', icon: '🤍' },
+  { id: 'judaica', label: 'Livres et objets', icon: '📖' },
+];
+
 // Les costumes sont rangés par famille (super-héros, maillots, métiers…)
 function grouped(slot, list) {
+  if (slot === 'judaica') return JUDAICA_GROUPS.map((g) => ({ ...g, items: list.filter((it) => it.slot === g.id) })).filter((g) => g.items.length);
   if (slot !== 'skin') return [{ id: 'all', label: null, items: list }];
   const left = new Set(list.map((it) => it.id));
   const groups = COSTUME_GROUPS.map((g) => {
@@ -91,18 +102,18 @@ function Inventory({ child, owned, rayon, onRayon, onEquip }) {
       <div class="sheet-actions"><button class="btn btn-gold" onClick=${() => navigate(`enfant/${child.id}?onglet=boutique`)}>Voir la boutique</button></div>
     </div>`;
   }
-  const slots = SLOT_ORDER.filter((slot) => mine.some((it) => it.slot === slot));
+  const slots = SLOT_ORDER.filter((slot) => mine.some((it) => rayonOf(it) === slot));
   if (!rayon || !slots.includes(rayon)) {
-    return html`<div class="rayons">${slots.map((slot, i) => html`<${RayonCard} key=${slot} slot=${slot} index=${i} look=${child.look} list=${mine.filter((it) => it.slot === slot)} onOpen=${onRayon} />`)}</div>`;
+    return html`<div class="rayons">${slots.map((slot, i) => html`<${RayonCard} key=${slot} slot=${slot} index=${i} look=${child.look} list=${mine.filter((it) => rayonOf(it) === slot)} onOpen=${onRayon} />`)}</div>`;
   }
   let i = 0;
   return html`<div>
     <${RayonHead} slot=${rayon} onBack=${() => onRayon(null)} />
-    ${grouped(rayon, mine.filter((it) => it.slot === rayon)).map((g) => html`<div key=${g.id}>
+    ${grouped(rayon, mine.filter((it) => rayonOf(it) === rayon)).map((g) => html`<div key=${g.id}>
       ${g.label && html`<h3 class="section-title">${g.icon} ${g.label}</h3>`}
       <div class="item-grid">${g.items.map((it) => {
-        const worn = child.equipped?.[rayon] === it.id;
-        const hidden = worn && costumeOn && COVERED_BY_SKIN.includes(rayon);
+        const worn = child.equipped?.[it.slot] === it.id;
+        const hidden = worn && costumeOn && COVERED_BY_SKIN.includes(it.slot);
         return html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${worn ? 'equipped' : ''} note=${hidden ? 'Sous le costume' : null} onClick=${() => onEquip(it)} />`;
       })}</div>
     </div>`)}
@@ -111,9 +122,12 @@ function Inventory({ child, owned, rayon, onRayon, onEquip }) {
 
 function Shop({ child, owned, bal, rayon, onRayon, onPick }) {
   const [affordableOnly, setAffordableOnly] = useState(false);
-  const bySlot = (slot) => shopItems().filter((it) => it.slot === slot && !owned.has(it.id)).sort((a, b) => a.price - b.price);
+  const sex = sexOf(child);
+  const bySlot = (slot) => shopItems()
+    .filter((it) => rayonOf(it) === slot && !owned.has(it.id) && offeredTo(it, sex))
+    .sort((a, b) => Number(starredFor(b, sex)) - Number(starredFor(a, sex)) || a.price - b.price);
   const slots = SLOT_ORDER.filter((slot) => slot !== 'magic' && bySlot(slot).length);
-  if (!slots.length) return html`<p style="padding:20px;text-align:center">Tu as déjà tout acheté. Bravo, champion ! 🏆</p>`;
+  if (!slots.length) return html`<p style="padding:20px;text-align:center">Tu as déjà tout acheté. Bravo, ${accord(child, 'champion', 'championne')} ! 🏆</p>`;
   if (!rayon || !slots.includes(rayon)) {
     return html`<div class="rayons">${slots.map((slot, i) => html`<${RayonCard} key=${slot} slot=${slot} index=${i} look=${child.look} bal=${bal} list=${bySlot(slot)} onOpen=${onRayon} />`)}</div>`;
   }
@@ -124,7 +138,7 @@ function Shop({ child, owned, bal, rayon, onRayon, onPick }) {
     ${!list.length && html`<p class="hint" style="padding:12px;text-align:center">Rien à ta portée ici pour l'instant : encore quelques pandi à gagner ! 💪</p>`}
     ${grouped(rayon, list).map((g) => html`<div key=${g.id}>
       ${g.label && html`<h3 class="section-title">${g.icon} ${g.label}</h3>`}
-      <div class="item-grid">${g.items.map((it) => html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${bal < it.price ? 'locked' : ''} price=${it.price} onClick=${() => onPick(it)} />`)}</div>
+      <div class="item-grid">${g.items.map((it) => html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${bal < it.price ? 'locked' : ''} price=${it.price} note=${starredFor(it, sex) ? 'Pour toi ✨' : null} onClick=${() => onPick(it)} />`)}</div>
     </div>`)}
   </div>`;
 }
@@ -150,8 +164,8 @@ function BuyModal({ child, item, bal, onBuy, onClose }) {
   const missing = item.price - bal;
   return html`<${Modal} onClose=${onClose} style=${{ '--kid': child.color, width: 'min(100%, calc(var(--u) * 130))' }}>
     <div style="display:flex;gap:calc(var(--u)*5);align-items:center;flex-wrap:wrap;justify-content:center">
-      ${item.garage
-        ? html`<div class="buy-scene"><div class="bs-avatar"><${Avatar} look=${child.look} equipped=${child.equipped} expr="joy" mode="full" seed=${child.id} /></div><div class="bs-garage"><${GarageScene} equipped=${child.equipped} tryOn=${{ slot: item.slot, itemId: item.id }} /></div></div>`
+      ${item.garage || item.slot === 'bg'
+        ? html`<div class="buy-scene"><${KidScene} child=${child} tryOn=${{ slot: item.slot, itemId: item.id }} expr="joy" interactive=${false} /></div>`
         : html`<div style="width:calc(var(--u)*44);height:calc(var(--u)*52);border-radius:calc(var(--u)*6);overflow:hidden;background:radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--kid), #fff 40%), var(--kid))">
             <${Avatar} look=${child.look} equipped=${child.equipped} tryOn=${{ slot: item.slot, itemId: item.id }} expr="joy" mode="full" seed=${child.id} />
           </div>`}
@@ -176,8 +190,15 @@ export function ChildPage({ childId, tab = 'look', rayon = null }) {
   const [photo, setPhoto] = useState(false);
   const [bank, setBank] = useState(false);
   const [asParent, parentGate] = useParentAction();
+  const [cheer, setCheer] = useState(0);
   const stage = useRef(null);
   const counter = useRef(null);
+  // Il fait la fête un moment quand il reçoit ou met un objet, puis reprend son sourire
+  useEffect(() => {
+    if (!cheer) return;
+    const t = setTimeout(() => setCheer(0), 3200);
+    return () => clearTimeout(t);
+  }, [cheer]);
 
   if (!child) {
     return html`<div class="welcome"><div class="sheet">Cet enfant n'existe plus. <button class="btn" onClick=${() => navigate('soiree')}>Retour</button></div></div>`;
@@ -191,9 +212,13 @@ export function ChildPage({ childId, tab = 'look', rayon = null }) {
   const toShop = () => navigate(`enfant/${child.id}?onglet=boutique&rayon=vehicle`);
   const openRayon = (slot) => navigate(`enfant/${child.id}?onglet=${current}${slot ? `&rayon=${slot}` : ''}`, { replace: true });
   const celebrateStage = () => {
-    replay(stage.current?.querySelector('.avatar'), 'av-jump', 900);
-    burst(stage.current, { count: 16, chars: ['✨', '⭐', '💖'] });
+    setCheer((c) => c + 1);
+    replay(stage.current?.querySelector('.ks-kid .avatar'), 'av-jump', 900);
+    burst(stage.current?.querySelector('.ks-kid') || stage.current, { count: 16, chars: ['✨', '⭐', '💖'] });
   };
+  // Pendant qu'il choisit son look ou un vêtement, la caméra s'approche de lui
+  const WEAR = ['skin', 'hat', 'face', 'neck', 'back', 'outfit', 'pet', 'fx'];
+  const focus = current === 'look' || ((current === 'boutique' || current === 'affaires') && WEAR.includes(rayon)) ? 'kid' : 'all';
 
   function equipToggle(item) {
     const on = child.equipped?.[item.slot] === item.id;
@@ -230,13 +255,8 @@ export function ChildPage({ childId, tab = 'look', rayon = null }) {
       </button>
     </header>
     <div class="child-body">
-      <div class="child-stage" ref=${stage}>
-        <div class="stage-floor" />
-        <${Avatar} look=${child.look} equipped=${child.equipped} expr="happy" mode="full" seed=${child.id} class="overflow" />
-      </div>
-      <div class="garage-card">
-        <span class="gc-title">🚗 Le garage de ${child.name}</span>
-        <${GarageScene} equipped=${child.equipped} onEmpty=${toShop} />
+      <div class="scene-card" ref=${stage}>
+        <${KidScene} child=${child} expr=${cheer ? 'joy' : 'happy'} pose=${cheer ? 'cheer' : 'idle'} focus=${focus} onEmpty=${toShop} />
         ${garage && html`<span class="gc-hint">Touche un objet !</span>`}
       </div>
       <div class="child-panel">
@@ -254,6 +274,7 @@ export function ChildPage({ childId, tab = 'look', rayon = null }) {
           ${current === 'boutique' && html`<${Shop} child=${child} owned=${owned} bal=${bal} rayon=${rayon} onRayon=${openRayon} onPick=${(it) => { sfx.tap(); setBuying(it); }} />`}
           ${current === 'defis' && html`<${Challenges} child=${child} state=${s} />`}
           ${current === 'equipe' && html`<${TeamPanel} me=${child} />`}
+          ${current === 'tsedaka' && html`<${TsedakaPanel} child=${child} counter=${counter} onGive=${celebrateStage} />`}
         </div>
       </div>
     </div>

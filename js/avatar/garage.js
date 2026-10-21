@@ -7,12 +7,14 @@
 import { html } from '../vendor/preact-htm.js';
 import { starPath, heartPath, mirror, grad, GOLD, sparkle } from './draw.js';
 import { shade } from '../lib/util.js';
+import { JUDAICA_ITEMS, JUDAICA_SLOT } from './judaica.js';
 
 export const GARAGE_SLOTS = {
   vehicle: { label: 'Véhicules et montures', icon: '🚗' },
   flag: { label: 'Drapeaux', icon: '🚩' },
   gear: { label: 'Accessoires', icon: '⚽' },
   yard: { label: 'Le jardin de la fratrie', icon: '🏡' },
+  ...JUDAICA_SLOT,
 };
 
 // --- Pièces communes --------------------------------------------------------------------------
@@ -75,9 +77,9 @@ function pony(id, { body, mane, horn = false, saddle = '#E2363F' }) {
 }
 
 const VEHICLES = [
-  { id: 'velo', act: 'drive', sound: 'bell', name: 'Vélo', price: 80, render: ({ id }) => bike(id, '#E2363F') },
+  { id: 'velo', act: 'drive', sound: 'bell', name: 'Vélo', price: 80, box: '30 96 140 88', render: ({ id }) => bike(id, '#E2363F') },
   {
-    id: 'trottinette', act: 'drive', sound: 'bell', name: 'Trottinette', price: 60,
+    id: 'trottinette', act: 'drive', sound: 'bell', name: 'Trottinette', price: 60, box: '40 96 124 88',
     render: () => html`<g class="veh-bob">${shadow(96, 50)}
       <path d="M50 160 L136 160 L132 168 L54 168 Z" fill="#4D9BFF" stroke="#2F74D6" stroke-width="2" />
       ${wheel(58, 170, 8)}${wheel(132, 170, 8)}
@@ -233,7 +235,7 @@ const VEHICLES = [
       <g class="puff"><circle cx="188" cy="102" r="5" fill="#D8D4E8" /><circle cx="196" cy="96" r="3.4" fill="#D8D4E8" /></g>
       <ellipse cx="78" cy="172" rx="13" ry="7" fill="#2FA65A" /><ellipse cx="118" cy="172" rx="13" ry="7" fill="#2FA65A" /></g>`,
   },
-  { id: 'tandem', act: 'drive', sound: 'bell', name: 'Tandem de l’équipe', price: 0, exclusive: true, team: true, render: ({ id }) => bike(id, '#9B6CF0', { tandem: true }) },
+  { id: 'tandem', act: 'drive', sound: 'bell', name: 'Tandem de l’équipe', price: 0, exclusive: true, team: true, box: '18 96 176 88', render: ({ id }) => bike(id, '#9B6CF0', { tandem: true }) },
   {
     id: 'bus_fratrie', act: 'drive', sound: 'honk', name: 'Bus de la fratrie', price: 500, exclusive: true, pot: true,
     render: () => html`<g class="veh-bob">${shadow(117, 98)}
@@ -478,7 +480,7 @@ const YARD = [
 
 const withSlot = (slot, list) => list.map((it) => ({ ...it, slot, garage: true }));
 
-export const GARAGE_ITEMS = [...withSlot('vehicle', VEHICLES), ...withSlot('flag', FLAGS), ...withSlot('gear', GEAR), ...withSlot('yard', YARD)];
+export const GARAGE_ITEMS = [...withSlot('vehicle', VEHICLES), ...withSlot('flag', FLAGS), ...withSlot('gear', GEAR), ...withSlot('yard', YARD), ...withSlot('judaica', JUDAICA_ITEMS)];
 
 // Ordre de dessin de la scène (du fond vers l'avant)
-export const SCENE_ORDER = ['yard', 'flag', 'vehicle', 'gear'];
+export const SCENE_ORDER = ['yard', 'flag', 'vehicle', 'gear', 'judaica'];

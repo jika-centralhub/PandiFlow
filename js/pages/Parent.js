@@ -2,17 +2,18 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { useStore, setPrefs } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { activeChildren, tasksForChild, findRating, balance, challengesForChild, COLOR_META, ROUTINES, routineOf, BEHAVIOR, findBehavior, behaviorLevel } from '../domain.js';
+import { SEXES, activeChildren, tasksForChild, findRating, balance, challengesForChild, COLOR_META, ROUTINES, routineOf, BEHAVIOR, findBehavior, behaviorLevel } from '../domain.js';
 import { eveningDate, addDays, formatLong, WEEKDAYS_SHORT, currentRoutine } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { CHILD_COLORS } from '../avatar/palette.js';
 import { ITEMS, SLOTS, rewardItems, getItem } from '../avatar/items.js';
 import { ItemThumb } from '../components/ItemThumb.js';
-import { Modal, Toggle, NumberInput, ColorPicker } from '../components/ui.js';
+import { Modal, Toggle, NumberInput, ColorPicker, SexPicker } from '../components/ui.js';
 import { PinPad } from '../components/PinGate.js';
 import { PhotoAvatar } from '../components/PhotoAvatar.js';
 import { PandiBank } from '../components/PandiBank.js';
 import { FamilyMembers } from '../components/FamilyMembers.js';
+import { TsedakaParent } from '../components/Tsedaka.js';
 import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
 import { APP_VERSION } from '../config.js';
@@ -22,6 +23,7 @@ const SECTIONS = [
   { id: 'taches', label: 'Tâches', icon: '✅' },
   { id: 'defis', label: 'Défis', icon: '🏆' },
   { id: 'historique', label: 'Historique', icon: '📅' },
+  { id: 'tsedaka', label: 'Tsedaka', icon: '💙' },
   { id: 'reglages', label: 'Réglages', icon: '⚙️' },
 ];
 
@@ -32,11 +34,12 @@ function ChildForm({ child, onClose }) {
   const s = useStore();
   const [name, setName] = useState(child?.name || '');
   const [age, setAge] = useState(child?.age || 6);
+  const [sex, setSex] = useState(child?.sex || null);
   const [color, setColor] = useState(child?.color || CHILD_COLORS[s.children.length % CHILD_COLORS.length]);
   function save() {
     if (!name.trim()) return;
-    if (child) actions.saveChild({ ...child, name: name.trim(), age, color });
-    else actions.addChild({ name: name.trim(), age, color });
+    if (child) actions.saveChild({ ...child, name: name.trim(), age, sex, color });
+    else actions.addChild({ name: name.trim(), age, sex, color });
     sfx.green();
     onClose();
   }
@@ -44,6 +47,7 @@ function ChildForm({ child, onClose }) {
     <h2>${child ? `Modifier ${child.name}` : 'Nouvel enfant'}</h2>
     <div class="field"><label>Prénom</label><input class="input" value=${name} maxLength="20" onInput=${(e) => setName(e.target.value)} placeholder="Prénom" /></div>
     <div class="field"><label>Âge</label><${NumberInput} value=${age} onChange=${setAge} min=${2} max=${14} /></div>
+    <div class="field"><label>C'est…</label><${SexPicker} value=${sex} onChange=${setSex} /></div>
     <div class="field"><label>Sa couleur (celle de sa colonne)</label><${ColorPicker} value=${color} onChange=${setColor} /></div>
     <div class="sheet-actions">
       ${child && html`<button class="p-btn danger" onClick=${() => { actions.archiveChild(child.id, !child.archived); onClose(); }}>${child.archived ? 'Réactiver' : 'Archiver'}</button>`}
@@ -63,7 +67,7 @@ function ChildrenSection() {
     <div class="row-list">
       ${list.map((c) => html`<div key=${c.id} class=${`row ${c.archived ? 'muted' : ''}`} style=${{ '--kid': c.color }}>
         <div class="mini-head" style=${{ background: c.color }}><${Avatar} look=${c.look} mode="head" still=${true} /></div>
-        <div class="grow"><div class="title">${c.name}${c.archived ? ' (archivé)' : ''}</div><div class="meta">${c.age ? `${c.age} ans · ` : ''}${balance(c.id, s)} pandi</div></div>
+        <div class="grow"><div class="title">${c.name}${c.archived ? ' (archivé)' : ''}</div><div class="meta">${c.sex ? `${SEXES[c.sex].label} · ` : ''}${c.age ? `${c.age} ans · ` : ''}${balance(c.id, s)} pandi</div></div>
         <button class="p-btn" onClick=${() => setPhotoFor(c)}>📸 Avatar photo</button>
         <button class="p-btn" onClick=${() => navigate(`enfant/${c.id}?onglet=look`)}>🪞 Look</button>
         <button class="p-btn" onClick=${() => setEditing(c)}>Modifier</button>
@@ -379,6 +383,7 @@ export function ParentPage({ section = 'enfants' }) {
         ${current === 'taches' && html`<${TasksSection} />`}
         ${current === 'defis' && html`<${ChallengesSection} />`}
         ${current === 'historique' && html`<${HistorySection} />`}
+        ${current === 'tsedaka' && html`<${TsedakaParent} />`}
         ${current === 'reglages' && html`<${SettingsSection} />`}
       </div>
     </div>

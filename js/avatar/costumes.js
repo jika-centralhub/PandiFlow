@@ -469,7 +469,7 @@ const magicien = {
 };
 
 const princesse = {
-  id: 'princesse', name: 'Tenue de princesse', price: 160, shirt: '#FF8FC8', sleeve: '#FFB6DA',
+  id: 'princesse', name: 'Tenue de princesse', price: 160, star: 'fille', shirt: '#FF8FC8', sleeve: '#FFB6DA',
   torso: () => html`<g>
     <path d="M84 182 L100 208 L116 182" fill="#FFE3F1" stroke="#FFFFFF" stroke-width="2" />
     <path d="M70 230 Q100 244 130 230" stroke="#FFFFFF" stroke-width="3" fill="none" />

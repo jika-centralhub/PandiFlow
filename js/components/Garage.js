@@ -25,7 +25,7 @@ export const hasGarage = (equipped, tryOn = null) => Object.keys(garageItems(equ
 
 // Où chaque objet se pose dans la scène (240 x 300, l'horizon de l'herbe à y = 200, la route de 248 à 282).
 // Le décor déborde largement du cadre : la carte se remplit quel que soit son format.
-const ZONES = {
+export const ZONES = {
   yard: 'translate(-61.4 82.5) scale(0.66)',
   flag: 'translate(38.4 14.7) scale(0.85)',
   vehicle: 'translate(15.5 96.9) scale(0.95)',
@@ -35,14 +35,14 @@ const ZONES = {
 const SUN = { x: 196, y: 46 };
 
 // Durée du numéro de chaque objet (ms)
-const ACT_MS = { drive: 2600, fly: 2600, launch: 3400, sail: 2000, gallop: 2400, bounce: 1600, ollie: 900, shine: 1400, strum: 1200, swoop: 2000, dance: 1600, star: 1800, drum: 1300, beep: 1200, wave: 1800, bird: 2200, boing: 1400, splash: 1200, crackle: 1600 };
+export const ACT_MS = { page: 2200, light: 2400, bells: 2000, drive: 2600, fly: 2600, launch: 3400, sail: 2000, gallop: 2400, bounce: 1600, ollie: 900, shine: 1400, strum: 1200, swoop: 2000, dance: 1600, star: 1800, drum: 1300, beep: 1200, wave: 1800, bird: 2200, boing: 1400, splash: 1200, crackle: 1600 };
 
-const isDay = () => {
+export const isDay = () => {
   const h = new Date().getHours();
   return h >= 7 && h < 20;
 };
 
-function Backdrop({ id, day }) {
+export function Backdrop({ id, day }) {
   return html`<g class="gs-backdrop">
     <defs>
       <linearGradient id=${`${id}-sky`} gradientUnits="userSpaceOnUse" x1="0" y1="-160" x2="0" y2="210">
@@ -76,7 +76,7 @@ function Backdrop({ id, day }) {
 }
 
 // Petits effets qui accompagnent certains numéros
-function ActFx({ act }) {
+export function ActFx({ act }) {
   if (act === 'star') return html`<g class="gs-shooting"><path d="M40 30 L70 44" stroke="#FFF7C2" stroke-width="2.4" stroke-linecap="round" /><path d=${starPath(72, 45, 5)} fill="#FFF7C2" /></g>`;
   if (act === 'splash') return html`<g class="gs-splash">${[0, 1, 2, 3, 4, 5].map((i) => html`<circle key=${i} style=${{ '--dx': `${(i - 2.5) * 10}px` }} cx="60" cy="182" r="3" fill="#7FD3FF" />`)}</g>`;
   if (act === 'bird') return html`<g class="gs-bird-out"><path d="M60 110 q6 -6 12 0 q6 -6 12 0" stroke="#3A3F4D" stroke-width="2" fill="none" stroke-linecap="round" /></g>`;

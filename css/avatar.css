@@ -5,7 +5,7 @@
    leurs attributs transform SVG intacts). */
 .av-char, .av-head, .av-eyes, .av-arm-l, .av-arm-r, .av-pet, .tw, .flutter, .wing-l, .wing-r, .flame,
 .tail, .ear-l, .ear-r, .pompom, .robot-eye, .puff, .flag, .sway, .spin-slow, .wiggle, .brossou-tilt,
-.brossou-paste, .brossou-tube, .brossou-cape, .bulle-wobble, .livre-wing-l, .livre-wing-r, .glow-pulse { transform-box: fill-box; }
+.brossou-paste, .brossou-tube, .brossou-cape, .bulle-wobble, .livre-wing-l, .livre-wing-r, .glow-pulse, .tsitsit { transform-box: fill-box; }
 
 .avatar .av-char { transform-origin: 50% 100%; animation: av-breathe 3.6s ease-in-out infinite; }
 .avatar .av-head { transform-origin: 50% 92%; animation: av-sway 5.4s ease-in-out infinite; }
@@ -85,6 +85,9 @@
 @keyframes flap-r { from { transform: rotate(-6deg) scaleX(1); } to { transform: rotate(10deg) scaleX(.82); } }
 
 .flame { transform-origin: 50% 0; animation: flame .16s ease-in-out infinite alternate; }
+/* Tsitsit du talit katan : ils se balancent doucement */
+.tsitsit { transform-origin: 50% 0; animation: tsitsit 2.6s ease-in-out infinite; }
+@keyframes tsitsit { 0%, 100% { transform: rotate(4deg); } 50% { transform: rotate(-4deg); } }
 @keyframes flame { from { transform: scaleY(.78); opacity: .85; } to { transform: scaleY(1.18); opacity: 1; } }
 
 .avatar .av-pet { animation: pet-bob 2.4s ease-in-out infinite; }

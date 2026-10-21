@@ -40,7 +40,7 @@ export function adminClient() {
   return createClient(Deno.env.get("SUPABASE_URL")!, serviceKey!, { auth: { persistSession: false } });
 }
 
-type Child = { id: string; family_id: string; look: unknown };
+type Child = { id: string; family_id: string; look: unknown; sex?: string | null };
 type Access = { child: Child; error?: undefined } | { child?: undefined; error: [string, number] };
 
 // Le parent doit être connecté et l'enfant appartenir à sa famille
@@ -50,7 +50,7 @@ export async function parentOfChild(req: Request, admin: SupabaseClient, childId
   const { data: auth } = await admin.auth.getUser(jwt);
   const user = auth?.user;
   if (!user) return { error: ["Ta session a expiré, reconnecte-toi.", 401] };
-  const { data: child } = await admin.from("children").select("id, family_id, look").eq("id", childId).maybeSingle();
+  const { data: child } = await admin.from("children").select("id, family_id, look, sex").eq("id", childId).maybeSingle();
   const { data: member } = child
     ? await admin.from("family_members").select("user_id").eq("family_id", child.family_id).eq("user_id", user.id).maybeSingle()
     : { data: null };
