@@ -12,7 +12,9 @@
 //           (image en base64 + mediaType) ou, avec fromFace, du visage 3D seul d'une version plus ancienne
 //   encourage (repos), joy (bras levés, « bravo »), dance : à partir du « happy » de cette version,
 //           pour garder le même personnage
-// Réponse : { version, base, expr, marks, image } (image = le personnage en webp, base64)
+//   marksOnly (avec version) : Claude relit seulement les repères d'une image déjà créée (rien n'est
+//           créé ni décompté), pour les personnages enregistrés sans eux par une ancienne version de l'app
+// Réponse : { version, base, expr, marks, image } (image = le personnage en webp, base64 ; absente avec marksOnly)
 //
 // Secrets : OPENAI_API_KEY (tools/set-openai-key.ps1) et ANTHROPIC_API_KEY (déjà utilisée par analyze-photo)
 
@@ -122,6 +124,11 @@ Corps :
 - waistY : la hauteur des hanches ; waistLeftX, waistRightX : les bords gauche et droit du buste à cette hauteur, sans les bras ni les mains.`;
 
 const decode = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+function encode(bytes: Uint8Array) {
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
 const newVersion = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 Deno.serve(async (req) => {
@@ -130,17 +137,20 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return reply({ error: "Méthode non autorisée." }, 405);
 
   // 1. Vérification de la requête
-  let body: { childId?: unknown; expr?: unknown; image?: unknown; mediaType?: unknown; version?: unknown; fromFace?: unknown };
+  let body: { childId?: unknown; expr?: unknown; image?: unknown; mediaType?: unknown; version?: unknown; fromFace?: unknown; marksOnly?: unknown };
   try {
     body = await req.json();
   } catch {
     return reply({ error: "Requête invalide." }, 400);
   }
   const { childId, expr, image, mediaType, version } = body;
-  const fromFace = expr === "happy" && body.fromFace === true;
+  const marksOnly = body.marksOnly === true;
+  const fromFace = !marksOnly && expr === "happy" && body.fromFace === true;
   if (typeof childId !== "string" || !EXPRS.includes(expr as Expr)) return reply({ error: "Requête invalide." }, 400);
   const validVersion = typeof version === "string" && /^[a-z0-9]{6,20}$/.test(version);
-  if (expr === "happy" && !fromFace) {
+  if (marksOnly) {
+    if (!validVersion) return reply({ error: "Requête invalide." }, 400);
+  } else if (expr === "happy" && !fromFace) {
     if (typeof image !== "string" || typeof mediaType !== "string") return reply({ error: "Requête invalide." }, 400);
     if (!["image/jpeg", "image/png", "image/webp"].includes(mediaType)) return reply({ error: "Format de photo non pris en charge." }, 415);
     if (image.length > MAX_IMAGE_BASE64) return reply({ error: "Photo trop lourde." }, 413);
@@ -171,6 +181,15 @@ Deno.serve(async (req) => {
     await log(false, { detail: detail.slice(0, 500) });
     return reply({ error: message, detail }, status);
   };
+
+  // Repères seuls d'une image déjà créée : ni OpenAI ni quota
+  if (marksOnly) {
+    const { data, error } = await admin.storage.from(BUCKET).download(`${folder}/${version}/${expr}.webp`);
+    if (error || !data) return reply({ error: "Image introuvable." }, 404);
+    const found = await findMarks(encode(new Uint8Array(await data.arrayBuffer())), started + 60_000);
+    await log(true, { via: "repères", detail: found.why ?? undefined });
+    return reply({ version, base: `${folder}/${version}`, expr, marks: found.marks });
+  }
 
   // 3. Image de départ : la photo, l'ancien visage 3D (fromFace), ou le « happy » de cette version
   //    pour garder le même personnage
@@ -208,9 +227,9 @@ Deno.serve(async (req) => {
   }
 
   // 6. Repères du visage par Claude (en cas d'échec ou de manque de temps, l'app utilise un cadrage moyen)
-  const marks = await findMarks(face.b64, deadline);
+  const { marks, why } = await findMarks(face.b64, deadline);
   const b64 = face.b64;
-  await log(true, { model: face.model, via: face.via });
+  await log(true, { model: face.model, via: face.via, detail: why ?? undefined });
 
   // 7. Ménage : on ne garde que la nouvelle version, celle que l'enfant porte encore et le visage de départ
   if (expr === "happy") {
@@ -351,9 +370,12 @@ function explain(e: unknown) {
   return { message, status, detail };
 }
 
-async function findMarks(b64: string, deadline: number): Promise<Marks> {
+// Repères de l'image, et pourquoi ils manquent quand c'est le cas (noté dans portrait_runs)
+type Found = { marks: Marks; why: string | null };
+
+async function findMarks(b64: string, deadline: number): Promise<Found> {
   const left = deadline - Date.now();
-  if (left < 8_000) return DEFAULT_MARKS;
+  if (left < 8_000) return { marks: DEFAULT_MARKS, why: "repères : plus le temps" };
   try {
     const anthropic = claudeClient();
     const response = await anthropic.beta.messages.create({
@@ -371,23 +393,24 @@ async function findMarks(b64: string, deadline: number): Promise<Marks> {
           ],
         },
       ],
-    } as Parameters<typeof anthropic.beta.messages.create>[0], { timeout: Math.min(25_000, left - 3_000), maxRetries: 0 });
-    if (response.stop_reason === "refusal") return DEFAULT_MARKS;
+    } as Parameters<typeof anthropic.beta.messages.create>[0], { timeout: Math.min(40_000, left - 3_000), maxRetries: 0 });
+    if (response.stop_reason === "refusal") return { marks: DEFAULT_MARKS, why: "repères : refus" };
     const text = response.content.find((b: { type: string }) => b.type === "text") as { text?: string } | undefined;
     return checkMarks(JSON.parse(text?.text ?? "{}"));
   } catch (e) {
-    console.error("make-portrait: repères", (e as Error)?.message?.slice(0, 200));
-    return DEFAULT_MARKS;
+    const message = (e as Error)?.message?.slice(0, 200) ?? "";
+    console.error("make-portrait: repères", message);
+    return { marks: DEFAULT_MARKS, why: `repères : ${message}` };
   }
 }
 
 // Les repères doivent dessiner un visage plausible, sinon on garde le cadrage moyen ; ceux du corps
 // sont gardés seulement s'ils dessinent un buste et deux bras plausibles (sinon l'app pose la tête
 // sur le corps dessiné)
-function checkMarks(raw: Record<string, unknown>): Marks {
+function checkMarks(raw: Record<string, unknown>): Found {
   const values = MARK_KEYS.map((k) => Number(raw[k]));
   const face = values.slice(0, FACE_KEYS.length);
-  if (face.some((n) => !Number.isFinite(n))) return DEFAULT_MARKS;
+  if (face.some((n) => !Number.isFinite(n))) return { marks: DEFAULT_MARKS, why: "repères du visage manquants" };
   const finite = values.filter((n) => Number.isFinite(n));
   const scale = finite.every((n) => n <= 1) ? 1 : 100; // pourcentages attendus, fractions acceptées
   const m = Object.fromEntries(MARK_KEYS.map((k, i) => [k, Math.round((values[i] / scale) * 1000) / 1000])) as Marks;
@@ -397,20 +420,22 @@ function checkMarks(raw: Record<string, unknown>): Marks {
     gap > 0.06 && gap < 0.5 && Math.abs(m.eyeLeftY - m.eyeRightY) < 0.08 &&
     m.topY < eyeY && m.chinY > eyeY && m.chinY - eyeY < 0.5 &&
     m.headLeftX < m.eyeLeftX && m.headRightX > m.eyeRightX;
-  if (!faceOk) return DEFAULT_MARKS;
+  if (!faceOk) return { marks: DEFAULT_MARKS, why: `visage peu plausible ${JSON.stringify(Object.fromEntries(FACE_KEYS.map((k) => [k, m[k]])))}` };
   const faceOnly = Object.fromEntries(FACE_KEYS.map((k) => [k, m[k]])) as Marks;
-  const body = BODY_KEYS.map((k) => m[k]);
-  if (body.some((n) => !Number.isFinite(n) || n < 0 || n > 1)) return faceOnly;
+  const missing = BODY_KEYS.filter((k) => !Number.isFinite(m[k]) || m[k] < 0 || m[k] > 1);
+  if (missing.length) return { marks: faceOnly, why: `repères du corps manquants : ${missing.join(", ")}` };
   const len = (a: string, b: string) => Math.hypot(m[`${a}X`] - m[`${b}X`], (m[`${a}Y`] - m[`${b}Y`]) * 1.5);
-  const arm = (s: "Left" | "Right") =>
-    len(`shoulder${s}`, `elbow${s}`) > 0.04 && len(`elbow${s}`, `wrist${s}`) > 0.04 && len(`wrist${s}`, `hand${s}`) < 0.12 &&
-    m[`shoulder${s}Y`] > m.chinY - 0.02 && m[`shoulder${s}Y`] < m.waistY;
-  const bodyOk = m.noseY > eyeY && m.noseY < m.mouthY && m.mouthY < m.chinY &&
-    m.collarY > m.chinY - 0.03 && m.collarY < m.waistY &&
-    m.shoulderLeftX < m.collarX && m.collarX < m.shoulderRightX &&
-    m.waistLeftX < m.collarX && m.collarX < m.waistRightX && m.waistY > m.chinY + 0.1 &&
-    arm("Left") && arm("Right");
-  return bodyOk ? m : faceOnly;
+  const checks: Record<string, boolean> = { "nez et bouche": m.noseY > eyeY && m.noseY < m.mouthY && m.mouthY < m.chinY };
+  checks.encolure = m.collarY > m.chinY - 0.03 && m.collarY < m.waistY;
+  checks["épaules"] = m.shoulderLeftX < m.collarX && m.collarX < m.shoulderRightX;
+  checks.hanches = m.waistLeftX < m.collarX && m.collarX < m.waistRightX && m.waistY > m.chinY + 0.1;
+  for (const s of ["Left", "Right"]) {
+    checks[`bras ${s}`] = len(`shoulder${s}`, `elbow${s}`) > 0.04 && len(`elbow${s}`, `wrist${s}`) > 0.04 && len(`wrist${s}`, `hand${s}`) < 0.12 &&
+      m[`shoulder${s}Y`] > m.chinY - 0.02 && m[`shoulder${s}Y`] < m.waistY;
+  }
+  const failed = Object.keys(checks).filter((k) => !checks[k]);
+  if (!failed.length) return { marks: m, why: null };
+  return { marks: faceOnly, why: `repères du corps refusés (${failed.join(", ")}) ${JSON.stringify(Object.fromEntries(BODY_KEYS.map((k) => [k, m[k]])))}`.slice(0, 480) };
 }
 
 async function cleanup(admin: ReturnType<typeof adminClient>, folder: string, keep: string[]) {

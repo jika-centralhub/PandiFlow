@@ -64,6 +64,13 @@ function placePortrait(m, ratio = 1, body = false) {
   const eyeLine = y + eyeY * H;
   const nose = Number.isFinite(m.noseY) ? y + m.noseY * H : eyeLine + NOSE_3D * gap * W;
   const headX = x + ((m.headLeftX + m.headRightX) / 2) * W;
+  // Image avec le haut du corps mais sans repères des bras : seulement la tête (ovale) et le cou, jamais
+  // les bras levés de l'image (deux contours tournant dans le même sens, pour que le masque les additionne)
+  const hx = headW * 0.56;
+  const hy = (chin - top) * 0.56;
+  const hcy = (top + chin) / 2;
+  const headOnly = `M${headX - hx} ${hcy} a${hx} ${hy} 0 1 0 ${2 * hx} 0 a${hx} ${hy} 0 1 0 ${-2 * hx} 0 Z ` +
+    `M${cx - neck} ${chin - 6} V${y + H} H${cx + neck} V${chin - 6} Z`;
   return {
     x,
     y,
@@ -77,7 +84,7 @@ function placePortrait(m, ratio = 1, body = false) {
     face: `translate(100 ${eyeLine}) scale(${k}) translate(-100 -106)`,
     // Objets accrochés sous le nez (anchor: 'nose') : même échelle, bas du nez dessiné (y = 124) sur celui du visage
     nose: `translate(100 ${nose}) scale(${k}) translate(-100 -124)`,
-    clip: `M${x - 40} ${y - 40} H${x + W + 40} V${cut} H${cx + neck} V${y + H} H${cx - neck} V${cut} H${x - 40} Z`,
+    clip: ratio > 1.2 && !body ? headOnly : `M${x - 40} ${y - 40} H${x + W + 40} V${cut} H${cx + neck} V${y + H} H${cx - neck} V${cut} H${x - 40} Z`,
     // Fond impossible à retirer : ovale doux autour de la tête (cheveux compris), coupé au menton ;
     // le cou dessiné prend le relais, pour ne rien montrer du vêtement de la photo
     oval: { cx: headX, cy: (top + chin) / 2, rx: headW * 0.54, ry: (chin - top) * 0.56 },

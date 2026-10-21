@@ -197,8 +197,8 @@ export class SupabaseRepo {
   }
 
   // Le personnage 3D dans une pose : { version, base, expr, marks, image (webp en base64) }
-  makePortrait({ childId, expr, image, mediaType, version, fromFace }) {
-    return this.invoke('make-portrait', { childId, expr, image, mediaType, version, fromFace });
+  makePortrait({ childId, expr, image, mediaType, version, fromFace, marksOnly }) {
+    return this.invoke('make-portrait', { childId, expr, image, mediaType, version, fromFace, marksOnly });
   }
 
   async downloadPortrait(path) {

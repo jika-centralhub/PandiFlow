@@ -11,7 +11,7 @@ import { toISODate } from './dates.js';
 import { hashPin, checkPin } from './pin.js';
 import { getItem } from '../avatar/items.js';
 import { normalizeLook, randomLook } from '../avatar/palette.js';
-import { setPortraitSource, primePortrait, portraitPath } from './portraits.js';
+import { setPortraitSource, primePortrait, portraitPath, loadPortrait, forgetPortrait, hasBody } from './portraits.js';
 
 let repo = null;
 export const getRepo = () => repo;
@@ -50,6 +50,7 @@ async function afterLogin(user) {
   if (!family) return setState({ status: 'setup' });
   await flush();
   await reload();
+  repairPortraits();
 }
 
 export async function reload() {
@@ -432,6 +433,43 @@ export async function makePortrait(childId, source, onFace) {
   const others = await Promise.allSettled(['encourage', 'joy', 'dance'].map((expr) => face(expr, { version: first.version })));
   for (const r of others) if (r.status === 'fulfilled') exprs[r.value.expr] = r.value.marks;
   return { base: first.base, exprs, body: true };
+}
+
+// Personnage 3D entier enregistré par une ancienne version de l'app (images avec le haut du corps, mais
+// sans le drapeau body ni les repères des bras) : Claude relit les images déjà créées (rien n'est créé
+// ni décompté), puis la pose « danse » manquante est créée. Une fois par personnage et par lancement.
+const repaired = new Set();
+function repairPortraits() {
+  for (const child of getState().children) {
+    const p = normalizeLook(child.look).portrait;
+    if (!p || p.body || p.off || repaired.has(p.base)) continue;
+    repaired.add(p.base);
+    repairPortrait(child.id, p).catch((e) => console.warn('PandiFlow : personnage 3D non réparé', e?.message));
+  }
+}
+
+async function repairPortrait(childId, p) {
+  const entry = await loadPortrait(portraitPath(p.base, 'happy'), p.exprs.happy);
+  // Image carrée : visage seul d'avant la v1.4, rien à réparer (le bouton « Créer le corps 3D » s'en charge)
+  if (!entry || entry.ratio < 1.2) return;
+  const version = p.base.split('/')[2];
+  const found = await Promise.all(Object.keys(p.exprs).map((expr) => repo.makePortrait({ childId, expr, version, marksOnly: true })));
+  const exprs = Object.fromEntries(found.map((res) => [res.expr, res.marks]));
+  if (!hasBody(exprs.happy)) return;
+  // fresh : images déjà préparées avec les anciens repères, à préparer de nouveau
+  const save = (more, fresh) => {
+    const child = getState().children.find((c) => c.id === childId);
+    const cur = child?.look?.portrait;
+    if (cur?.base !== p.base) return false; // l'enfant a changé de personnage entre-temps
+    if (fresh) for (const expr of Object.keys(more)) forgetPortrait(portraitPath(p.base, expr));
+    saveLook(childId, { ...child.look, portrait: { ...cur, exprs: { ...cur.exprs, ...more }, body: true } });
+    return true;
+  };
+  if (!save(exprs, true) || exprs.dance) return;
+  const res = await repo.makePortrait({ childId, expr: 'dance', version });
+  const blob = await (await fetch(`data:image/webp;base64,${res.image}`)).blob();
+  await primePortrait(portraitPath(p.base, 'dance'), blob, res.marks);
+  save({ dance: res.marks }, false);
 }
 
 // Version du visage 3D (tête seule) d'un enfant, à qui on peut créer le haut du corps sans nouvelle photo

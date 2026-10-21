@@ -26,6 +26,14 @@ export async function primePortrait(path, blob, marks) {
   return entry;
 }
 
+// Image à préparer de nouveau (ses repères ont changé) ; le fichier reste dans le cache du navigateur
+export function forgetPortrait(path) {
+  const entry = ready.get(path);
+  if (!entry) return;
+  ready.delete(path);
+  for (const url of [entry.url, entry.body?.cloth, entry.body?.skinMask, entry.body?.shade]) if (url) URL.revokeObjectURL(url);
+}
+
 export function loadPortrait(path, marks) {
   if (ready.has(path)) return Promise.resolve(ready.get(path));
   if (pending.has(path)) return pending.get(path);
