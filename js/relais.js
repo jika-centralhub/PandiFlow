@@ -6,7 +6,7 @@
 // l'appareil (minuteurs, notes pas encore envoyées…) :
 //
 // 1. http -> https, même nom. Tant que l'app est ouverte en http, ce script vérifie si le https
-//    répond ; dès que c'est le cas, il emporte les données dans l'adresse de la page https (après
+//    sert bien PandiFlow ; dès que c'est le cas, il emporte les données dans l'adresse de la page https (après
 //    le « # », jamais envoyé au serveur), qui les range avant le démarrage de l'app. Ensuite
 //    l'appareil ne relance plus jamais l'app en http : Supabase n'accepte chaque jeton de
 //    connexion qu'une fois, une connexion utilisée des deux côtés finirait refusée partout.
@@ -128,8 +128,12 @@
     sending = true;
     var ctrl = new AbortController();
     var timer = setTimeout(function () { ctrl.abort(); }, 5000);
-    fetch(target + '/manifest.webmanifest?sonde=' + Date.now(), { mode: 'no-cors', cache: 'no-store', signal: ctrl.signal })
-      .then(function () {
+    // On lit le manifeste pour de vrai (GitHub Pages l'autorise) : un filtre d'entreprise ou un
+    // portail wifi répond lui aussi en https, mais avec sa propre page, pas avec PandiFlow
+    fetch(target + '/manifest.webmanifest?sonde=' + Date.now(), { cache: 'no-store', signal: ctrl.signal })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (manifest) {
+        if (!manifest || manifest.short_name !== 'PandiFlow') return;
         var items = collect(localStorage);
         var code = encode(items, Date.now());
         if (code.length > MAX_CHARS) {
@@ -280,6 +284,7 @@
   var ready = new Promise(function (resolve) {
     if (!ours) return resolve();
     receive();
+    if (location.protocol === 'http:' && localStorage.getItem(MOVED)) return send(); // part tout de suite en https
     if (location.hostname === WWW) {
       if (!authKey(localStorage)) {
         readBridge(localStorage, APEX, function () {
