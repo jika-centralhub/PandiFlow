@@ -4,7 +4,9 @@ import { useStore, setPrefs } from '../lib/store.js';
 import * as cd from '../lib/countdown.js';
 import * as timers from '../lib/timers.js';
 import { Avatar } from '../avatar/Avatar.js';
-import { Pandi } from './Coin.js';
+import { Pandi3D, has3D } from './Pandi3D.js';
+import { PandiFlat } from './Coin.js';
+import { pandiFor } from '../mascot/tasks.js';
 import { Modal } from './ui.js';
 import { sfx } from '../lib/sounds.js';
 import { burst, confettiBurst } from '../anim/fx.js';
@@ -127,7 +129,9 @@ export function TimerStage({ timer, child, task, others, onRate, onClose, onSwit
       </div>
       <div class="ts-pandi">
         <div class="ts-mascot">
-          <${Pandi} mood=${won ? 'happy' : 'neutral'} wave=${look === 'calm'} />
+          ${has3D()
+            ? html`<${Pandi3D} class="ts-pandi3d" framing="auto" base="full" sound=${true} brushColor=${child.color} ...${pandiFor(task, { timer: { look, progress: v.progress } })} />`
+            : html`<${PandiFlat} mood=${won ? 'happy' : 'neutral'} wave=${look === 'calm'} />`}
           <div class="ts-deco">${deco.map((e, i) => html`<span key=${`${look}${i}`} style=${{ left: `${8 + ((i * 29) % 84)}%`, animationDelay: `${i * 0.35}s` }}>${e}</span>`)}</div>
         </div>
         <span class="ts-bubble" key=${look}>${BUBBLE[look](child.name)}</span>

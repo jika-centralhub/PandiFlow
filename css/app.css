@@ -489,6 +489,9 @@ h1, h2, h3, p { margin: 0; }
 .pandi-wave { animation: pandi-wave 1.1s ease-in-out infinite alternate; }
 @keyframes pandi-wave { from { transform: rotate(-12deg); } to { transform: rotate(18deg); } }
 .pandi-eyes { animation: av-blink 4s infinite; }
+/* Pandi en 3D : il bouge tout seul (pas d'animation CSS par-dessus) et arrive avec un petit rebond */
+canvas.pandi3d { display: block; animation: none !important; opacity: 0; transform: scale(.7); transition: opacity .3s ease, transform .55s cubic-bezier(.3, 1.6, .5, 1); }
+canvas.pandi3d.ready { opacity: 1; transform: none; }
 
 /* Trésor débloqué en paysage sur un écran bas (téléphone, télé) : coffre à gauche, texte à droite */
 @media (orientation: landscape) and (max-height: 640px) {

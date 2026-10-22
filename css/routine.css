@@ -40,6 +40,13 @@
 .cr-card.wobble { animation: tile-wobble .6s ease-in-out; }
 .cr-card.deflate { animation: tile-deflate .7s ease-in-out; }
 .cr-step { position: absolute; top: 3.6cqh; left: 50%; transform: translateX(-50%); font-size: 4.4cqh; font-weight: 700; opacity: .55; letter-spacing: .04em; }
+/* Pandi sort du rond de la carte du milieu ; l'emoji de la tâche devient une pastille */
+.cr-emoji-wrap.has-pandi { width: 40cqh; height: 40cqh; margin-top: 9cqh; }
+.cr-pandi { position: absolute; left: 50%; bottom: -3%; width: 120%; height: 138%; transform: translateX(-50%); pointer-events: none; z-index: 1; }
+.cr-pandi .pandi3d { width: 100%; height: 100%; }
+.cr-badge { position: absolute; right: -10%; bottom: -6%; z-index: 2; width: 14cqh; height: 14cqh; border-radius: 50%; display: grid; place-items: center; font-size: 8.4cqh; line-height: 1;
+  background: #fff; box-shadow: 0 .8cqh 0 rgba(42, 35, 80, .14), 0 0 0 .7cqh color-mix(in srgb, var(--kid), #fff 40%); }
+.cr-card .cr-step { z-index: 3; }
 .cr-emoji-wrap { position: relative; width: 36cqh; height: 36cqh; border-radius: 50%; display: grid; place-items: center; flex: none;
   background: radial-gradient(circle at 40% 35%, #fff, color-mix(in srgb, var(--kid), #fff 70%)); box-shadow: inset 0 -1.2cqh 0 rgba(42, 35, 80, .08); }
 .cr-card.green .cr-emoji-wrap, .cr-card.orange .cr-emoji-wrap, .cr-card.red .cr-emoji-wrap { background: rgba(255, 255, 255, .55); }
@@ -158,6 +165,8 @@
 .ts-paused .ts-digits { animation: t-blink 1.4s ease-in-out infinite; }
 .ts-pandi { display: flex; align-items: center; gap: calc(var(--u) * 2.4); }
 .ts-mascot { position: relative; flex: none; width: calc(var(--u) * 20); height: calc(var(--u) * 20); }
+.ts-mascot:has(.pandi3d) { width: calc(var(--u) * 34); height: calc(var(--u) * 40); }
+.ts-pandi3d { width: 100%; height: 100%; }
 .ts-pandi .mascot { width: 100%; height: 100%; overflow: visible; }
 .ts-calm .ts-pandi .mascot { animation: mascot-float 3.4s ease-in-out infinite; }
 .ts-hurry .ts-pandi .mascot { animation: pandi-jump 1s ease-in-out infinite; }

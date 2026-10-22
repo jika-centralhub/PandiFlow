@@ -10,6 +10,8 @@ import { routineDate, currentRoutine, addDays, formatLong } from '../lib/dates.j
 import { Avatar } from '../avatar/Avatar.js';
 import { PandiCounter, Gauge, Modal } from '../components/ui.js';
 import { Coin } from '../components/Coin.js';
+import { Pandi3D, has3D } from '../components/Pandi3D.js';
+import { pandiFor } from '../mascot/tasks.js';
 import { showOverlay } from '../components/Overlays.js';
 import { PandiBank } from '../components/PandiBank.js';
 import { useParentAction } from '../components/PinGate.js';
@@ -50,8 +52,21 @@ export function TopBar({ date, setDate, routine, setRoutine, onCalm }) {
 }
 
 // Une carte du carrousel. d = écart avec la carte du centre (0 = au centre, -1 à gauche, 1 à droite…)
-function TaskCard({ task, index, total, d, rating, timer, canTime, cardRef, onClick, onTimer }) {
+// Sur la carte du milieu, Pandi fait la tâche avec l'enfant (ou réagit à la note)
+function CardPandi({ task, rating, view, color, active }) {
+  const prev = useRef(rating);
+  const [voice, setVoice] = useState(false);
+  useEffect(() => {
+    if (rating && rating !== prev.current) setVoice(true);
+    prev.current = rating;
+  }, [rating]);
+  const { act, ctx } = pandiFor(task, { rating, timer: view });
+  return html`<div class="cr-pandi"><${Pandi3D} act=${act} ctx=${{ ...ctx, color }} framing="auto" fps=${30} sound=${voice} active=${active} brushColor=${color} /></div>`;
+}
+
+function TaskCard({ task, index, total, d, rating, timer, canTime, cardRef, onClick, onTimer, color, pandiActive }) {
   const ad = Math.abs(d);
+  const withPandi = d === 0 && has3D();
   const now = useClock(Boolean(timer));
   const v = timer ? timerView(timer, now) : null;
   const cls = ['cr-card', rating?.color || '', d === 0 ? 'center' : '', v ? `timing t-${v.look}` : '', ad > 2 ? 'far' : ''].filter(Boolean).join(' ');
@@ -67,9 +82,12 @@ function TaskCard({ task, index, total, d, rating, timer, canTime, cardRef, onCl
     onKeyDown=${(e) => (e.key === 'Enter' || e.key === ' ') && onClick(e)}
   >
     <span class="cr-step">${index + 1} / ${total}</span>
-    <div class="cr-emoji-wrap">
+    <div class=${`cr-emoji-wrap ${withPandi ? 'has-pandi' : ''}`}>
       ${v && html`<${TimerRing} progress=${v.progress} />`}
-      <span class="cr-emoji">${v?.phase === 'over' ? '⏰' : task.emoji}</span>
+      ${withPandi
+        ? html`<${CardPandi} task=${task} rating=${rating?.color} view=${v} color=${color} active=${pandiActive} />
+          <span class="cr-badge">${v?.phase === 'over' ? '⏰' : task.emoji}</span>`
+        : html`<span class="cr-emoji">${v?.phase === 'over' ? '⏰' : task.emoji}</span>`}
     </div>
     <div class="cr-title">${task.title}</div>
     ${v
@@ -123,7 +141,7 @@ function BehaviorSheet({ child, current, settings, onPick, onClose }) {
 
 // Le carrousel d'un enfant : la tâche du moment au centre, les voisines inclinées sur les côtés.
 // On balaie, on touche une carte voisine, une flèche ou une pastille pour se déplacer.
-function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFor, cards, onOpen, onTimer, behavior, onBehavior }) {
+function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFor, cards, onOpen, onTimer, behavior, onBehavior, paused }) {
   const s = useStore();
   const start = useRef(null);
   const swiped = useRef(false);
@@ -172,6 +190,8 @@ function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFo
           rating=${findRating(s.ratings, child.id, task.id, date)}
           timer=${timerFor(child.id, task.id)}
           canTime=${canTime}
+          color=${child.color}
+          pandiActive=${!paused}
           cardRef=${(n) => (cards.current[key] = n)}
           onTimer=${() => onTimer(task)}
           onClick=${() => {
@@ -514,6 +534,7 @@ export function Evening() {
             cards=${cards}
             onOpen=${(task) => openTask(child, task)}
             onTimer=${(task) => { sfx.tap(); setPicker({ childId: child.id, taskId: task.id }); }}
+            paused=${Boolean(stageTimer)}
           />
         </section>`;
       })}

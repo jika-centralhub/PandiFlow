@@ -167,6 +167,38 @@ export const sfx = {
   },
 };
 
+// --- La petite voix de Pandi (pas de mots : des bruits de personnage de dessin animé) ---------
+const VOICE = {
+  hop: () => {
+    tone(520, { dur: 0.1, slide: 520, type: 'triangle', vol: 0.2 });
+    tone(980, { at: 0.08, dur: 0.09, type: 'sine', vol: 0.14 });
+  },
+  rire: () => [920, 860, 820, 760].forEach((f, i) => tone(f, { at: i * 0.09, dur: 0.08, slide: 90, type: 'triangle', vol: 0.16 })),
+  oh: () => tone(640, { dur: 0.24, slide: -180, type: 'sine', vol: 0.22 }),
+  miam: () => {
+    tone(330, { dur: 0.22, type: 'sine', vol: 0.16, attack: 0.04 });
+    tone(440, { at: 0.24, dur: 0.18, slide: 140, type: 'triangle', vol: 0.16 });
+  },
+  baille: () => {
+    tone(540, { dur: 1.1, attack: 0.3, slide: -280, type: 'triangle', vol: 0.11 });
+    noise({ dur: 0.9, vol: 0.03, freq: 700, q: 0.5 });
+  },
+  splash: () => {
+    noise({ dur: 0.45, vol: 0.12, freq: 2600, q: 0.6 });
+    [1900, 2500, 2200].forEach((f, i) => tone(f, { at: 0.05 + i * 0.07, dur: 0.06, slide: -600, type: 'sine', vol: 0.06 }));
+  },
+  mmf: () => [210, 190].forEach((f, i) => tone(f, { at: i * 0.18, dur: 0.14, type: 'sine', vol: 0.16 })),
+  pop: () => tone(300, { dur: 0.09, slide: 900, type: 'sine', vol: 0.22 }),
+  panier: () => [660, 990, 1320].forEach((f, i) => tone(f, { at: i * 0.07, dur: 0.12, type: 'triangle', vol: 0.15 })),
+  boing: () => {
+    tone(220, { dur: 0.16, slide: 440, type: 'sine', vol: 0.22 });
+    tone(660, { at: 0.16, dur: 0.32, slide: -380, type: 'sine', vol: 0.18 });
+  },
+  tada: () => [784, 1047].forEach((f, i) => tone(f, { at: i * 0.1, dur: i ? 0.3 : 0.1, type: 'triangle', vol: 0.18 })),
+  clap: () => [0, 0.18].forEach((at) => noise({ at, dur: 0.06, vol: 0.18, freq: 1800, q: 1.4 })),
+};
+export const pandiVoice = (cue) => VOICE[cue]?.();
+
 // --- Sons du garage (quand on touche un véhicule ou un accessoire) ---------------------------
 export const garageSfx = {
   honk: () => {

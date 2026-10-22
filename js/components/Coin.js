@@ -1,5 +1,6 @@
 // La pièce "pandi" (tête de panda dorée) et Pandi, la mascotte panda.
 import { html } from '../vendor/preact-htm.js';
+import { Pandi3D, has3D } from './Pandi3D.js';
 
 let n = 0;
 
@@ -9,9 +10,15 @@ export function Coin({ class: cls = 'coin' }) {
   return html`<span class=${cls} style="display:inline-block" dangerouslySetInnerHTML=${{ __html: COIN_SVG }} />`;
 }
 
-// Pandi, la mascotte : un panda tout rond qui fait coucou.
-// mood : 'neutral' (coucou), 'happy' (yeux plissés, bras levés), 'sad' (petite larme, bras baissés)
+// Pandi, la mascotte : en 3D quand le téléphone sait le faire, sinon le panda dessiné ci-dessous.
+// mood : 'neutral' (coucou), 'happy' (sauts de joie), 'sad' (tête basse)
 export function Pandi({ class: cls = 'mascot', wave = true, mood = 'neutral' }) {
+  if (has3D()) return html`<${Pandi3D} class=${cls} act=${mood === 'happy' ? 'bravo' : mood === 'sad' ? 'triste' : wave ? 'coucou' : 'idle'} />`;
+  return html`<${PandiFlat} class=${cls} wave=${wave} mood=${mood} />`;
+}
+
+// Le Pandi dessiné : un panda tout rond qui fait coucou
+export function PandiFlat({ class: cls = 'mascot', wave = true, mood = 'neutral' }) {
   const id = `pandi${++n}`;
   const b = `url(#${id}-b)`;
   const happy = mood === 'happy';
