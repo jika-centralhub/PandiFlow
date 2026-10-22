@@ -1,5 +1,5 @@
 // Où se pose l'image 3D de chaque objet, dans le repère de son dessin (voir art.js pour les champs).
-// Clé : « rayon/identifiant » quand deux objets partagent un identifiant, sinon l'identifiant seul.
+// Clé : l'identifiant de l'objet.
 // Valeurs de départ mesurées sur les dessins, puis ajustées à l'œil sur chaque image.
 import { html } from '../vendor/preact-htm.js';
 import { sparkle } from './draw.js';
@@ -85,7 +85,7 @@ export const PLACE = {
   dragon_monture: { cx: 100, bottom: 178, h: 116, shadow: 60, cls: 'veh-bob', ride: { hips: [108, 113], s: 0.21, front: 116 }, over: () => puff(178, 90) },
   tandem: { cx: 105, bottom: 178, w: 160, shadow: 66, cls: 'veh-bob' },
   bus_fratrie: { cx: 117, bottom: 178, w: 200, shadow: 86, cls: 'veh-bob', ride: { hips: [98, 124], s: 0.12, front: 118 } },
-  'vehicle/licorne': { cx: 105, bottom: 178, h: 112, shadow: 48, cls: 'veh-bob', ride: { hips: [95, 119], s: 0.21, front: 120 } },
+  licorne: { cx: 105, bottom: 178, h: 112, shadow: 48, cls: 'veh-bob', ride: { hips: [95, 119], s: 0.21, front: 120 } },
 
   // --- Accessoires ---
   ballon_foot: { cx: 40, bottom: 178, w: 27, shadow: 13, cls: 'ball-bounce' },
@@ -94,7 +94,7 @@ export const PLACE = {
   trophee: { cx: 40, bottom: 178, h: 56, shadow: 18, over: () => sparkle(62, 118, 5, 'tw', 0.3) },
   guitare: { cx: 36, bottom: 178, h: 82, shadow: 14 },
   cerf_volant: { cx: 54, bottom: 142, h: 104, cls: 'sway', under: () => kiteString },
-  'gear/robot': { cx: 42, bottom: 178, h: 64, shadow: 16 },
+  robot: { cx: 42, bottom: 178, h: 64, shadow: 16 },
   telescope: { cx: 40, bottom: 178, h: 66, shadow: 22, over: () => sparkle(72, 104, 5, 'tw', 0) },
   batterie: { cx: 44, bottom: 178, w: 66, shadow: 30 },
   talkie: { cx: 46, bottom: 178, h: 58, shadow: 24 },
@@ -122,7 +122,7 @@ export const PLACE = {
   chat: { cx: 100, bottom: 74, w: 128, h: 70 },
   fleurs: { cx: 100, bottom: 82, w: 140 },
   bonnet: { cx: 126, bottom: 80, w: 176, h: 104 },
-  'hat/licorne': { img: 'licorne_corne', cx: 100, bottom: 78, w: 90, over: () => html`<g>${sparkle(126, -30, 6, 'tw', 0.4)}${sparkle(72, -6, 4, 'tw', 1.1)}</g>` },
+  licorne_corne: { cx: 100, bottom: 78, w: 90, over: () => html`<g>${sparkle(126, -30, 6, 'tw', 0.4)}${sparkle(72, -6, 4, 'tw', 1.1)}</g>` },
   // Kippas : la calotte posée sur le haut du crâne, un peu aplatie (vue de face, elle épouse la tête)
   kippa_velours: { cx: 100, bottom: 36, w: 74, h: 24 },
   kippa_srouga: { cx: 100, bottom: 36, w: 76, h: 25 },
@@ -155,7 +155,7 @@ export const PLACE = {
   chiot: { cx: 172, bottom: 247, h: 72 },
   pandi: { cx: 170, bottom: 247, h: 70 },
   bebe_dragon: { cx: 170, bottom: 246, h: 76 },
-  'pet/robot': { img: 'robot_copain', cx: 170, bottom: 245, h: 80 },
+  robot_copain: { cx: 170, bottom: 245, h: 80 },
 
   // --- Décors (plein cadre) ---
   chateau: { img: 'fond_chateau', cover: FRAME },

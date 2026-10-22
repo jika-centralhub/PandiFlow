@@ -42,7 +42,7 @@ function shadow({ cx, bottom, shadow: s }) {
   return html`<ellipse cx=${cx + dx} cy=${bottom + 0.6 + dy} rx=${rx} ry=${ry} fill="#000" opacity="0.18" />`;
 }
 
-export const placeOf = (item) => item.art || PLACE[`${item.slot}/${item.id}`] || PLACE[item.id] || null;
+export const placeOf = (item) => item.art || PLACE[item.id] || null;
 
 export function withArt(item) {
   const art = placeOf(item);

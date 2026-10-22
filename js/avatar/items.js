@@ -139,7 +139,7 @@ const hats = [
     </g>`,
   },
   {
-    id: 'licorne', name: 'Corne de licorne', price: 55,
+    id: 'licorne_corne', name: 'Corne de licorne', price: 55,
     render: ({ id }) => html`<g>
       <defs>${grad(`${id}-horn`, ['#FFF6C2', '#FFD23F', '#FF9EC7'])}</defs>
       <path d="M90 50 L100 -18 L110 50 Z" fill=${`url(#${id}-horn)`} stroke="#E79BC1" stroke-width="2" stroke-linejoin="round" />
@@ -384,7 +384,7 @@ const pets = [
     </g>`,
   },
   {
-    id: 'robot', name: 'Robot copain', price: 110,
+    id: 'robot_copain', name: 'Robot copain', price: 110,
     render: ({ id }) => html`<g transform="translate(168 208) scale(1.32)">
       <defs>${grad(`${id}-rb`, ['#EEF2F8', '#B7C1D2', '#8A96AC'])}</defs>
       <line x1="0" y1="-24" x2="0" y2="-33" stroke="#8A96AC" stroke-width="2.5" />
@@ -524,10 +524,12 @@ export const ITEMS = [
 ].map(withArt);
 
 const BY_ID = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
-// Deux objets peuvent partager un identifiant dans des rayons différents (la licorne : monture et
-// corne ; le robot : accessoire et compagnon) : avec le rayon, on trouve toujours le bon
-const BY_SLOT = Object.fromEntries(ITEMS.map((i) => [`${i.slot}/${i.id}`, i]));
-export const getItem = (id, slot = null) => (slot && BY_SLOT[`${slot}/${id}`]) || BY_ID[id] || null;
+// Chaque identifiant ne doit servir qu'une fois : sinon getItem trouve l'autre objet, et l'achat
+// débite et équipe le mauvais (la corne de licorne achetait la monture)
+if (Object.keys(BY_ID).length !== ITEMS.length) {
+  console.warn('PandiFlow : identifiants d’objets en double', ITEMS.map((i) => i.id).filter((id, k, all) => all.indexOf(id) !== k));
+}
+export const getItem = (id) => BY_ID[id] || null;
 export const shopItems = () => ITEMS.filter((i) => !i.exclusive);
 export const rewardItems = () => ITEMS.filter((i) => i.exclusive && !i.pot);
 export const potItems = () => ITEMS.filter((i) => i.pot);
