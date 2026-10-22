@@ -7,7 +7,7 @@ import { Avatar, COVERED_BY_SKIN } from '../avatar/Avatar.js';
 import { ITEMS, SLOTS, shopItems, getItem, rayonOf, offeredTo, starredFor } from '../avatar/items.js';
 import { COSTUME_GROUPS } from '../avatar/costumes.js';
 import { ItemThumb } from '../components/ItemThumb.js';
-import { PandiCounter, Modal, ColorPicker } from '../components/ui.js';
+import { PandiCounter, Modal } from '../components/ui.js';
 import { Coin } from '../components/Coin.js';
 import { LookEditor } from '../components/LookEditor.js';
 import { PinGate } from '../components/PinGate.js';
@@ -23,9 +23,9 @@ import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
 
 const TABS = [
+  { id: 'boutique', label: 'Boutique', icon: '🛍️' },
   { id: 'look', label: 'Mon look', icon: '🪞' },
   { id: 'affaires', label: 'Mes affaires', icon: '🎒' },
-  { id: 'boutique', label: 'Boutique', icon: '🛍️' },
   { id: 'defis', label: 'Défis', icon: '🏆' },
   { id: 'equipe', label: 'Équipe', icon: '🤝' },
   { id: 'tsedaka', label: 'Tsedaka', icon: '💙' },
@@ -182,7 +182,7 @@ function BuyModal({ child, item, bal, onBuy, onClose }) {
   <//>`;
 }
 
-export function ChildPage({ childId, tab = 'look', rayon = null }) {
+export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
   const s = useStore();
   const child = s.children.find((c) => c.id === childId);
   const [buying, setBuying] = useState(null);
@@ -207,7 +207,7 @@ export function ChildPage({ childId, tab = 'look', rayon = null }) {
   const owned = new Set(s.owned.filter((o) => o.child_id === child.id).map((o) => o.item_id));
   const bal = balance(child.id, s);
   const tabs = activeChildren(s.children).length > 1 ? TABS : TABS.filter((t) => t.id !== 'equipe');
-  const current = tabs.some((t) => t.id === tab) ? tab : 'look';
+  const current = tabs.some((t) => t.id === tab) ? tab : 'boutique';
   const garage = hasGarage(child.equipped);
   const toShop = () => navigate(`enfant/${child.id}?onglet=boutique&rayon=vehicle`);
   const openRayon = (slot) => navigate(`enfant/${child.id}?onglet=${current}${slot ? `&rayon=${slot}` : ''}`, { replace: true });
@@ -266,10 +266,7 @@ export function ChildPage({ childId, tab = 'look', rayon = null }) {
           </button>`)}
         </nav>
         <div class="tab-content" key=${`${current}-${rayon || ''}`}>
-          ${current === 'look' && html`<div>
-            <div class="look-group"><h3>Ma couleur</h3><${ColorPicker} value=${child.color} onChange=${(color) => actions.saveChild({ ...child, color })} /></div>
-            <${LookEditor} look=${child.look} onChange=${(look) => actions.saveLook(child.id, look)} onPhoto=${() => (actions.isParentUnlocked() ? setPhoto(true) : setGate(true))} />
-          </div>`}
+          ${current === 'look' && html`<${LookEditor} look=${child.look} onChange=${(look) => actions.saveLook(child.id, look)} onPhoto=${() => (actions.isParentUnlocked() ? setPhoto(true) : setGate(true))} />`}
           ${current === 'affaires' && html`<${Inventory} child=${child} owned=${owned} rayon=${rayon} onRayon=${openRayon} onEquip=${equipToggle} />`}
           ${current === 'boutique' && html`<${Shop} child=${child} owned=${owned} bal=${bal} rayon=${rayon} onRayon=${openRayon} onPick=${(it) => { sfx.tap(); setBuying(it); }} />`}
           ${current === 'defis' && html`<${Challenges} child=${child} state=${s} />`}

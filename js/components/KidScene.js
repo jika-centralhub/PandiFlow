@@ -198,6 +198,12 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
     }
   }
 
+  // Rien à côté de lui : le panneau « Mon garage » se plante à sa droite (seulement en plan large :
+  // en gros plan sur l'enfant, il serait coupé)
+  const empty = interactive && onEmpty && focus !== 'kid' && !vehicle && !book && !items.gear && !items.yard && !items.flag;
+  const signX = standRight + 6;
+  const signBox = empty ? { x0: signX, y0: 204, x1: signX + 110, y1: STAND.y } : null;
+
   // --- Cadrage ----------------------------------------------------------------------------------
   // L'essentiel (l'enfant et son véhicule) d'abord ; la table et les accessoires seulement s'ils ne
   // rapetissent pas trop l'enfant (sinon ils dépassent du cadre, comme au cinéma)
@@ -209,7 +215,7 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
     };
     let box = vehicle ? union([kidBox, boxOf(vehicle, vZone)]) : kidBox;
     let cam = frame(box);
-    const extras = [table?.box, !ride && items.gear ? boxOf(items.gear, zoneOf('gear')) : null].filter(Boolean);
+    const extras = [table?.box, !ride && items.gear ? boxOf(items.gear, zoneOf('gear')) : null, signBox].filter(Boolean);
     for (const extra of extras) {
       const wider = union([box, extra]);
       const next = frame(wider);
@@ -219,7 +225,7 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
       }
     }
     return cam;
-  }, [focus, aspect, vehicle?.id, ride, book?.id, items.gear?.id, kidBox.x0, kidBox.y0, kidBox.x1, kidBox.y1]);
+  }, [focus, aspect, vehicle?.id, ride, book?.id, items.gear?.id, Boolean(signBox), kidBox.x0, kidBox.y0, kidBox.x1, kidBox.y1]);
 
   // La caméra glisse vers son nouveau cadrage (sans redessiner la scène à chaque image)
   useLayoutEffect(() => {
@@ -297,7 +303,6 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
     ${ride.front && html`<g clip-path=${`url(#${id}-front)`} aria-hidden="true">${vehicle.render({ id: `${id}-vfront` })}</g>`}
   </g>`;
 
-  const empty = !vehicle && !book && !items.gear && !items.yard && !items.flag;
   return html`<svg ref=${svg} class=${`garage-scene kid-scene ${day ? 'day' : 'night'} ${ride ? 'riding' : 'standing'} ${cls}`} viewBox="0 0 240 300"
     preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label=${`La scène de ${child.name}`}>
     ${bg ? html`<g ref=${bgLayer} class="ks-bg">${bg.render({ id: `${id}-bg`, crown: 26 })}</g>` : html`<${Backdrop} id=${id} day=${day} />`}
@@ -310,11 +315,11 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
       ${table.art ? html`<${TableArt} box=${table.art} ground=${table.ground} />` : html`<${Table} x=${table.x} top=${table.top} w=${table.w} ground=${table.ground} />`}
       <g transform=${`translate(${table.x + table.w / 2 - 40 * table.k} ${table.top - 178 * table.k}) scale(${table.k})`}>${piece('judaica', book)}</g>
     </g>`}
-    ${empty && interactive && onEmpty && html`<g class="gs-empty ks-empty" onClick=${onEmpty} role="button" aria-label="Voir les véhicules">
+    ${empty && html`<g transform=${`translate(${(signX - 150).toFixed(1)} 0)`}><g class="gs-empty ks-empty" onClick=${onEmpty} role="button" aria-label="Voir les véhicules">
       <path d="M205 290 L205 250" stroke="#8B5A2B" stroke-width="5" />
       <rect x="150" y="204" width="110" height="48" rx="8" fill="#FFF6E5" stroke="#C47A3A" stroke-width="3" />
       <text x="205" y="225" text-anchor="middle" font-size="12" font-weight="700" font-family="Fredoka, sans-serif" fill="#7E4520">Mon garage</text>
       <text x="205" y="242" text-anchor="middle" font-size="9" font-family="Fredoka, sans-serif" fill="#7E4520">Bientôt ton véhicule ! 🚗</text>
-    </g>`}
+    </g></g>`}
   </svg>`;
 }
