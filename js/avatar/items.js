@@ -74,7 +74,6 @@ const hats = [
   },
   {
     id: 'couronne', name: 'Couronne royale', price: 60,
-    art: { cx: 100, bottom: 54, w: 96, over: () => html`<g>${sparkle(134, 14, 7, 'tw', 0)}${sparkle(64, 22, 5, 'tw', 0.8)}</g>` },
     render: ({ id }) => html`<g>
       <defs>${grad(`${id}-gold`, GOLD)}</defs>
       <path d="M56 48 L60 10 L80 30 L100 0 L120 30 L140 10 L144 48 Z" fill=${`url(#${id}-gold)`} stroke="#B8860B" stroke-width="2" stroke-linejoin="round" />
@@ -525,7 +524,10 @@ export const ITEMS = [
 ].map(withArt);
 
 const BY_ID = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
-export const getItem = (id) => BY_ID[id] || null;
+// Deux objets peuvent partager un identifiant dans des rayons différents (la licorne : monture et
+// corne ; le robot : accessoire et compagnon) : avec le rayon, on trouve toujours le bon
+const BY_SLOT = Object.fromEntries(ITEMS.map((i) => [`${i.slot}/${i.id}`, i]));
+export const getItem = (id, slot = null) => (slot && BY_SLOT[`${slot}/${id}`]) || BY_ID[id] || null;
 export const shopItems = () => ITEMS.filter((i) => !i.exclusive);
 export const rewardItems = () => ITEMS.filter((i) => i.exclusive && !i.pot);
 export const potItems = () => ITEMS.filter((i) => i.pot);

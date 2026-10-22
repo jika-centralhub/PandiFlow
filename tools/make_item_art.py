@@ -2,7 +2,8 @@
 
 Les images brutes viennent de tools/make-item-art.ps1 (tests/local/item-art/, hors dépôt), sur un fond uni
 vert ou magenta : on retire le fond (bords adoucis, reflets de la couleur du fond neutralisés), on recadre
-au ras de l'objet (son bas se pose ainsi pile sur le sol de la scène), puis on réduit.
+au ras de l'objet (son bas se pose ainsi pile sur le sol de la scène), puis on réduit. Les décors (key none)
+gardent tout leur cadre et sont seulement réduits.
 Résultat : assets/items/<nom>.webp (scène) et assets/items/thumb/<nom>.webp (vignettes de la boutique),
 et js/avatar/art-list.js, la liste des images présentes avec leur taille (lue par js/avatar/art.js).
 Usage : python tools/make_item_art.py [nom1 nom2…]
@@ -21,6 +22,7 @@ OUT = os.path.join(ROOT, "assets", "items")
 THUMB = os.path.join(OUT, "thumb")
 LIST = os.path.join(ROOT, "js", "avatar", "art-list.js")
 FULL_MAX = 640  # côté le plus long dans la scène
+SCENERY_MAX = 960  # côté le plus long d'un décor plein cadre
 THUMB_MAX = 220  # côté le plus long d'une vignette
 
 
@@ -94,9 +96,15 @@ def main():
         if stem not in keys:
             print(f"{stem}: absent de tools/item-art.json, ignoré")
             continue
-        out = trim(key_out(Image.open(os.path.join(SRC, name)), keys[stem]))
-        full = shrink(out, FULL_MAX)
-        full.save(os.path.join(OUT, f"{stem}.webp"), "WEBP", quality=84, method=6)
+        raw = Image.open(os.path.join(SRC, name))
+        if keys[stem] == "none":
+            out = raw.convert("RGB")
+            full = shrink(out, SCENERY_MAX)
+            full.save(os.path.join(OUT, f"{stem}.webp"), "WEBP", quality=80, method=6)
+        else:
+            out = trim(key_out(raw, keys[stem]))
+            full = shrink(out, FULL_MAX)
+            full.save(os.path.join(OUT, f"{stem}.webp"), "WEBP", quality=84, method=6)
         shrink(out, THUMB_MAX).save(os.path.join(THUMB, f"{stem}.webp"), "WEBP", quality=82, method=6)
         size = os.path.getsize(os.path.join(OUT, f"{stem}.webp")) // 1024
         print(f"{stem}: {full.width}x{full.height}, {size} Ko")

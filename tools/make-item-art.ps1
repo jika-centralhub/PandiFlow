@@ -48,7 +48,8 @@ $m = 0
 foreach ($img in $todo) {
   $i++
   $file = Join-Path $out "$($img.id).webp"
-  $prompt = "$($img.prompt) $($spec.style) $($spec.cutout.($img.key))"
+  $style = if ($img.style) { $img.style } else { 'prop' }
+  $prompt = "$($img.prompt) $($spec.styles.$style) $($spec.cutout.($img.key))".Trim()
   Write-Host "[$i/$($todo.Count)] $($img.id)… " -NoNewline
   $done = $false
   $tries = 0

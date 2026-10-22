@@ -1,5 +1,6 @@
 // La scène de l'enfant : une seule carte où l'enfant vit dans son décor animé (le paysage du garage,
-// ou le décor acheté), avec ses objets à côté de lui, à l'échelle :
+// le décor acheté, ou le décor 3D qu'apporte son objet principal : la caserne derrière le camion de
+// pompiers, la synagogue autour de la Torah…), avec ses objets à côté de lui, à l'échelle :
 //   - il monte dans son véhicule quand c'est possible (voiture, kart, avion, poney…) et part avec lui
 //     pendant son numéro ; sinon (vélo, trottinette) le véhicule est garé derrière lui, sur la route ;
 //   - ses livres, ses bougies de Chabbat ou sa Torah sont posés sur une petite table, à leur vraie taille ;
@@ -9,7 +10,8 @@
 import { html, useEffect, useLayoutEffect, useMemo, useRef, useState } from '../vendor/preact-htm.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { getItem } from '../avatar/items.js';
-import { hasArt, artSize, artBox, artSrc } from '../avatar/art.js';
+import { hasArt, artSize, artBox, artSrc, artImage } from '../avatar/art.js';
+import { THEMES, FRAME } from '../avatar/art-place.js';
 import { garageItems, Backdrop, ActFx, ACT_MS, ZONES, isDay } from './Garage.js';
 import { garageSfx, sfx } from '../lib/sounds.js';
 import { replay } from '../anim/fx.js';
@@ -139,6 +141,15 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
   const ride = vehicle ? vehicle.ride || RIDES[vehicle.id] : null;
   const book = items.judaica || null;
   const sky = vehicle?.zone === 'sky';
+  // Sans décor acheté, le véhicule (sinon l'objet du Judaïsme) apporte son décor 3D, quand il en a un
+  const themed = !bg && (THEMES[vehicle?.id] || THEMES[book?.id]);
+  const theme = themed && hasArt(themed.img) ? themed : null;
+  const scenery = bg || (theme && {
+    id: theme.img,
+    art: { cover: FRAME },
+    render: () => html`<g>${artImage(theme.img, { cover: FRAME })}
+      ${theme.outdoor && !day && html`<rect x=${FRAME.x} y=${FRAME.y} width=${FRAME.w} height=${FRAME.h} fill="#1E1A5C" opacity="0.5" style="mix-blend-mode:multiply" />`}</g>`,
+  });
   const xOf = (item) => Number((item.box || DEFAULT_BOX[item.slot]).split(/\s+/)[0]);
   const wOf = (item) => Number((item.box || DEFAULT_BOX[item.slot]).split(/\s+/)[2]);
   // L'enfant debout : la table, le véhicule et l'accessoire se rangent à sa droite, l'un après l'autre
@@ -233,10 +244,12 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
     if (!el) return;
     const apply = (c) => {
       el.setAttribute('viewBox', `${c.x.toFixed(2)} ${c.y.toFixed(2)} ${c.w.toFixed(2)} ${c.h.toFixed(2)}`);
-      // Le décor acheté couvre toujours tout le cadre
+      // Le décor couvre toujours tout le cadre ; en image 3D, il remonte un peu (sans découvrir le haut)
+      // pour qu'on voie le bâtiment ou le paysage derrière l'enfant, pas seulement le sol
       if (bgLayer.current) {
         const k = Math.max(c.w / 240, c.h / 298);
-        bgLayer.current.setAttribute('transform', `translate(${(c.x + c.w / 2 - 100 * k).toFixed(2)} ${(c.y + c.h - 254 * k).toFixed(2)}) scale(${k.toFixed(4)})`);
+        const lift = scenery?.art?.cover ? Math.max(0, Math.min(298 - c.h / k, 40)) : 0;
+        bgLayer.current.setAttribute('transform', `translate(${(c.x + c.w / 2 - 100 * k).toFixed(2)} ${(c.y + c.h - (254 - lift) * k).toFixed(2)}) scale(${k.toFixed(4)})`);
       }
     };
     const from = cam.current;
@@ -258,7 +271,7 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [target.x, target.y, target.w, target.h, bg?.id]);
+  }, [target.x, target.y, target.w, target.h, scenery?.id]);
 
   function play(slot, item) {
     if (!interactive || !item.act || act?.slot === slot) return;
@@ -305,7 +318,7 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
 
   return html`<svg ref=${svg} class=${`garage-scene kid-scene ${day ? 'day' : 'night'} ${ride ? 'riding' : 'standing'} ${cls}`} viewBox="0 0 240 300"
     preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label=${`La scène de ${child.name}`}>
-    ${bg ? html`<g ref=${bgLayer} class="ks-bg">${bg.render({ id: `${id}-bg`, crown: 26 })}</g>` : html`<${Backdrop} id=${id} day=${day} />`}
+    ${scenery ? html`<g ref=${bgLayer} class="ks-bg">${scenery.render({ id: `${id}-bg`, crown: 26 })}</g>` : html`<${Backdrop} id=${id} day=${day} />`}
     ${items.yard && piece('yard', items.yard)}
     ${items.flag && piece('flag', items.flag)}
     ${vehicle && piece('vehicle', vehicle, rideInner)}

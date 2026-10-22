@@ -293,7 +293,7 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
   const items = {};
   for (const slot of SLOT_ORDER) {
     const itemId = tryOn && tryOn.slot === slot ? tryOn.itemId : equipped?.[slot];
-    const item = itemId ? getItem(itemId) : null;
+    const item = itemId ? getItem(itemId, slot) : null;
     if (item && item.slot === slot) items[slot] = item;
   }
   // Costume complet : il prend la place du haut, du chapeau, du masque, du cou et du dos

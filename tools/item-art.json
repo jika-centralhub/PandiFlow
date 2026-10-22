@@ -1,38 +1,634 @@
 {
-  "comment": "Images 3D façon film d'animation des objets de la boutique. Lues par tools/make-item-art.ps1 (création) et tools/make_item_art.py (détourage). key = couleur du fond à retirer : green, ou magenta pour les objets qui ont du vert.",
-  "style": "Pixar-style 3D animated feature film prop render, like the toys and vehicles of Toy Story or Cars and the objects of Coco: stylized appealing chunky toy-like shapes with soft rounded bevelled edges, rich saturated colors, soft physically based materials (glossy painted metal, soft plastic, rubber, polished wood, leather, velvet), warm soft key light with a subtle rim light, soft ambient occlusion, cinematic high-detail render.",
+  "comment": "Images 3D façon film d'animation des objets de la boutique. Lues par tools/make-item-art.ps1 (création) et tools/make_item_art.py (détourage). style = prop (objet), creature (animal, personnage) ou scenery (décor plein cadre). key = couleur du fond à retirer : green, magenta pour les objets qui ont du vert, none pour les décors.",
+  "styles": {
+    "prop": "Pixar-style 3D animated feature film prop render, like the toys and vehicles of Toy Story or Cars and the objects of Coco: stylized appealing chunky toy-like shapes with soft rounded bevelled edges, rich saturated colors, soft physically based materials (glossy painted metal, soft plastic, rubber, polished wood, leather, velvet), warm soft key light with a subtle rim light, soft ambient occlusion, cinematic high-detail render.",
+    "creature": "Pixar-style 3D animated feature film character render, like the animals of Zootopia, Coco or Ratatouille: stylized appealing chubby proportions, big expressive eyes with glossy irises and bright catchlights, soft rounded shapes, soft fur or skin with subsurface scattering, warm soft key light with a subtle rim light, cinematic high-detail render.",
+    "scenery": "Pixar-style 3D animated feature film set, like the cozy sets of Toy Story, Up, Cars or Coco: stylized toy-like chunky rounded shapes, soft warm and slightly pastel colors, friendly and cozy for young children, gentle soft lighting, soft depth of field; not realistic, not futuristic, not sci-fi, not dark. A completely empty set: absolutely no people, no children, no characters, no animals, no robots, no vehicles, no text, no letters, no numbers, no signs and no logo unless the description explicitly asks for one. Tall portrait composition; the bottom quarter of the image is a wide, flat, completely empty floor or ground with nothing standing on it, seen slightly from above and kept completely empty, and the middle of the image stays open and uncluttered."
+  },
   "cutout": {
     "green": "A single object shown whole, entirely inside the image with a comfortable margin on every side, never cropped. Perfectly flat, uniform pure chroma-key green background (#00FF00) with no gradient, no floor, no cast shadow, no reflection, no scenery and no green light on the object. The object itself has no green at all. No people, no text, no letters, no numbers, no logo, no watermark.",
-    "magenta": "A single object shown whole, entirely inside the image with a comfortable margin on every side, never cropped. Perfectly flat, uniform pure chroma-key magenta background (#FF00FF) with no gradient, no floor, no cast shadow, no reflection, no scenery and no magenta light on the object. The object itself has no magenta and no pink at all. No people, no text, no letters, no numbers, no logo, no watermark."
+    "magenta": "A single object shown whole, entirely inside the image with a comfortable margin on every side, never cropped. Perfectly flat, uniform pure chroma-key magenta background (#FF00FF) with no gradient, no floor, no cast shadow, no reflection, no scenery and no magenta light on the object. The object itself has no magenta and no pink at all. No people, no text, no letters, no numbers, no logo, no watermark.",
+    "none": ""
   },
   "items": [
     {
-      "id": "kart", "size": "1536x1024", "quality": "high", "key": "green",
+      "id": "kart",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
       "prompt": "A kid-sized go-kart seen from the side in a slight three-quarter view, facing right: a chunky glossy sunny-yellow body, a low open cockpit with an empty black bucket seat (nobody in it), a small black steering wheel, a white round racing disc with a red star on its side, four fat black rubber tires with silver rims, a little rear spoiler."
     },
     {
-      "id": "poney", "size": "1536x1024", "quality": "high", "key": "green",
+      "id": "poney",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
       "prompt": "A cute chubby kid-friendly pony standing calmly, seen from the side facing right, with its head turned a little towards the viewer: a caramel chestnut coat, a fluffy dark-brown mane and tail, big shiny friendly eyes with catchlights, a small red leather saddle on its back with nobody riding it, all four legs visible."
     },
     {
-      "id": "velo", "size": "1536x1024", "quality": "high", "key": "green",
+      "id": "velo",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
       "prompt": "A child's bicycle seen exactly from the side, facing right: a glossy cherry-red frame, black tires with thin silver spokes, a black saddle, a silver handlebar with pink rubber grips, a little silver bell, a red chain guard. Nobody on it, standing upright."
     },
     {
-      "id": "ballon_foot", "size": "1024x1024", "quality": "high", "key": "green",
+      "id": "ballon_foot",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
       "prompt": "A classic soccer ball with black pentagons and white hexagons, slightly stylized toy-like look, soft glossy leather with gentle stitched seams and a soft highlight."
     },
     {
-      "id": "sidour", "size": "1024x1024", "quality": "high", "key": "green",
+      "id": "sidour",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
       "prompt": "A small Jewish prayer book (siddur) standing upright, seen from the front with a slight three-quarter angle: a deep royal-blue hardcover with a gold embossed Star of David in the middle and a thin gold border, golden page edges visible on the side. No letters and no writing anywhere."
     },
     {
-      "id": "couronne", "size": "1536x1024", "quality": "high", "key": "green",
+      "id": "couronne",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
       "prompt": "A royal golden crown for a child, seen straight from the front at eye level: polished gold with five rounded points each topped with a small pearl, a round red ruby in the middle of the band and a blue sapphire on each side, soft red velvet visible inside between the points."
     },
     {
-      "id": "table", "size": "1536x1024", "quality": "high", "key": "green",
+      "id": "table",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
       "prompt": "A small kids' side table in polished warm honey-colored wood, seen from the front at a slightly elevated angle so the top surface is just visible, a simple rounded rectangular top and four sturdy rounded legs, empty with nothing on it."
+    },
+    {
+      "id": "trottinette",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's kick scooter seen exactly from the side, facing right, standing upright: a glossy sky-blue deck, two small black wheels with silver hubs, a tall silver steering column at the front on the right with a black handlebar and pink rubber grips. Nobody on it."
+    },
+    {
+      "id": "voiture_course",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A kid-sized open-cockpit race car seen from the side in a slight three-quarter view, facing right: a long low glossy cherry-red body with a white racing stripe, an empty open cockpit with a black seat and a small steering wheel (nobody in it), a black rear wing, four fat black racing tires with silver rims."
+    },
+    {
+      "id": "voiture_police",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cute chunky toy-like police car seen exactly from the side, facing right: white body with a dark navy-blue lower band, a red and blue light bar on the roof, big rounded windows, the front side window fully rolled down (no glass) so the empty driver seat is visible, four black tires with silver rims. Nobody inside. No writing on it."
+    },
+    {
+      "id": "camion_pompiers",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cute chunky toy-like red fire truck seen exactly from the side, facing right: a rounded cab at the front on the right with its side window fully rolled down (no glass) so the empty seat is visible, a silver ladder on top, a white stripe along the side, a coiled yellow hose reel on the side, a blue light on the cab roof, big black tires with silver rims. Nobody inside. No writing on it."
+    },
+    {
+      "id": "moto",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A small kid-sized motorbike seen exactly from the side, facing right: a glossy red fuel tank and body, a black seat that is empty, a silver exhaust pipe, a round headlight at the front, black handlebars, two chunky black tires with silver spokes. Nobody on it, standing upright."
+    },
+    {
+      "id": "tracteur",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "magenta",
+      "prompt": "A cute chunky toy-like farm tractor with no cabin and no roof, seen exactly from the side, facing right: a bright green body (no pink), an empty open black seat with a steering wheel in front of it, huge yellow-rimmed rear wheels with deep black treads at the back on the left, small yellow-rimmed front wheels, a short black exhaust pipe on the hood. Nobody on it."
+    },
+    {
+      "id": "bateau",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A small cute wooden sailboat for a child seen exactly from the side, facing right, floating upright: a rounded polished wooden hull with an open cockpit where a child could sit (empty), a tall mast with a big white mainsail and a pink front sail, a little red pennant at the top of the mast. No water, no waves, the boat alone."
+    },
+    {
+      "id": "avion",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cute chubby toy-like small propeller airplane flying, seen exactly from the side, facing right: a rounded white fuselage with a blue stripe, a red tail fin, short blue wings, a yellow nose with a two-blade propeller at the front on the right, an open cockpit right behind the nose with an empty seat (nobody in it), round windows along the side. No landing gear down."
+    },
+    {
+      "id": "helico",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cute chubby toy-like helicopter flying, seen exactly from the side, facing right: a rounded bright orange body, a big round bubble cockpit at the front on the right with its side door open so the empty seat is visible (nobody inside), a long main rotor on top, a small tail rotor at the end of the tail on the left, two black landing skids."
+    },
+    {
+      "id": "fusee",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cute chunky toy-like rocket standing vertically, seen from the front: a glossy white body, a red pointed nose cone, three red fins at the bottom, a big round porthole window in the middle with a thick silver rim and dark blue glass, a silver engine nozzle at the bottom with no flame and no smoke."
+    },
+    {
+      "id": "soucoupe",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cute toy-like flying saucer seen from the side at eye level: a wide polished silver disc with a ring of colorful round lights (yellow, pink, cyan, orange) around its rim, and a large clear glass dome on top that is completely empty and transparent. No beam of light, no alien, nobody inside."
+    },
+    {
+      "id": "licorne",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cute chubby kid-friendly unicorn standing calmly, seen from the side facing right, with its head turned a little towards the viewer: a pearly white coat, a fluffy rainbow mane and tail in pink, purple, blue and gold (no green), a golden spiral horn, big shiny friendly eyes with catchlights, a small lilac-purple saddle on its back with nobody riding it, all four legs visible.",
+      "style": "creature"
+    },
+    {
+      "id": "dragon_monture",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "magenta",
+      "prompt": "A friendly chubby baby dragon big enough to be ridden by a child, standing on its four short legs, seen from the side facing right, head turned a little towards the viewer with a big friendly smile: emerald-green scales, a cream-yellow belly, small cream horns, folded violet-blue wings, a red leather saddle on its back with nobody riding it, a curled tail on the left.",
+      "style": "creature"
+    },
+    {
+      "id": "tandem",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's tandem bicycle for two seen exactly from the side, facing right: a long glossy lavender-purple frame with a small pink heart sticker in the middle, two black saddles, two silver handlebars, black tires with thin silver spokes. Nobody on it, standing upright."
+    },
+    {
+      "id": "bus_fratrie",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cute chunky toy-like yellow school bus seen exactly from the side, facing right: rounded corners, a row of big side windows with no glass (open) showing empty seats inside, small colorful heart stickers under the windows, a black bumper stripe, round headlights at the front on the right, big black tires with silver rims. Nobody inside. No writing on it."
+    },
+    {
+      "id": "ballon_basket",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "An orange basketball with black seams, slightly stylized toy-like look, pebbled rubber texture with a soft highlight."
+    },
+    {
+      "id": "skate",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's skateboard seen from the side and slightly from above, facing right: a bubblegum-pink deck with kicked-up nose and tail and a white dashed stripe, silver trucks and four chunky yellow wheels."
+    },
+    {
+      "id": "trophee",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A shiny golden trophy cup for a child champion, seen from the front: a big rounded cup with two curly handles, a raised star on the front, a short golden stem on a dark polished wooden base."
+    },
+    {
+      "id": "guitare",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A small child's acoustic guitar standing upright and slightly tilted, seen from the front: a glossy cherry-red body, a dark round sound hole, a brown wooden neck and head with silver tuning pegs, white strings."
+    },
+    {
+      "id": "cerf_volant",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A diamond-shaped kite flying, seen from the front: bubblegum-pink fabric with darker pink cross spars, a long wavy purple ribbon tail below it with little yellow bows. No string, no hands."
+    },
+    {
+      "id": "robot",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A small friendly toy robot standing, seen from the front: a rounded light-silver head and body, two big glowing cyan eyes, a little smile, a red light on top of a short antenna, a round yellow button on its chest, short arms and two stubby legs."
+    },
+    {
+      "id": "telescope",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's telescope on a wooden tripod, seen from the side: a glossy royal-blue tube pointing up to the right with a darker blue lens hood and a small golden knob, three wooden tripod legs."
+    },
+    {
+      "id": "batterie",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A small child's drum kit seen from the front: a red bass drum with a white drumhead, a small red snare drum beside it, one golden cymbal on a silver stand, two wooden drumsticks resting on the snare."
+    },
+    {
+      "id": "talkie",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A pair of chunky toy walkie-talkies standing upright side by side, seen from the front: the left one lavender-purple and the right one bubblegum-pink, each with a short black antenna, a small light-blue screen and a speaker grille."
+    },
+    {
+      "id": "cabane",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "magenta",
+      "prompt": "A cute treehouse in a single leafy tree, seen from the front: a small wooden cabin with a red roof, a round window and a little door, sitting in the branches of a round bushy tree with bright green leaves, a wooden rope ladder hanging down to the ground, the tree trunk standing on the ground."
+    },
+    {
+      "id": "trampoline",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A round kids' backyard trampoline seen from the side and slightly from above: a black bouncing mat, thick royal-blue safety padding around the rim, sturdy silver legs. No safety net, nobody on it."
+    },
+    {
+      "id": "piscine",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A round inflatable kids' paddling pool seen from the side and slightly from above: two puffy bubblegum-pink rings, filled with clear sparkling turquoise water, a little yellow rubber duck floating in it."
+    },
+    {
+      "id": "tente",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cute orange camping tent for children seen from the front in a slight three-quarter view, with its door flap rolled open showing a dark inside, and just beside it on the right a small unlit campfire of crossed logs in a ring of grey stones, with no fire, no flame and no smoke."
+    },
+    {
+      "id": "chateau_gonflable",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "An inflatable bouncy castle for kids seen from the front: puffy sky-blue walls, two puffy pink towers with yellow cone roofs and little red flags on top, a yellow arched entrance in the middle."
+    },
+    {
+      "id": "tehilim",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A small Jewish book of Psalms standing upright, seen from the front with a slight three-quarter angle: a deep burgundy-red hardcover with a small gold embossed harp in the middle and a thin gold border, golden page edges visible on the side. No letters and no writing anywhere."
+    },
+    {
+      "id": "houmash",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A thick Jewish Torah book (chumash) standing upright, seen from the front with a slight three-quarter angle: a rich brown leather hardcover with gold embossed rounded Tablets of the Law in the middle (blank, without letters) and a thin gold border, golden page edges visible on the side. No letters and no writing anywhere."
+    },
+    {
+      "id": "bougies_chabbat",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "Two polished silver Shabbat candlesticks standing side by side on a small oval silver tray, seen from the front: each holds a tall white candle, both candles unlit, with no flame and no smoke."
+    },
+    {
+      "id": "sefer_torah",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A Torah scroll standing upright, seen from the front: dressed in a deep royal-blue velvet mantle embroidered in gold with a small crown and a Star of David (no letters), two polished wooden handles sticking out below the mantle, and on top two silver rimonim crowns with tiny golden bells. No writing anywhere."
+    },
+    {
+      "id": "kippa_velours",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A round black velvet kippah (Jewish skullcap) seen from the front at eye level, as it sits on a head: a low soft dome, plain black velvet with a soft sheen, thin black stitched rim."
+    },
+    {
+      "id": "kippa_srouga",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A round knitted crochet kippah (Jewish skullcap, srugah) seen from the front at eye level, as it sits on a head: a low soft dome in cream yarn with blue and orange zigzag bands and a small orange center."
+    },
+    {
+      "id": "kippa_chabbat",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A round white satin Shabbat kippah (Jewish skullcap) seen from the front at eye level, as it sits on a head: a low soft dome in shiny white satin with a thin gold embroidered band and small gold diamond motifs."
+    },
+    {
+      "id": "kippa_maguen",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A round royal-blue satin kippah (Jewish skullcap) seen from the front at eye level, as it sits on a head: a low soft dome in shiny blue satin with a thin white band and a small white embroidered Star of David at the top."
+    },
+    {
+      "id": "kippa_foot",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A round kippah (Jewish skullcap) printed like a soccer ball, seen from the front at eye level, as it sits on a head: a low soft dome in white fabric with black pentagons, thin black rim."
+    },
+    {
+      "id": "casquette",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's red baseball cap seen straight from the front at eye level, as if worn: a rounded red crown with a white star on the front, a red button on top, and the curved red visor pointing towards the viewer."
+    },
+    {
+      "id": "casquette_equipe",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's lavender-purple baseball cap seen straight from the front at eye level, as if worn: a rounded purple crown with a pink heart on the front, a pink button on top, and a curved pink visor pointing towards the viewer."
+    },
+    {
+      "id": "sorcier",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's wizard hat seen from the front: a tall violet-purple cone with a floppy tip bent to the right, a wide purple brim, a golden-yellow band, a few golden stars and a crescent moon on it."
+    },
+    {
+      "id": "pirate",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's black pirate tricorn hat seen straight from the front: black felt with gold trim along the edge and a white skull and crossbones on the front."
+    },
+    {
+      "id": "chat",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cat ears headband for a child seen straight from the front: a thin dark charcoal-grey headband arc with two soft fluffy dark-grey cat ears with pink insides."
+    },
+    {
+      "id": "fleurs",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "magenta",
+      "prompt": "A flower crown for a child seen straight from the front, as if worn on the head: a green leafy vine arc with seven round flowers in yellow, lilac and sky blue, each with a pale yellow center."
+    },
+    {
+      "id": "bonnet",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A soft periwinkle-blue nightcap seen from the front as if worn, with a cream fluffy cuff at the bottom, small yellow stars on it, and its long floppy tip drooping down to the right ending with a cream pompom."
+    },
+    {
+      "id": "licorne_corne",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A unicorn horn headband for a child seen straight from the front: a tall golden-pastel spiral horn standing upright on a thin headband, with three small flowers at its base in lilac, sky blue and pink."
+    },
+    {
+      "id": "soleil",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A pair of child's sunglasses seen straight from the front: chunky glossy black frames with opaque dark lenses and a soft white reflection, the temple arms pointing straight back and hidden."
+    },
+    {
+      "id": "coeurs",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A pair of heart-shaped novelty sunglasses seen straight from the front: glossy hot-pink frames with opaque glossy darker pink lenses and a soft white reflection, the temple arms pointing straight back and hidden."
+    },
+    {
+      "id": "masque",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's superhero eye mask seen straight from the front: a royal-blue fabric domino mask with two almond-shaped eye holes (the background visible through them) and small pointed tips on both sides."
+    },
+    {
+      "id": "etoiles",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A pair of star-shaped novelty sunglasses seen straight from the front: glossy golden-yellow star frames with opaque glossy amber lenses and a soft white reflection, the temple arms pointing straight back and hidden."
+    },
+    {
+      "id": "moustache",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A funny fake curly moustache seen from the front: dark chocolate-brown, thick and fluffy, with both ends curled up."
+    },
+    {
+      "id": "noeud",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's red satin bow tie seen straight from the front, with a soft knot in the middle."
+    },
+    {
+      "id": "medaille",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A gold medal hanging from a sky-blue ribbon, seen from the front as if worn around the neck: the ribbon forms a V from the top down to the medal, a round shiny gold medal with a raised star in the middle."
+    },
+    {
+      "id": "medaille_equipe",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A gold medal hanging from a lavender-purple ribbon with a thin pink stripe, seen from the front as if worn around the neck: the ribbon forms a V from the top down to the medal, a round shiny gold medal with a raised pink heart in the middle."
+    },
+    {
+      "id": "fee",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A pair of fairy wings for a child seen from the front, spread symmetrically to both sides as if worn on the back: two upper and two lower rounded wings, pearly iridescent light blue fading to pink at the edges, glittering, mostly opaque."
+    },
+    {
+      "id": "dragon",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A pair of dragon wings for a child costume seen from the front, spread symmetrically to both sides as if worn on the back: bat-like violet-purple membrane wings with darker purple bones and claws at the tips."
+    },
+    {
+      "id": "jetpack",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's toy jetpack seen from the front, as if worn on the back: two chunky rounded silver rocket tanks, one on each side, with red bands, connected by grey straps in the middle, nozzles at the bottom with no flame and no smoke."
+    },
+    {
+      "id": "chaton",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "An adorable chubby orange tabby kitten sitting, seen from the front, big shiny eyes, pink nose, a cream chest, its tail curled up beside it.",
+      "style": "creature"
+    },
+    {
+      "id": "chiot",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "An adorable chubby caramel-brown puppy sitting, seen from the front, big shiny eyes, long floppy dark-brown ears, a cream muzzle and chest, a little pink tongue out.",
+      "style": "creature"
+    },
+    {
+      "id": "pandi",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "An adorable chubby baby panda sitting, seen from the front, big shiny eyes in black eye patches, round black ears, rosy cheeks, a happy little smile.",
+      "style": "creature"
+    },
+    {
+      "id": "bebe_dragon",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "magenta",
+      "prompt": "An adorable chubby baby dragon sitting, seen from the front: bright green scales, a pale yellow belly, two tiny yellow horns, small mint-green wings, big shiny eyes, a happy smile, a little curled tail.",
+      "style": "creature"
+    },
+    {
+      "id": "robot_copain",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A small cute round companion robot standing, seen from the front: a rounded light-silver head with a dark navy visor face showing two glowing cyan eyes and a cyan smile, a short antenna with a red light, a small round silver body with a yellow button.",
+      "style": "creature"
+    },
+    {
+      "id": "brossou",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cute superhero toothbrush character flying upward, seen from the front: a blue handle body with a small navy eye mask band showing two big friendly eyes and a happy smile, a yellow star on its belly, little round blue hands, a red cape fluttering behind it, white bristles on top with no toothpaste.",
+      "style": "creature"
+    },
+    {
+      "id": "brossou_tube",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A toothpaste tube standing upright on its cap, seen from the front: a white tube with light-blue stripes and a red cap at the bottom, the crimped end at the top. No writing on it."
+    },
+    {
+      "id": "livre",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "An enchanted flying storybook seen from the front, opened wide like a pair of wings: violet-purple covers, cream pages fanning out on both sides, a few sparkles around it.",
+      "style": "creature"
+    },
+    {
+      "id": "veilleuse",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cute sleepy star night-light character seen from the front: a plump five-pointed golden-yellow star glowing softly, closed happy eyes, a small smile and rosy cheeks.",
+      "style": "creature"
+    },
+    {
+      "id": "drapeau_mat",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A tall thin flagpole for a garden, seen from the front: a polished silver metal pole with a shiny golden ball on top and a small round grey base at the bottom, with no flag on it."
+    },
+    {
+      "id": "fond_chambre",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A cozy child's bedroom at night: soft lavender walls, a big window with a crescent moon and stars outside, a garland of warm fairy lights, a small bed and a shelf with plain soft toys far on the sides, a warm wooden floor with a round soft rug, the floor in the lower part empty."
+    },
+    {
+      "id": "fond_espace",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "An uninhabited storybook space landscape, environment only, like an empty film set waiting for its characters: a soft purple and blue night sky full of twinkling stars, a friendly ringed orange planet and a small blue planet far away, a few glowing comets, and a smooth soft grey moon ground with gentle round craters in the lower part. Nobody and nothing stands on the ground: no astronaut, no robot, no rover, no flag."
+    },
+    {
+      "id": "fond_foret",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A bright, friendly enchanted forest clearing in the late afternoon: round chubby trees with soft green and teal foliage on both sides, glowing fireflies, little red-capped mushrooms at the edges, warm sunbeams, and a soft flat mossy-green grass clearing in the lower part."
+    },
+    {
+      "id": "fond_chateau",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A dreamy fairy-tale princess castle at golden hour: a pastel pink and lilac castle with pointed towers and little pink and blue flags in the background, soft clouds, a pale stone courtyard with flowering hedges as the ground in the lower part."
+    },
+    {
+      "id": "fond_ocean",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "The bottom of a sunny tropical sea: deep turquoise-blue water with sunbeams from above, swaying green seaweed and colorful corals on the sides, rising bubbles, a few small colorful fish in the distance, a flat golden sandy seabed as the ground in the lower part."
+    },
+    {
+      "id": "fond_plage",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A sunny beach: a bright blue sky with puffy clouds, a big warm sun, a sparkling turquoise sea with gentle waves, a palm tree on one side, and wide flat smooth golden sand in the lower part with nothing on it."
+    },
+    {
+      "id": "fond_arcenciel",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "An uninhabited dreamy sky landscape above the clouds, environment only, like an empty film set waiting for its characters: a big bright rainbow arching across a pastel lilac and peach sky, fluffy white clouds on both sides, and a wide floor of soft flat fluffy white clouds in the lower part. Nobody and nothing on the clouds: no child, no animal, no creature, no plane."
+    },
+    {
+      "id": "fond_caserne",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "The front of a friendly toy-like red brick fire station for children: big open red garage doors with an empty inside, a small bell tower on top, a big sign above the doors that reads POMPIERS in white letters (the only writing in the image), a red fire hydrant on the side, a sunny blue sky, and a flat empty light-grey concrete driveway in the lower part."
+    },
+    {
+      "id": "fond_commissariat",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "The front of a friendly toy-like small-town police station for children: a cute building with navy-blue and white walls, a blue lamp and a big gold star badge emblem above the door, flower boxes under the windows, a sunny blue sky, and a flat empty grey street with a sidewalk in the lower part."
+    },
+    {
+      "id": "fond_ferme",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A sunny friendly farm: a red barn with white trim, a round golden haystack, a wooden fence, rolling green hills, a blue sky with puffy clouds, and a flat empty dirt farm path in the lower part."
+    },
+    {
+      "id": "fond_circuit",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A sunny kids' racing circuit: red and white curbs, colorful striped pennants, a small empty grandstand with colorful seats, green grass, a blue sky, and a wide flat empty grey asphalt race track with a checkered start line in the lower part."
+    },
+    {
+      "id": "fond_synagogue",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "The warm, welcoming inside of a synagogue: a beautiful carved wooden Holy Ark (aron kodesh) with a deep blue velvet curtain embroidered with a golden Star of David at the back in the middle, a small golden eternal light hanging above it, warm golden light through arched stained-glass windows with blue and gold Stars of David, wooden benches on the sides, and a flat empty polished wooden floor in the lower part. No letters and no writing anywhere."
+    },
+    {
+      "id": "fond_chabbat",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A warm cozy family dining room on Friday evening for Shabbat: at the back a table with a white tablecloth, a braided challah bread under an embroidered cover, a silver cup and a vase of flowers, no candles on that table, warm golden lamplight, a window showing a soft evening sky, and a flat empty warm wooden floor in the lower part. No letters and no writing anywhere."
     }
   ]
 }

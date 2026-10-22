@@ -15,7 +15,7 @@ export function garageItems(equipped, tryOn = null) {
   const out = {};
   for (const slot of SCENE_ORDER) {
     const itemId = tryOn && tryOn.slot === slot ? tryOn.itemId : equipped?.[slot];
-    const item = itemId ? getItem(itemId) : null;
+    const item = itemId ? getItem(itemId, slot) : null;
     if (item && item.slot === slot) out[slot] = item;
   }
   return out;

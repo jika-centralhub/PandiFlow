@@ -114,6 +114,9 @@
 .art-item > .art { transform-box: fill-box; transform-origin: 50% 100%; }
 .act-page .art-item > .art { animation: art-hop 1.6s ease-in-out .2s; }
 @keyframes art-hop { 0%, 100% { transform: translateY(0) rotate(0); } 20% { transform: translateY(-7px) rotate(-7deg); } 42% { transform: translateY(0) rotate(0); } 62% { transform: translateY(-4px) rotate(5deg); } 80% { transform: translateY(0) rotate(0); } }
+/* Le livre enchanté en image bat des pages comme des ailes */
+.art-flap { transform-box: fill-box; transform-origin: 50% 50%; animation: art-flap .7s ease-in-out infinite alternate; }
+@keyframes art-flap { from { transform: scaleX(1); } to { transform: scaleX(.84); } }
 .candle-flame { transform-origin: 50% 100%; animation: candle .9s ease-in-out infinite alternate; }
 @keyframes candle { 0% { transform: scale(1, 1) rotate(-2deg); } 50% { transform: scale(.92, 1.08) rotate(2deg); } 100% { transform: scale(1.04, .95) rotate(-1deg); } }
 .candle-glow { transform-origin: 50% 50%; animation: glow-soft 2.2s ease-in-out infinite; }
