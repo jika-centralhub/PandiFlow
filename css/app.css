@@ -574,3 +574,15 @@ h1, h2, h3, p { margin: 0; }
 .invite-box p { margin-bottom: calc(var(--u) * 1.6); }
 .invite-box .meta { color: var(--ink-soft); font-size: calc(var(--u) * 3.3); margin-top: calc(var(--u) * 1.6); }
 .row.muted-row { background: #f8f6fe; }
+
+/* ===== Téléphone : proposition du plein écran en paysage ===== */
+.landscape-offer { position: fixed; left: 50%; bottom: max(calc(var(--u) * 3), env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 35; width: min(94vw, calc(var(--u) * 150)); display: flex; align-items: center; gap: calc(var(--u) * 3); padding: calc(var(--u) * 2.6) calc(var(--u) * 3.4); border-radius: calc(var(--u) * 5); background: rgba(42, 35, 80, .94); backdrop-filter: blur(10px); box-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 8) rgba(0, 0, 0, .4), inset 0 0 0 2px var(--line); color: #fff; animation: lo-in .5s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes lo-in { from { transform: translate(-50%, 160%); } }
+.lo-icon { font-size: calc(var(--u) * 8); line-height: 1; flex: none; }
+.lo-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: calc(var(--u) * .6); font-size: calc(var(--u) * 3.3); line-height: 1.3; }
+.lo-text > b { font-size: calc(var(--u) * 3.9); }
+.lo-actions { display: flex; gap: calc(var(--u) * 1.6); flex: none; }
+@media (orientation: portrait) {
+  .landscape-offer { flex-wrap: wrap; }
+  .lo-actions { flex: 1 1 100%; justify-content: flex-end; }
+}

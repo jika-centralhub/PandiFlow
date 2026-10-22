@@ -6,6 +6,7 @@ import { initSky } from './anim/sky.js';
 import { unlockAudio } from './lib/sounds.js';
 import { Toast, Loading } from './components/ui.js';
 import { OverlayHost } from './components/Overlays.js';
+import { LandscapeOffer } from './components/Landscape.js';
 import { Evening } from './pages/Evening.js';
 import { ChildPage } from './pages/Child.js';
 import { ParentPage } from './pages/Parent.js';
@@ -36,7 +37,7 @@ function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('reduce-motion', Boolean(s.prefs.reducedMotion));
   }, [s.prefs.reducedMotion]);
-  return html`<${Router} /><${OverlayHost} /><${Toast} />`;
+  return html`<${Router} /><${OverlayHost} /><${LandscapeOffer} /><${Toast} />`;
 }
 
 initSky(document.getElementById('sky'));

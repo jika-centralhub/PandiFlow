@@ -44,7 +44,8 @@ function tone(freq, { at = 0, dur = 0.15, type = 'sine', vol = 0.4, slide = 0, a
   osc.stop(t + dur + 0.05);
 }
 
-function noise({ at = 0, dur = 0.3, vol = 0.2, freq = 1200, q = 1, dest = null } = {}) {
+// Souffle filtré. attack : montée progressive (sinon le son démarre d'un coup) ; to : fréquence d'arrivée du filtre
+function noise({ at = 0, dur = 0.3, vol = 0.2, freq = 1200, q = 1, attack = 0, filter = 'bandpass', to = 0, dest = null } = {}) {
   const a = audio();
   if (!a) return;
   const t = a.currentTime + at;
@@ -54,11 +55,15 @@ function noise({ at = 0, dur = 0.3, vol = 0.2, freq = 1200, q = 1, dest = null }
   const src = a.createBufferSource();
   src.buffer = buffer;
   const f = a.createBiquadFilter();
-  f.type = 'bandpass';
-  f.frequency.value = freq;
+  f.type = filter;
+  f.frequency.setValueAtTime(freq, t);
+  if (to) f.frequency.exponentialRampToValueAtTime(to, t + dur);
   f.Q.value = q;
   const g = a.createGain();
-  g.gain.setValueAtTime(vol, t);
+  if (attack) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + attack);
+  } else g.gain.setValueAtTime(vol, t);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   src.connect(f).connect(g).connect(dest || master);
   src.start(t);
@@ -75,6 +80,11 @@ export const sfx = {
   orange: () => [523, 659].forEach((f, i) => tone(f, { at: i * 0.12, dur: 0.22, type: 'triangle', vol: 0.26 })),
   red: () => [392, 349].forEach((f, i) => tone(f, { at: i * 0.16, dur: 0.26, type: 'sine', vol: 0.24 })),
   whoosh: () => noise({ dur: 0.45, vol: 0.25, freq: 900, q: 0.7 }),
+  // Passage d'une carte du carrousel à l'autre : un petit froissement feutré, sans attaque sèche
+  slide: () => {
+    noise({ dur: 0.24, vol: 0.05, freq: 650, to: 260, q: 0.4, filter: 'lowpass', attack: 0.06 });
+    tone(520, { at: 0.02, dur: 0.12, type: 'sine', vol: 0.03, attack: 0.02, slide: -80 });
+  },
   fanfare: () => {
     const notes = [523, 523, 523, 659, 784, 659, 784, 1047];
     const times = [0, 0.12, 0.24, 0.36, 0.6, 0.84, 0.96, 1.15];

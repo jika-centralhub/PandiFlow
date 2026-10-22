@@ -141,7 +141,7 @@ function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFo
   const go = (i) => {
     const j = Math.max(0, Math.min(total - 1, i));
     if (j === focus) return;
-    sfx.whoosh();
+    sfx.slide();
     onFocus(ids[j]);
   };
   function down(e) {
@@ -431,7 +431,7 @@ export function Evening() {
       const wantBehavior = routine === 'soir' && !findBehavior(st.ledger, child.id, date);
       const target = after ? after.id : wantBehavior ? BEHAVIOR_CARD : next >= 0 ? list[next].id : null;
       if (target) {
-        sfx.whoosh();
+        sfx.slide();
         setFocus((f) => ({ ...f, [child.id]: target }));
       }
     }, 950);
