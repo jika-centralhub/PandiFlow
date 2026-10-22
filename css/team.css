@@ -4,7 +4,6 @@
 .cr-card.gold { background: linear-gradient(160deg, #fff3b0, var(--gold)); color: #6b4300; }
 .cr-card.gold .cr-emoji-wrap { background: rgba(255, 255, 255, .55); }
 .cr-card.behavior:not(.gold):not(.green):not(.red) { background: linear-gradient(160deg, #ffffff, #f1ecff); }
-.cr-dot.gold { background: var(--gold); filter: none; opacity: 1; }
 .rate-choice.gold { background: linear-gradient(180deg, #fff2b0, var(--gold)); color: #6b4300; box-shadow: 0 calc(var(--u) * 1.4) 0 var(--gold-d); }
 
 /* Bandeau sous la barre du haut : départ à l'école (matin) + pastille de l'équipe */

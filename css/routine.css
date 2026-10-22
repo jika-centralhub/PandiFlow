@@ -67,18 +67,46 @@
 .cr-arrow.next { right: calc(var(--u) * .8); }
 .cr-arrow:disabled { opacity: 0; pointer-events: none; }
 .cr-arrow:active { transform: scale(.85); }
-.cr-dots { display: flex; gap: calc(var(--u) * 1); overflow-x: auto; scrollbar-width: none; padding: calc(var(--u) * 1) calc(var(--u) * 1.6); flex: none; }
+/* La frise des tâches : de petits galets 3D brillants, façon film d'animation. La tâche du moment se soulève ;
+   une tâche notée s'entoure d'un liseré lumineux de la couleur de sa note, qui respire et où court une étincelle
+   (doré qui clignote : minuteur en cours) */
+.cr-dots { display: flex; gap: calc(var(--u) * 1.6); overflow-x: auto; scrollbar-width: none; padding: calc(var(--u) * 2.8) calc(var(--u) * 2.4) calc(var(--u) * 2.4); flex: none; }
 .cr-dot:first-child { margin-left: auto; }
 .cr-dot:last-child { margin-right: auto; }
 .cr-dots::-webkit-scrollbar { display: none; }
-.cr-dot { flex: none; width: calc(var(--u) * 6); height: calc(var(--u) * 6); border-radius: 50%; display: grid; place-items: center; font-size: calc(var(--u) * 3.3);
-  background: rgba(255, 255, 255, .16); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .25); filter: grayscale(.5); opacity: .75; transition: all .4s cubic-bezier(.3, 1.6, .5, 1); }
-.cr-dot.on { transform: scale(1.25); filter: none; opacity: 1; background: #fff; box-shadow: 0 0 0 calc(var(--u) * .7) color-mix(in srgb, var(--kid), #fff 20%); }
-.cr-dot.green { background: var(--green); filter: none; opacity: 1; }
-.cr-dot.orange { background: var(--orange); filter: none; opacity: 1; }
-.cr-dot.red { background: var(--red); filter: none; opacity: 1; }
-.cr-dot.timing { animation: dot-tick 1s ease-in-out infinite; filter: none; opacity: 1; }
-@keyframes dot-tick { 50% { box-shadow: 0 0 0 calc(var(--u) * .9) var(--gold); } }
+.cr-dot { --rc: transparent; position: relative; flex: none; width: calc(var(--u) * 6.6); height: calc(var(--u) * 6.6); border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 40% 28%, #ffffff 0%, #f3efff 34%, #d3c8f5 72%, #a99be0 100%);
+  box-shadow: inset 0 calc(var(--u) * -.8) calc(var(--u) * 1.3) rgba(72, 40, 150, .38), inset 0 calc(var(--u) * .35) calc(var(--u) * .5) rgba(255, 255, 255, .95),
+    0 calc(var(--u) * .9) calc(var(--u) * 1.4) rgba(15, 8, 50, .4);
+  transition: transform .45s cubic-bezier(.3, 1.6, .5, 1), box-shadow .3s; }
+/* Reflet de la lumière sur le galet */
+.cr-dot::before { content: ''; position: absolute; z-index: 2; left: 17%; top: 9%; width: 36%; height: 22%; border-radius: 50%; transform: rotate(-26deg); pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, .9), rgba(255, 255, 255, 0) 72%); }
+.cr-dot-ico { position: relative; z-index: 1; font-size: calc(var(--u) * 3.7); line-height: 1; transform: translateY(-3%);
+  filter: drop-shadow(0 calc(var(--u) * .35) calc(var(--u) * .3) rgba(40, 20, 90, .4)); }
+.cr-dot.on { z-index: 1; transform: translateY(calc(var(--u) * -.7)) scale(1.3);
+  box-shadow: inset 0 calc(var(--u) * -.8) calc(var(--u) * 1.3) rgba(72, 40, 150, .38), inset 0 calc(var(--u) * .35) calc(var(--u) * .5) rgba(255, 255, 255, .95),
+    0 calc(var(--u) * 1.8) calc(var(--u) * 2) rgba(15, 8, 50, .45), 0 0 calc(var(--u) * 2.6) rgba(255, 255, 255, .5); }
+.cr-dot.on .cr-dot-ico { animation: dot-bob 2.6s ease-in-out infinite; }
+@keyframes dot-bob { 50% { transform: translateY(-12%) rotate(-7deg) scale(1.06); } }
+/* Le liseré lumineux : il respire (opacité seule, léger pour le téléphone) */
+.cr-dot.green { --rc: var(--green); }
+.cr-dot.orange { --rc: var(--orange); }
+.cr-dot.red { --rc: var(--red); }
+.cr-dot.gold, .cr-dot.timing { --rc: var(--gold); }
+:is(.cr-dot.green, .cr-dot.orange, .cr-dot.red, .cr-dot.gold, .cr-dot.timing)::after { content: ''; position: absolute; inset: calc(var(--u) * -.6); border-radius: 50%; pointer-events: none;
+  border: calc(var(--u) * .45) solid var(--rc);
+  box-shadow: 0 0 calc(var(--u) * .9) var(--rc), 0 0 calc(var(--u) * 2) color-mix(in srgb, var(--rc), transparent 35%), inset 0 0 calc(var(--u) * .8) var(--rc);
+  animation: dot-glow 2.2s ease-in-out infinite alternate; animation-delay: calc(var(--i, 0) * -.41s); }
+@keyframes dot-glow { from { opacity: .55; } to { opacity: 1; } }
+.cr-dot.timing::after { animation-duration: .5s; }
+/* … et une étincelle blanche fait le tour du liseré */
+.cr-dot-spark { position: absolute; inset: calc(var(--u) * -.6); border-radius: 50%; pointer-events: none; z-index: 3;
+  background: conic-gradient(from 0deg, transparent 0 62%, rgba(255, 255, 255, .95) 74%, transparent 80% 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--u) * .5), #000 calc(100% - var(--u) * .42));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--u) * .5), #000 calc(100% - var(--u) * .42));
+  animation: dot-spin 3.2s linear infinite; animation-delay: calc(var(--i, 0) * -.53s); }
+@keyframes dot-spin { to { transform: rotate(1turn); } }
 
 /* ----- Minuteur dans la carte ----- */
 .cr-card.timing { --tc: var(--green); }

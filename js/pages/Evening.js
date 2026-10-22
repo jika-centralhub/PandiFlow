@@ -5,16 +5,14 @@ import { useStore, setPrefs, getState } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import * as timers from '../lib/timers.js';
 import { timerKey } from '../lib/countdown.js';
-import { activeChildren, tasksForChild, routineProgress, balance, findRating, pointsFor, COLOR_META, ROUTINES, BEHAVIOR, findBehavior, behaviorLevel } from '../domain.js';
+import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, ROUTINES, BEHAVIOR, findBehavior, behaviorLevel } from '../domain.js';
 import { routineDate, currentRoutine, addDays, formatLong } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
-import { PandiCounter, Gauge, Modal } from '../components/ui.js';
+import { Modal } from '../components/ui.js';
 import { Coin } from '../components/Coin.js';
 import { Pandi3D, has3D } from '../components/Pandi3D.js';
 import { pandiFor } from '../mascot/tasks.js';
 import { showOverlay } from '../components/Overlays.js';
-import { PandiBank } from '../components/PandiBank.js';
-import { useParentAction } from '../components/PinGate.js';
 import { TimerRing, TimerPicker, TimerStage, TimerResult, timerView, useClock } from '../components/Timer.js';
 import { DepartureBar } from '../components/Departure.js';
 import { CalmCorner } from '../components/CalmCorner.js';
@@ -222,11 +220,15 @@ function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFo
       ${list.map((task, i) => {
         const r = findRating(s.ratings, child.id, task.id, date);
         const t = timerFor(child.id, task.id);
-        return html`<button key=${task.id} role="tab" aria-selected=${i === focus} aria-label=${task.title}
-          class=${`cr-dot ${r?.color || ''} ${i === focus ? 'on' : ''} ${t ? 'timing' : ''}`} onClick=${() => go(i)}>${task.emoji}</button>`;
+        return html`<button key=${task.id} role="tab" aria-selected=${i === focus} aria-label=${task.title} style=${{ '--i': i }}
+          class=${`cr-dot ${r?.color || ''} ${i === focus ? 'on' : ''} ${t ? 'timing' : ''}`} onClick=${() => go(i)}>
+          <span class="cr-dot-ico">${task.emoji}</span>${(r || t) && html`<i class="cr-dot-spark" />`}
+        </button>`;
       })}
-      ${behavior && html`<button key=${BEHAVIOR_CARD} role="tab" aria-selected=${focus === list.length} aria-label="Comportement"
-        class=${`cr-dot ${behavior.level ? BEHAVIOR_CLASS[behavior.level] : ''} ${focus === list.length ? 'on' : ''}`} onClick=${() => go(list.length)}>${behavior.level ? BEHAVIOR[behavior.level].face : '😇'}</button>`}
+      ${behavior && html`<button key=${BEHAVIOR_CARD} role="tab" aria-selected=${focus === list.length} aria-label="Comportement" style=${{ '--i': list.length }}
+        class=${`cr-dot ${behavior.level ? BEHAVIOR_CLASS[behavior.level] : ''} ${focus === list.length ? 'on' : ''}`} onClick=${() => go(list.length)}>
+        <span class="cr-dot-ico">${behavior.level ? BEHAVIOR[behavior.level].face : '😇'}</span>${behavior.level && html`<i class="cr-dot-spark" />`}
+      </button>`}
     </div>
   </div>`;
 }
@@ -286,11 +288,7 @@ export function Evening() {
   const [team, setTeam] = useState(false);
   const [behaviorFor, setBehaviorFor] = useState(null);
   const [moods, setMoods] = useState({});
-  const [held, setHeld] = useState({}); // solde affiché gelé pendant le vol des pièces
-  const [bankFor, setBankFor] = useState(null);
-  const [asParent, parentGate] = useParentAction();
   const cards = useRef({});
-  const counters = useRef({});
   const heads = useRef({});
   const moodTimers = useRef({});
   const lastAuto = useRef(currentRoutine());
@@ -357,7 +355,6 @@ export function Evening() {
 
   async function pickBehavior(child, level) {
     setBehaviorFor(null);
-    const before = balance(child.id, s);
     const res = actions.setBehavior(child.id, date, level);
     const card = cards.current[`${child.id}:${BEHAVIOR_CARD}`];
     const head = heads.current[child.id];
@@ -379,10 +376,8 @@ export function Evening() {
       setMood(child.id, 'focus', 2400);
     }
     if (res.delta > 0) {
-      setHeld((h) => ({ ...h, [child.id]: before }));
       floatText(card, `+${res.delta}`);
-      await flyCoins(card, counters.current[child.id], Math.min(10, res.delta));
-      setHeld((h) => ({ ...h, [child.id]: undefined }));
+      await flyCoins(card, head, Math.min(10, res.delta));
     }
   }
 
@@ -413,7 +408,6 @@ export function Evening() {
 
   async function pick(child, task, color) {
     closeRating();
-    const before = balance(child.id, s);
     const res = actions.rate(child.id, task.id, date, color);
     if (!color) {
       sfx.pop();
@@ -457,10 +451,8 @@ export function Evening() {
     }, 950);
 
     if (points > 0 && res.delta > 0) {
-      setHeld((h) => ({ ...h, [child.id]: before }));
       floatText(card, `+${points}`);
-      await flyCoins(card, counters.current[child.id], Math.min(points, res.delta));
-      setHeld((h) => ({ ...h, [child.id]: undefined }));
+      await flyCoins(card, head, Math.min(points, res.delta));
     }
 
     if (res.becameComplete) {
@@ -504,20 +496,13 @@ export function Evening() {
         const list = tasksForChild(child.id, date, s, routine);
         const behaviorRow = routine === 'soir' && list.length ? findBehavior(s.ledger, child.id, date) : null;
         const behavior = routine === 'soir' && list.length ? { level: behaviorLevel(behaviorRow), points: behaviorRow?.amount || 0 } : null;
-        const bal = held[child.id] ?? balance(child.id, s);
         return html`<section key=${child.id} class=${`kid-col ${prog.complete ? 'done' : ''}`} style=${{ '--kid': child.color }}>
           <div class="kid-head">
             <button class="kid-avatar" ref=${(n) => (heads.current[child.id] = n)} onClick=${() => navigate(`enfant/${child.id}`)} aria-label=${`Le coin de ${child.name}`}>
               <${Avatar} look=${child.look} equipped=${child.equipped} expr=${moods[child.id] || 'happy'} mode="head" seed=${child.id} />
             </button>
             <div class="kid-info">
-              <div class="kid-name-row">
-                <span class="kid-name">${child.name}</span>
-                <button class="counter-btn" aria-label=${`Cagnotte de ${child.name}`} onClick=${() => { sfx.tap(); asParent(() => setBankFor(child.id)); }}>
-                  <${PandiCounter} value=${bal} counterRef=${{ set current(n) { counters.current[child.id] = n; } }} />
-                </button>
-              </div>
-              <${Gauge} segments=${prog.segments} complete=${prog.complete} />
+              <span class="kid-name">${child.name}</span>
             </div>
           </div>
           <${Carousel}
@@ -539,8 +524,6 @@ export function Evening() {
         </section>`;
       })}
     </div>
-    ${bankFor && kids.some((k) => k.id === bankFor) && html`<${PandiBank} child=${kids.find((k) => k.id === bankFor)} onClose=${() => setBankFor(null)} />`}
-    ${parentGate}
     ${pickerChild && pickerTask && html`<${TimerPicker}
       child=${pickerChild}
       task=${pickerTask}

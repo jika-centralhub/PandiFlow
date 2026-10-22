@@ -37,28 +37,6 @@ export function PandiCounter({ value, big = false, counterRef, id }) {
   </span>`;
 }
 
-// Jauge de la soirée : un segment par tâche, coloré selon la note
-export function Gauge({ segments, complete }) {
-  const shine = useRef(null);
-  const rated = segments.filter((s) => s.color).length;
-  const prev = useRef(rated);
-  useEffect(() => {
-    if (rated > prev.current && shine.current) {
-      shine.current.classList.remove('go');
-      void shine.current.offsetWidth;
-      shine.current.classList.add('go');
-    }
-    prev.current = rated;
-  }, [rated]);
-  return html`<div class="gauge" role="progressbar" aria-valuemin="0" aria-valuemax=${segments.length} aria-valuenow=${rated}>
-    <div class="gauge-track">
-      ${segments.map((s) => html`<div key=${s.task.id} class=${`gauge-seg ${s.color || ''}`}>${s.color && html`<i key=${s.color} />`}</div>`)}
-      <div class="gauge-shine" ref=${shine} />
-    </div>
-    <span class=${`gauge-star ${complete ? 'lit' : ''}`}>⭐</span>
-  </div>`;
-}
-
 export function Modal({ onClose, children, class: cls = '', style, closable = true }) {
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && closable && onClose?.();
