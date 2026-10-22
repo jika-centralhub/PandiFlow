@@ -77,7 +77,7 @@ function pony(id, { body, mane, horn = false, saddle = '#E2363F' }) {
 }
 
 const VEHICLES = [
-  { id: 'velo', act: 'drive', sound: 'bell', name: 'Vélo', price: 80, box: '30 96 140 88', render: ({ id }) => bike(id, '#E2363F') },
+  { id: 'velo', act: 'drive', sound: 'bell', name: 'Vélo', price: 80, box: '30 96 140 88', art: { cx: 101, bottom: 178, w: 118, shadow: 60, cls: 'veh-bob' }, render: ({ id }) => bike(id, '#E2363F') },
   {
     id: 'trottinette', act: 'drive', sound: 'bell', name: 'Trottinette', price: 60, box: '40 96 124 88',
     render: () => html`<g class="veh-bob">${shadow(96, 50)}
@@ -89,6 +89,7 @@ const VEHICLES = [
   },
   {
     id: 'kart', act: 'drive', sound: 'engine', name: 'Kart', price: 150,
+    art: { cx: 100, bottom: 178, w: 140, shadow: { rx: 62, ry: 7, dx: 2, dy: -4 }, cls: 'veh-bob', ride: { hips: [82, 147], s: 0.22, front: 141 } },
     render: () => html`<g class="veh-bob">${shadow(100, 72)}
       <path d="M34 150 C40 136 70 132 96 136 L150 140 C162 142 168 152 164 160 L40 162 C34 160 32 156 34 150 Z" fill="#FFD23F" stroke="#C99A12" stroke-width="2" />
       <path d="M70 136 L66 116 L86 118 L90 136 Z" fill="#2B2B33" />
@@ -210,7 +211,11 @@ const VEHICLES = [
       </g>
     </g>`,
   },
-  { id: 'poney', act: 'gallop', sound: 'neigh', name: 'Poney', price: 220, render: ({ id }) => pony(id, { body: '#C98A5B', mane: '#6B3E1E' }) },
+  {
+    id: 'poney', act: 'gallop', sound: 'neigh', name: 'Poney', price: 220,
+    art: { cx: 105, bottom: 178, h: 108, shadow: 52, cls: 'veh-bob', ride: { hips: [99, 116], s: 0.22, front: 117 } },
+    render: ({ id }) => pony(id, { body: '#C98A5B', mane: '#6B3E1E' }),
+  },
   {
     id: 'licorne', act: 'gallop', sound: 'neigh', name: 'Licorne', price: 350,
     render: ({ id }) => html`<g>
@@ -352,7 +357,7 @@ const soccer = (cx, cy, r) => html`<g class="ball-bounce">
 </g>`;
 
 const GEAR = [
-  { id: 'ballon_foot', act: 'bounce', sound: 'kick', name: 'Ballon de foot', price: 30, box: '10 130 60 54', render: () => html`<g>${shadow(40, 14)}${soccer(40, 164, 13)}</g>` },
+  { id: 'ballon_foot', act: 'bounce', sound: 'kick', name: 'Ballon de foot', price: 30, box: '10 130 60 54', art: { cx: 40, bottom: 178, w: 27, shadow: 13, cls: 'ball-bounce' }, render: () => html`<g>${shadow(40, 14)}${soccer(40, 164, 13)}</g>` },
   {
     id: 'ballon_basket', act: 'bounce', sound: 'kick', name: 'Ballon de basket', price: 30, box: '10 130 60 54',
     render: () => html`<g>${shadow(40, 14)}<g class="ball-bounce"><circle cx="40" cy="164" r="13" fill="#F28C28" stroke="#B85E12" stroke-width="1.8" />

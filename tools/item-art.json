@@ -1,0 +1,38 @@
+{
+  "comment": "Images 3D façon film d'animation des objets de la boutique. Lues par tools/make-item-art.ps1 (création) et tools/make_item_art.py (détourage). key = couleur du fond à retirer : green, ou magenta pour les objets qui ont du vert.",
+  "style": "Pixar-style 3D animated feature film prop render, like the toys and vehicles of Toy Story or Cars and the objects of Coco: stylized appealing chunky toy-like shapes with soft rounded bevelled edges, rich saturated colors, soft physically based materials (glossy painted metal, soft plastic, rubber, polished wood, leather, velvet), warm soft key light with a subtle rim light, soft ambient occlusion, cinematic high-detail render.",
+  "cutout": {
+    "green": "A single object shown whole, entirely inside the image with a comfortable margin on every side, never cropped. Perfectly flat, uniform pure chroma-key green background (#00FF00) with no gradient, no floor, no cast shadow, no reflection, no scenery and no green light on the object. The object itself has no green at all. No people, no text, no letters, no numbers, no logo, no watermark.",
+    "magenta": "A single object shown whole, entirely inside the image with a comfortable margin on every side, never cropped. Perfectly flat, uniform pure chroma-key magenta background (#FF00FF) with no gradient, no floor, no cast shadow, no reflection, no scenery and no magenta light on the object. The object itself has no magenta and no pink at all. No people, no text, no letters, no numbers, no logo, no watermark."
+  },
+  "items": [
+    {
+      "id": "kart", "size": "1536x1024", "quality": "high", "key": "green",
+      "prompt": "A kid-sized go-kart seen from the side in a slight three-quarter view, facing right: a chunky glossy sunny-yellow body, a low open cockpit with an empty black bucket seat (nobody in it), a small black steering wheel, a white round racing disc with a red star on its side, four fat black rubber tires with silver rims, a little rear spoiler."
+    },
+    {
+      "id": "poney", "size": "1536x1024", "quality": "high", "key": "green",
+      "prompt": "A cute chubby kid-friendly pony standing calmly, seen from the side facing right, with its head turned a little towards the viewer: a caramel chestnut coat, a fluffy dark-brown mane and tail, big shiny friendly eyes with catchlights, a small red leather saddle on its back with nobody riding it, all four legs visible."
+    },
+    {
+      "id": "velo", "size": "1536x1024", "quality": "high", "key": "green",
+      "prompt": "A child's bicycle seen exactly from the side, facing right: a glossy cherry-red frame, black tires with thin silver spokes, a black saddle, a silver handlebar with pink rubber grips, a little silver bell, a red chain guard. Nobody on it, standing upright."
+    },
+    {
+      "id": "ballon_foot", "size": "1024x1024", "quality": "high", "key": "green",
+      "prompt": "A classic soccer ball with black pentagons and white hexagons, slightly stylized toy-like look, soft glossy leather with gentle stitched seams and a soft highlight."
+    },
+    {
+      "id": "sidour", "size": "1024x1024", "quality": "high", "key": "green",
+      "prompt": "A small Jewish prayer book (siddur) standing upright, seen from the front with a slight three-quarter angle: a deep royal-blue hardcover with a gold embossed Star of David in the middle and a thin gold border, golden page edges visible on the side. No letters and no writing anywhere."
+    },
+    {
+      "id": "couronne", "size": "1536x1024", "quality": "high", "key": "green",
+      "prompt": "A royal golden crown for a child, seen straight from the front at eye level: polished gold with five rounded points each topped with a small pearl, a round red ruby in the middle of the band and a blue sapphire on each side, soft red velvet visible inside between the points."
+    },
+    {
+      "id": "table", "size": "1536x1024", "quality": "high", "key": "green",
+      "prompt": "A small kids' side table in polished warm honey-colored wood, seen from the front at a slightly elevated angle so the top surface is just visible, a simple rounded rectangular top and four sturdy rounded legs, empty with nothing on it."
+    }
+  ]
+}

@@ -9,6 +9,7 @@
 import { html, useEffect, useLayoutEffect, useMemo, useRef, useState } from '../vendor/preact-htm.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { getItem } from '../avatar/items.js';
+import { hasArt, artSize, artBox, artSrc } from '../avatar/art.js';
 import { garageItems, Backdrop, ActFx, ACT_MS, ZONES, isDay } from './Garage.js';
 import { garageSfx, sfx } from '../lib/sounds.js';
 import { replay } from '../anim/fx.js';
@@ -45,7 +46,8 @@ const RIDES = {
   dragon_monture: { hips: [99, 117], s: 0.23, front: 118 },
   bus_fratrie: { hips: [75, 148], s: 0.15, front: 130 },
 };
-export const ridesIn = (itemId) => Boolean(RIDES[itemId]);
+// (un véhicule en image 3D porte sa propre place : item.ride)
+export const ridesIn = (itemId) => Boolean(getItem(itemId)?.ride || RIDES[itemId]);
 
 // L'enfant debout (pas de véhicule où monter) : au premier plan, coupé aux hanches par le bas de la carte
 const STAND = { x: 40, y: 300, s: 0.78 };
@@ -56,6 +58,8 @@ const STAND_VEHICLE = { c: 1.32, ground: 277 };
 const STAND_GEAR = { c: 0.85, ground: 270 };
 const GROUND = 266; // la route, là où roulent les véhicules (sol du dessin à y = 178)
 const TABLE_CM = 58; // hauteur d'une table d'enfant (presque à ses hanches)
+// La table en image 3D : là où se posent les objets, en part de la hauteur de l'image (le milieu du plateau)
+const TABLE_TOP = 0.11;
 const DEFAULT_BOX = { vehicle: '6 56 216 128', flag: '186 26 60 50', gear: '4 110 80 74', yard: '96 20 148 164' };
 
 // « translate(a b) scale(c) » -> { a, b, c }
@@ -94,6 +98,14 @@ function Table({ x, top, w, ground = null }) {
   </g>`;
 }
 
+// La même table en image 3D, dans le rectangle box
+function TableArt({ box, ground = null }) {
+  return html`<g class="ks-table">
+    ${ground != null && html`<ellipse cx=${box.x + box.w / 2} cy=${ground} rx=${box.w * 0.52} ry=${Math.max(2, box.w * 0.05)} fill="#000" opacity="0.16" />`}
+    <image class="art" href=${artSrc('table')} x=${box.x.toFixed(2)} y=${box.y.toFixed(2)} width=${box.w.toFixed(2)} height=${box.h.toFixed(2)} preserveAspectRatio="none" />
+  </g>`;
+}
+
 export function KidScene({ child, equipped = child.equipped, tryOn = null, expr = 'happy', pose = 'idle', focus = 'all', interactive = true, onEmpty = null, class: cls = '' }) {
   const id = useMemo(() => `ks${++n}`, []);
   const svg = useRef(null);
@@ -124,7 +136,7 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
   const bgId = tryOn?.slot === 'bg' ? tryOn.itemId : equipped?.bg;
   const bg = bgId ? getItem(bgId) : null;
   const vehicle = items.vehicle || null;
-  const ride = vehicle ? RIDES[vehicle.id] : null;
+  const ride = vehicle ? vehicle.ride || RIDES[vehicle.id] : null;
   const book = items.judaica || null;
   const sky = vehicle?.zone === 'sky';
   const xOf = (item) => Number((item.box || DEFAULT_BOX[item.slot]).split(/\s+/)[0]);
@@ -176,6 +188,14 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
       table = { x: standRight + 2, top: STAND.y - 12, w, ground: null, k: bookScale };
     }
     table.box = { x0: table.x, y0: table.top - (book.drawH || 40) * bookScale, x1: table.x + table.w, y1: table.ground ?? STAND.y };
+    // En image : ses pieds touchent la route (ou, l'enfant debout, sortent du cadre), le plateau reste à sa place
+    if (hasArt('table')) {
+      const [pw, ph] = artSize('table');
+      const h = table.ground != null ? (table.ground - table.top) / (1 - TABLE_TOP) : (table.w * ph) / pw;
+      table.art = artBox('table', { cx: table.x + table.w / 2, bottom: table.top + h * (1 - TABLE_TOP), h });
+      table.box.x0 = Math.min(table.box.x0, table.art.x);
+      table.box.x1 = Math.max(table.box.x1, table.art.x + table.art.w);
+    }
   }
 
   // --- Cadrage ----------------------------------------------------------------------------------
@@ -287,7 +307,7 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
     ${items.gear && piece('gear', items.gear)}
     ${!ride && html`<g class="ks-stand">${kid(placeKid(STAND.x, STAND.y, STAND.s))}</g>`}
     ${table && html`<g>
-      <${Table} x=${table.x} top=${table.top} w=${table.w} ground=${table.ground} />
+      ${table.art ? html`<${TableArt} box=${table.art} ground=${table.ground} />` : html`<${Table} x=${table.x} top=${table.top} w=${table.w} ground=${table.ground} />`}
       <g transform=${`translate(${table.x + table.w / 2 - 40 * table.k} ${table.top - 178 * table.k}) scale(${table.k})`}>${piece('judaica', book)}</g>
     </g>`}
     ${empty && interactive && onEmpty && html`<g class="gs-empty ks-empty" onClick=${onEmpty} role="button" aria-label="Voir les véhicules">

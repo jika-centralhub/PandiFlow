@@ -6,6 +6,7 @@ import { COSTUMES } from './costumes.js';
 import { GARAGE_ITEMS, GARAGE_SLOTS } from './garage.js';
 import { starPath, heartPath, grad, GOLD, sparkle, mirror } from './draw.js';
 import { JUDAICA_WEAR } from './judaica.js';
+import { withArt } from './art.js';
 
 export { starPath, heartPath };
 
@@ -73,6 +74,7 @@ const hats = [
   },
   {
     id: 'couronne', name: 'Couronne royale', price: 60,
+    art: { cx: 100, bottom: 54, w: 96, over: () => html`<g>${sparkle(134, 14, 7, 'tw', 0)}${sparkle(64, 22, 5, 'tw', 0.8)}</g>` },
     render: ({ id }) => html`<g>
       <defs>${grad(`${id}-gold`, GOLD)}</defs>
       <path d="M56 48 L60 10 L80 30 L100 0 L120 30 L140 10 L144 48 Z" fill=${`url(#${id}-gold)`} stroke="#B8860B" stroke-width="2" stroke-linejoin="round" />
@@ -520,7 +522,7 @@ export const ITEMS = [
   ...teamWear,
   ...GARAGE_ITEMS,
   ...REWARDS.map((r) => ({ ...r, slot: 'magic', exclusive: true, price: 0 })),
-];
+].map(withArt);
 
 const BY_ID = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
 export const getItem = (id) => BY_ID[id] || null;

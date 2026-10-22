@@ -136,6 +136,7 @@ const harp = (cx, cy, s) => html`<g transform=${`translate(${cx} ${cy}) scale(${
 const JUDAICA = [
   {
     id: 'sidour', act: 'page', sound: 'page', name: 'Sidour', price: 60, real: 16, drawH: 31, box: '12 128 56 54',
+    art: { cx: 40.5, bottom: 178, h: 31, shadow: 12, over: () => letters(41, 150, ['א', 'ב', 'ג']) },
     render: ({ id }) => html`<g>
       ${book({ id, x: 29, w: 23, h: 31, cover: ['#2A3F8F', '#1C2D6B', '#13204D'], title: 'סידור', emblem: html`<path d=${davidLines(41.6, 160, 5.4)} stroke="#F2CE62" stroke-width="1.2" fill="none" stroke-linejoin="round" />` })}
       ${letters(41, 150, ['א', 'ב', 'ג'])}

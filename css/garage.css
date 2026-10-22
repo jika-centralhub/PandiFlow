@@ -110,6 +110,10 @@
 @keyframes bk-flip { 0%, 10% { transform: scaleX(1); } 45%, 70% { transform: scaleX(-.86); } 100% { transform: scaleX(1); } }
 .act-page .bk-letter { animation: bk-letter 1.8s ease-out .4s both; }
 @keyframes bk-letter { 0% { opacity: 0; transform: translate(0, 0) scale(.6); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), -46px) scale(1.3); } }
+/* Objets en image 3D : plus de pièces à animer à part (couverture, pages), c'est l'objet entier qui fait son numéro */
+.art-item > .art { transform-box: fill-box; transform-origin: 50% 100%; }
+.act-page .art-item > .art { animation: art-hop 1.6s ease-in-out .2s; }
+@keyframes art-hop { 0%, 100% { transform: translateY(0) rotate(0); } 20% { transform: translateY(-7px) rotate(-7deg); } 42% { transform: translateY(0) rotate(0); } 62% { transform: translateY(-4px) rotate(5deg); } 80% { transform: translateY(0) rotate(0); } }
 .candle-flame { transform-origin: 50% 100%; animation: candle .9s ease-in-out infinite alternate; }
 @keyframes candle { 0% { transform: scale(1, 1) rotate(-2deg); } 50% { transform: scale(.92, 1.08) rotate(2deg); } 100% { transform: scale(1.04, .95) rotate(-1deg); } }
 .candle-glow { transform-origin: 50% 50%; animation: glow-soft 2.2s ease-in-out infinite; }
