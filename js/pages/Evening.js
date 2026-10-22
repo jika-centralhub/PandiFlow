@@ -23,13 +23,15 @@ import { navigate } from '../router.js';
 import { keepScreenOn, toggleFullscreen, isFullscreen } from '../lib/device.js';
 
 // Matin ou soir : la routine change toute seule (à 4 h et à 13 h), on n'affiche que celle du moment
-export function TopBar({ onCalm }) {
+export function TopBar({ onCalm, chest = null }) {
   const s = useStore();
   const [fs, setFs] = useState(isFullscreen());
   return html`<header class="topbar">
     <div class="brand"><${Coin} /> <span>Pandi<b>Flow</b></span></div>
     ${s.mode === 'demo' && html`<span class="mode-badge">Démo</span>`}
     ${s.mode === 'cloud' && html`<span class=${`sync-dot ${s.pendingOps ? 'busy' : ''}`} title=${s.pendingOps ? 'Synchronisation…' : 'Synchronisé'} />`}
+    <div class="spacer" />
+    ${chest}
     <div class="spacer" />
     <button class="icon-btn calm-btn" aria-label="Coin calme : apaiser une émotion" title="Coin calme" onClick=${() => { sfx.sparkle(); onCalm(); }}>🌈</button>
     <button class="icon-btn" aria-label=${s.prefs.sound ? 'Couper le son' : 'Activer le son'} onClick=${() => setPrefs({ sound: !s.prefs.sound })}>${s.prefs.sound ? '🔊' : '🔇'}</button>
@@ -472,11 +474,10 @@ export function Evening() {
     .filter((o) => o.child && o.task);
 
   return html`<div class=${`evening routine-${routine} page-enter`}>
-    <${TopBar} onCalm=${() => setCalm(true)} />
+    <${TopBar} onCalm=${() => setCalm(true)} chest=${kids.length > 1 && html`<${TeamPill} onOpen=${() => setTeam(true)} />`} />
     ${date !== today && html`<div class="past-banner">Tu modifies ${routine === 'matin' ? 'le matin' : 'la soirée'} du ${formatLong(date)}</div>`}
     <div class="strip">
       ${routine === 'matin' && date === today && html`<${DepartureBar} date=${date} />`}
-      ${kids.length > 1 && html`<${TeamPill} onOpen=${() => setTeam(true)} />`}
     </div>
     <div class="columns" style=${{ '--n': Math.max(1, kids.length) }}>
       ${kids.length === 0 && html`<div class="empty-col">Ajoute un enfant dans l'espace parent ⚙️ pour commencer !</div>`}

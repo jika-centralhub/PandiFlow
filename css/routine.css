@@ -18,8 +18,8 @@
 .carousel { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: calc(var(--u) * 1.6); }
 .cr-stage { position: relative; flex: 1; min-height: 0; container-type: size; perspective: 900px; overflow: hidden; touch-action: pan-y; border-radius: calc(var(--u) * 4); }
 .cr-card {
-  --cw: min(64cqw, 84cqh);
-  --ch: 88cqh;
+  --cw: min(66cqw, 100cqh);
+  --ch: 92cqh;
   --tc: var(--kid);
   position: absolute; left: 50%; top: 50%; width: var(--cw); height: var(--ch); margin-left: calc(var(--cw) / -2); margin-top: calc(var(--ch) / -2);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.4cqh; padding: 4cqh 3cqh; text-align: center;
@@ -70,7 +70,7 @@
 /* La frise des tâches : de petits galets 3D brillants, façon film d'animation. La tâche du moment se soulève ;
    une tâche notée s'entoure d'un liseré lumineux de la couleur de sa note, qui respire et où court une étincelle
    (doré qui clignote : minuteur en cours) */
-.cr-dots { display: flex; gap: calc(var(--u) * 1.6); overflow-x: auto; scrollbar-width: none; padding: calc(var(--u) * 2.8) calc(var(--u) * 2.4) calc(var(--u) * 2.4); flex: none; }
+.cr-dots { display: flex; gap: calc(var(--u) * 1.6); overflow-x: auto; scrollbar-width: none; padding: calc(var(--u) * 2.6) calc(var(--u) * 2.4) calc(var(--u) * 1.2); flex: none; }
 .cr-dot:first-child { margin-left: auto; }
 .cr-dot:last-child { margin-right: auto; }
 .cr-dots::-webkit-scrollbar { display: none; }

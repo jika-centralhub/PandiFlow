@@ -6,12 +6,13 @@
 .cr-card.behavior:not(.gold):not(.green):not(.red) { background: linear-gradient(160deg, #ffffff, #f1ecff); }
 .rate-choice.gold { background: linear-gradient(180deg, #fff2b0, var(--gold)); color: #6b4300; box-shadow: 0 calc(var(--u) * 1.4) 0 var(--gold-d); }
 
-/* Bandeau sous la barre du haut : départ à l'école (matin) + pastille de l'équipe */
+/* Bandeau sous la barre du haut : départ à l'école (matin) ; le coffre de l'équipe est au milieu de la barre du haut */
 .strip { display: flex; align-items: center; gap: calc(var(--u) * 2); margin: 0 calc(var(--u) * 3.5) calc(var(--u) * 2); }
 .strip:empty { display: none; }
 .strip .departure { flex: 1; margin: 0; min-width: 0; }
 .team-chest { flex: none; margin-left: auto; width: calc(var(--u) * 15); aspect-ratio: 5 / 4; padding: 0; background: none; border: 0; cursor: pointer;
   filter: drop-shadow(0 calc(var(--u) * .8) calc(var(--u) * 1.4) rgba(0, 0, 0, .35)); transition: transform .15s cubic-bezier(.3, 1.6, .5, 1); animation: fade-up .5s ease backwards, chest-bob 3.2s ease-in-out .5s infinite; }
+.topbar .team-chest { margin: calc(var(--u) * -1.4) 0; width: calc(var(--u) * 14); }
 .team-chest svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .team-chest:active { transform: scale(.9); }
 .team-chest .tc-lid { transform-box: view-box; transform-origin: 50px 46px; transition: transform 1s cubic-bezier(.3, 1.5, .5, 1); }
