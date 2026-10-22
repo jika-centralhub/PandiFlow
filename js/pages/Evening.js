@@ -5,7 +5,7 @@ import { useStore, setPrefs, getState } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import * as timers from '../lib/timers.js';
 import { timerKey } from '../lib/countdown.js';
-import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, ROUTINES, BEHAVIOR, findBehavior, behaviorLevel } from '../domain.js';
+import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, BEHAVIOR, findBehavior, behaviorLevel } from '../domain.js';
 import { routineDate, currentRoutine, addDays, formatLong } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { Modal } from '../components/ui.js';
@@ -22,25 +22,14 @@ import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
 import { keepScreenOn, toggleFullscreen, isFullscreen } from '../lib/device.js';
 
-export function TopBar({ date, setDate, routine, setRoutine, onCalm }) {
+// Matin ou soir : la routine change toute seule (à 4 h et à 13 h), on n'affiche que celle du moment
+export function TopBar({ onCalm }) {
   const s = useStore();
-  const today = routineDate(routine);
-  const R = ROUTINES[routine];
   const [fs, setFs] = useState(isFullscreen());
   return html`<header class="topbar">
     <div class="brand"><${Coin} /> <span>Pandi<b>Flow</b></span></div>
     ${s.mode === 'demo' && html`<span class="mode-badge">Démo</span>`}
     ${s.mode === 'cloud' && html`<span class=${`sync-dot ${s.pendingOps ? 'busy' : ''}`} title=${s.pendingOps ? 'Synchronisation…' : 'Synchronisé'} />`}
-    <div class="spacer" />
-    <div class="routine-switch top" role="tablist" aria-label="Routine">
-      ${['matin', 'soir'].map((r) => html`<button key=${r} role="tab" aria-selected=${routine === r} class=${routine === r ? 'on' : ''} onClick=${() => { sfx.tap(); setRoutine(r); }}>
-        <span class="rs-ico">${ROUTINES[r].icon}</span><span class="rs-label">${ROUTINES[r].label}</span>
-      </button>`)}
-    </div>
-    <div class="date-switch" role="tablist">
-      <button class=${date === addDays(today, -1) ? 'on' : ''} onClick=${() => { sfx.tap(); setDate(addDays(today, -1)); }}>${R.yesterday}</button>
-      <button class=${date === today ? 'on' : ''} onClick=${() => { sfx.tap(); setDate(today); }}>${R.today}</button>
-    </div>
     <div class="spacer" />
     <button class="icon-btn calm-btn" aria-label="Coin calme : apaiser une émotion" title="Coin calme" onClick=${() => { sfx.sparkle(); onCalm(); }}>🌈</button>
     <button class="icon-btn" aria-label=${s.prefs.sound ? 'Couper le son' : 'Activer le son'} onClick=${() => setPrefs({ sound: !s.prefs.sound })}>${s.prefs.sound ? '🔊' : '🔇'}</button>
@@ -483,7 +472,7 @@ export function Evening() {
     .filter((o) => o.child && o.task);
 
   return html`<div class=${`evening routine-${routine} page-enter`}>
-    <${TopBar} date=${date} setDate=${setDate} routine=${routine} setRoutine=${setRoutine} onCalm=${() => setCalm(true)} />
+    <${TopBar} onCalm=${() => setCalm(true)} />
     ${date !== today && html`<div class="past-banner">Tu modifies ${routine === 'matin' ? 'le matin' : 'la soirée'} du ${formatLong(date)}</div>`}
     <div class="strip">
       ${routine === 'matin' && date === today && html`<${DepartureBar} date=${date} />`}

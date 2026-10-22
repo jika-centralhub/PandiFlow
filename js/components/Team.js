@@ -35,16 +35,44 @@ export function teamSummary(s) {
   return { week: teamWeek(s, today), treasure: treasureProgress(s), pot: potBalance(s) };
 }
 
-// Petite pastille de l'écran de la soirée : progression du défi de la semaine et du trésor
+// Les pierres et les pièces du coffre, de la plus basse à la plus haute : [x, y, r, couleur]
+const LOOT = [
+  [30, 47, 7, '#FFD23F'], [44, 46, 7.5, '#FFC21A'], [58, 47, 7, '#FFD23F'], [71, 46, 7, '#FFB800'],
+  [37, 41, 6.5, '#5EC8FF'], [51, 40, 7, '#FFD23F'], [65, 41, 6.5, '#FF6FA8'],
+  [43, 35, 6, '#FFC21A'], [57, 34, 6.5, '#48E0A4'], [50, 29, 5.5, '#9B7BFF'],
+];
+
+// Écran de la soirée : le coffre de la fratrie, qui se remplit à chaque vert (trésor commun) et brille
+// quand le défi d'équipe de la semaine est réussi. On le touche pour ouvrir l'espace équipe.
 export function TeamPill({ onOpen }) {
   const s = useStore();
   const { week, treasure } = teamSummary(s);
-  return html`<button class=${`team-pill ${week.done ? 'done' : ''}`} onClick=${() => { sfx.tap(); onOpen(); }} aria-label="L'espace équipe">
-    <span class="tp-ico">🤝</span>
-    <span class="tp-bar"><i style=${{ width: `${week.ratio * 100}%` }} /></span>
-    <span class="tp-num">${week.done ? 'Réussi !' : `${week.greens}/${week.goal}`}</span>
-    <span class="tp-sep" />
-    <span class="tp-ico">💎</span><span class="tp-num">${treasure.count}/${treasure.goal}</span>
+  const ratio = Math.max(0, Math.min(1, treasure.goal ? treasure.count / treasure.goal : 0));
+  const shown = ratio > 0 ? Math.max(1, Math.ceil(ratio * LOOT.length)) : 0;
+  const lift = ratio > 0 ? 5 + ratio * 13 : 0; // le couvercle se soulève à mesure qu'il se remplit
+  const label = `Le coffre de l'équipe : ${treasure.count} sur ${treasure.goal}${week.done ? ', défi de la semaine réussi' : ''}. Ouvrir l'espace équipe`;
+  return html`<button class=${`team-chest ${week.done ? 'done' : ''} ${ratio >= 1 ? 'full' : ''}`} onClick=${() => { sfx.chest?.(); onOpen(); }} aria-label=${label} title=${`${treasure.count} / ${treasure.goal}`}>
+    <svg viewBox="0 0 100 80" aria-hidden="true">
+      <defs>
+        <linearGradient id="tc-wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C98A5B" /><stop offset="1" stop-color="#8B5A2B" /></linearGradient>
+        <radialGradient id="tc-glow"><stop offset="0" stop-color="#FFF3B0" stop-opacity=".95" /><stop offset="1" stop-color="#FFD23F" stop-opacity="0" /></radialGradient>
+      </defs>
+      <ellipse class="tc-halo" cx="50" cy="40" rx=${20 + ratio * 26} ry=${12 + ratio * 18} fill="url(#tc-glow)" opacity=${0.25 + ratio * 0.75} />
+      <g class="tc-lid" style=${{ transform: `translateY(${-lift}px) rotate(${-lift * 0.5}deg)` }}>
+        <path d="M14 46 Q14 26 50 26 Q86 26 86 46 Z" fill="url(#tc-wood)" stroke="#5E3A1A" stroke-width="2.5" />
+        <path d="M14 46 Q14 26 50 26 Q86 26 86 46" fill="none" stroke="#FFC21A" stroke-width="3" />
+        <rect x="45" y="26" width="10" height="20" fill="#FFC21A" stroke="#B07A00" stroke-width="1.2" />
+      </g>
+      ${lift > 0 && html`<path d=${`M16 46 L20 ${44 - lift} L80 ${44 - lift} L84 46 Z`} fill="#3A2210" />`}
+      <g class="tc-loot">${LOOT.slice(0, shown).map(([x, y, r, c], i) => html`<circle key=${i} cx=${x} cy=${y} r=${r} fill=${c} stroke="rgba(0,0,0,.25)" stroke-width="1" style=${{ '--i': i }} />`)}</g>
+      <rect x="14" y="46" width="72" height="28" rx="4" fill="url(#tc-wood)" stroke="#5E3A1A" stroke-width="2.5" />
+      <rect x="14" y="46" width="72" height="5" fill="#FFC21A" stroke="#B07A00" stroke-width="1" />
+      <rect x="22" y="46" width="6" height="28" fill="#FFC21A" opacity=".85" />
+      <rect x="72" y="46" width="6" height="28" fill="#FFC21A" opacity=".85" />
+      <rect x="43" y="52" width="14" height="13" rx="3" fill="#FFD23F" stroke="#B07A00" stroke-width="1.5" />
+      <circle cx="50" cy="57.5" r="2" fill="#6b4300" />
+      ${week.done && html`<g class="tc-stars"><text x="12" y="22" font-size="13">⭐</text><text x="78" y="18" font-size="11">✨</text></g>`}
+    </svg>
   </button>`;
 }
 
