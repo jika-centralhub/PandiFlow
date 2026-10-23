@@ -6,7 +6,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, APP_VERSION } from '../config.js';
 import * as domain from '../domain.js';
 import { STATE_KEYS, sameKey, matches } from './tables.js';
 import { buildFamilySeed, buildMorningSeed, makeChild, DEMO_CHILDREN } from './seed.js';
-import { uid, sleep } from './util.js';
+import { uid, sleep, measure } from './util.js';
 import { toISODate } from './dates.js';
 import { hashPin, checkPin } from './pin.js';
 import { getItem } from '../avatar/items.js';
@@ -21,6 +21,7 @@ export const isCloudConfigured = () =>
 
 // --- Démarrage ----------------------------------------------------------------
 export async function boot() {
+  performance.mark?.('pandiflow:boot');
   try {
     if (isCloudConfigured()) {
       const { SupabaseRepo } = await import('./supabaseRepo.js');
@@ -54,8 +55,10 @@ async function afterLogin(user) {
 }
 
 export async function reload() {
+  const start = performance.now();
   const data = await repo.loadAll(getState().family?.id);
   setState({ ...data, settings: domain.mergeSettings(data.family?.settings), status: 'ready' });
+  measure('pandiflow:reload', start, { ratings: data.ratings.length, ledger: data.ledger.length });
   ensureMorningTasks();
 }
 

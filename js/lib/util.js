@@ -4,6 +4,15 @@ export const uid = () =>
     return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
   }));
 
+// Mesure nommée, lue par le compteur de performance caché (js/lib/perf.js) ; sans effet sinon
+export function measure(name, start, detail) {
+  try {
+    performance.measure(name, { start, detail });
+  } catch {
+    /* navigateur sans mesures nommées */
+  }
+}
+
 export const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];

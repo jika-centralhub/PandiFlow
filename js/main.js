@@ -40,6 +40,14 @@ function App() {
   return html`<${Router} /><${OverlayHost} /><${LandscapeOffer} /><${Toast} />`;
 }
 
+// Compteur de performance caché (js/lib/perf.js) : ?perf l'allume sur cet appareil, ?perf=0 l'éteint
+const perf = new URLSearchParams(location.search).get('perf');
+if (perf !== null) perf === '0' ? localStorage.removeItem('pandiflow-perf') : localStorage.setItem('pandiflow-perf', '1');
+if (localStorage.getItem('pandiflow-perf')) {
+  const appCode = performance.now();
+  import('./lib/perf.js').then((m) => m.startPerf({ appCode })).catch((e) => console.warn('PandiFlow : compteur indisponible', e?.message));
+}
+
 initSky(document.getElementById('sky'));
 unlockAudio();
 render(html`<${App} />`, document.getElementById('app'));

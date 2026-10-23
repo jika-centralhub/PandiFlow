@@ -4,6 +4,7 @@
 // Au chargement, le fond est retiré ici, sans IA : fond vert uni (incrustation), sinon fond uni ;
 // si le fond ne peut pas être retiré, l'avatar découpe le visage avec un masque doux.
 import { useEffect, useState } from '../vendor/preact-htm.js';
+import { measure } from './util.js';
 
 const CACHE = 'pandiflow-portraits';
 const ready = new Map(); // chemin -> { url, skin, keyed }
@@ -101,9 +102,17 @@ export const hasBody = (m) => Boolean(m && Number.isFinite(m.elbowLeftX) && Numb
 const toUrl = (canvas, fallback = null) =>
   new Promise((resolve) => canvas.toBlob((b) => resolve(b || fallback ? URL.createObjectURL(b || fallback) : ''), 'image/png'));
 
+// Durée de chaque préparation, lue par le compteur de performance caché (js/lib/perf.js)
+async function prepare(blob, marks) {
+  const start = performance.now();
+  const entry = await prepareImage(blob, marks);
+  measure('pandiflow:portrait', start, { body: Boolean(entry.body), keyed: entry.keyed, kb: Math.round(blob.size / 1024) });
+  return entry;
+}
+
 // Détourage + couleur de peau, en une seule lecture de l'image ; pour un personnage avec le haut du corps,
 // aussi les masques du t-shirt et de la peau, l'ombrage du tissu et l'épaisseur des bras (bodyMaps)
-async function prepare(blob, marks) {
+async function prepareImage(blob, marks) {
   try {
     const bitmap = await createImageBitmap(blob);
     const canvas = document.createElement('canvas');
