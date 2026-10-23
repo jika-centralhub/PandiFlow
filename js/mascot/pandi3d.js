@@ -148,6 +148,7 @@ export function shade(mat, occ, patches = []) {
       }),
     };
     u.pSoft = { value: patches.map((p) => p.soft ?? 0.015) };
+    mat.userData.patchColors = u.pCol.value; // couleur et opacité des taches, modifiables pendant l'animation
   }
   mat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, u);
@@ -310,8 +311,11 @@ function noseGeo() {
 export const MUZZLE = { c: [0, -0.17, 0.41], r: [0.28, 0.2, 0.21] };
 export const MOUTH_Y = -0.245;
 
-export function onMuzzle(x, y, lift) {
-  const [cx, cy, cz] = MUZZLE.c, [rx, ry, rz] = MUZZLE.r;
+export const onMuzzle = (x, y, lift) => onEllipsoid(MUZZLE, x, y, lift);
+
+// Un point (x, y) projeté vers l'avant sur un ellipsoïde { c, r }, décollé de lift le long de la normale
+export function onEllipsoid(E, x, y, lift) {
+  const [cx, cy, cz] = E.c, [rx, ry, rz] = E.r;
   const k = Math.max(0.03, 1 - ((x - cx) / rx) ** 2 - ((y - cy) / ry) ** 2);
   const z = cz + rz * Math.sqrt(k);
   const n = new THREE.Vector3((x - cx) / rx ** 2, (y - cy) / ry ** 2, (z - cz) / rz ** 2).normalize();
@@ -331,13 +335,13 @@ function polyBuffer() {
   return g;
 }
 
-function polyGeo(pts, lift, g) {
+function polyGeo(pts, lift, g, surf = onMuzzle) {
   const contour = pts.slice(0, CAP).map(([x, y]) => new THREE.Vector2(x, y));
   if (THREE.ShapeUtils.isClockWise(contour)) contour.reverse();
   const tris = THREE.ShapeUtils.triangulateShape(contour, []).flat();
   const pos = g.attributes.position, nor = g.attributes.normal;
   contour.forEach((v, i) => {
-    const [x, y, z, n] = onMuzzle(v.x, v.y, lift);
+    const [x, y, z, n] = surf(v.x, v.y, lift);
     pos.array.set([x, y, z], i * 3);
     nor.array.set([n.x, n.y, n.z], i * 3);
   });
@@ -348,13 +352,14 @@ function polyGeo(pts, lift, g) {
 }
 
 // f : { open (0–0,12), smile (-1–1), wide (0,7–1,4), teeth (0–1), tongue (0–1), round (0–1 : bouche en O) }
-function mouthPolys(f) {
-  const w = 0.075 * f.wide * (1 - f.round * 0.5);
-  const o = f.open;
-  const cy = MOUTH_Y + 0.022 * f.smile; // les coins remontent quand il sourit
-  const t = 0.012;
+// y : hauteur de la bouche ; k : taille (1 = Pandi ; le bébé dragon a une bouche plus grande)
+function mouthPolys(f, y = MOUTH_Y, k = 1) {
+  const w = 0.075 * k * f.wide * (1 - f.round * 0.5);
+  const o = f.open * k;
+  const cy = y + 0.022 * k * f.smile; // les coins remontent quand il sourit
+  const t = 0.012 * k;
   // lèvre du haut presque droite, lèvre du bas bien ronde : un sourire en « D » (et l'inverse quand il est triste)
-  const upMid = cy - 0.012 * Math.max(0, f.smile) - 0.004 + o * 0.12 - Math.min(0, f.smile) * 0.03;
+  const upMid = cy + k * (-0.012 * Math.max(0, f.smile) - 0.004 - Math.min(0, f.smile) * 0.03) + o * 0.12;
   const loMid = upMid - t - o * 1.2;
   const N = 20;
   const up = [], lo = [];
@@ -389,7 +394,7 @@ function mouthPolys(f) {
     }
     return [...a, ...b.reverse()];
   };
-  const open = o > 0.012;
+  const open = o > 0.012 * k;
   return {
     mouth,
     open,
@@ -399,7 +404,9 @@ function mouthPolys(f) {
   };
 }
 
-function mouthRig(occ) {
+// La bouche de Pandi ; S = { surf, y, k, line } pour la poser sur un autre museau (bébé dragon…)
+export function mouthRig(occ, S = null) {
+  const surf = S?.surf || onMuzzle, my = S?.y ?? MOUTH_Y, mk_ = S?.k ?? 1;
   const g = new THREE.Group();
   const mk = (color, rough, order) => {
     const m = new THREE.Mesh(
@@ -411,10 +418,12 @@ function mouthRig(occ) {
     g.add(m);
     return m;
   };
-  const inner = mk('#5A1A2A', 0.7, 0), tongue = mk('#FF6F88', 0.45, 1), up = mk('#FFFDF7', 0.3, 2), lo = mk('#FFFDF7', 0.3, 2), line = mk('#24161C', 0.6, 0);
+  const inner = mk('#5A1A2A', 0.7, 0), tongue = mk('#FF6F88', 0.45, 1), up = mk('#FFFDF7', 0.3, 2), lo = mk('#FFFDF7', 0.3, 2), line = mk(S?.line || '#24161C', 0.6, 0);
   // petit trait sous la truffe
-  const phil = mk('#24161C', 0.6, 0);
-  polyGeo([[-0.0065, -0.115], [0.0065, -0.115], [0.0055, MOUTH_Y + 0.006], [-0.0055, MOUTH_Y + 0.006]], 0.002, phil.geometry);
+  if (!S) {
+    const phil = mk('#24161C', 0.6, 0);
+    polyGeo([[-0.0065, -0.115], [0.0065, -0.115], [0.0055, MOUTH_Y + 0.006], [-0.0055, MOUTH_Y + 0.006]], 0.002, phil.geometry);
+  }
   let last = '';
   return {
     group: g,
@@ -422,14 +431,14 @@ function mouthRig(occ) {
       const k = [f.open, f.smile, f.wide, f.teeth, f.tongue, f.round].map((v) => v.toFixed(3)).join();
       if (k === last) return;
       last = k;
-      const P = mouthPolys(f);
+      const P = mouthPolys(f, my, mk_);
       line.visible = !P.open;
       inner.visible = P.open;
-      if (P.open) polyGeo(P.mouth, 0.002, inner.geometry);
-      else polyGeo(P.mouth, 0.002, line.geometry);
+      if (P.open) polyGeo(P.mouth, 0.002, inner.geometry, surf);
+      else polyGeo(P.mouth, 0.002, line.geometry, surf);
       for (const [m, pts] of [[tongue, P.tongue], [up, P.teethUp], [lo, P.teethLo]]) {
         m.visible = Boolean(pts);
-        if (pts) polyGeo(pts, 0.003, m.geometry);
+        if (pts) polyGeo(pts, 0.003, m.geometry, surf);
       }
     },
   };
@@ -591,13 +600,15 @@ const _d = new THREE.Vector3(), _p = new THREE.Vector3(), _e = new THREE.Vector3
 const DOWN = new THREE.Vector3(0, -1, 0);
 
 // target et pole dans le repère du buste
+// (arm.L1 et arm.L2 : longueurs d'un autre bras que celui de Pandi)
 export function reach(arm, target, pole) {
   const S = arm.shoulder.position;
   _d.subVectors(target, S);
   const dist = Math.max(1e-4, _d.length());
-  const maxR = (ARM.L1 + ARM.L2) * 0.995;
+  const L1 = arm.L1 ?? ARM.L1, L2 = arm.L2 ?? ARM.L2;
+  const maxR = (L1 + L2) * 0.995;
   const s = clamp(dist / maxR, 1, 1.28);
-  const l1 = ARM.L1 * s, l2 = ARM.L2 * s;
+  const l1 = L1 * s, l2 = L2 * s;
   const D = Math.min(dist, (l1 + l2) * 0.999);
   const cosA = clamp((l1 * l1 + D * D - l2 * l2) / (2 * l1 * D), -1, 1);
   const a = Math.acos(cosA);
@@ -655,4 +666,4 @@ export function updateOcclusion(rig, camera) {
   });
 }
 
-export { lerp, clamp, smoothstep };
+export { lerp, clamp, smoothstep, eyeTexture, bumpRepeat, blob, mesh, joint, OCC_N };

@@ -122,6 +122,24 @@
 .cc-smile { animation: stage-in .8s cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes cc-roar { from { transform: rotate(-3deg) scale(1.05); } to { transform: rotate(3deg) scale(1.08); } }
 
+/* Exercice avec son personnage en 3D (js/components/CalmStage.js) : la scène prend la place de Pandi
+   et du dessin, le compte et la consigne restent à droite */
+.calm-corner.cc-hero .cc-pandi { display: none; }
+.cc-hero .cc-body { padding-left: calc(var(--u) * 2); }
+.cc-hero .cc-main { max-width: none; }
+.cc-hero .cc-breath, .cc-hero .cc-breath.v-dragon, .cc-hero .cc-steps { flex-direction: row; gap: calc(var(--u) * 3); }
+.cc-hero .cc-visual, .cc-hero .v-dragon .cc-visual { flex: 1 1 auto; width: auto; max-width: 64vw; height: min(70vh, calc(100vh - var(--u) * 34)); aspect-ratio: 1.45; }
+.cc-hero .cc-guide { flex: 0 1 calc(var(--u) * 62); max-width: calc(var(--u) * 62); }
+.cc-hero .v-dragon .cc-count { font-size: calc(var(--u) * 16); }
+.cc-hero .v-dragon .cc-text { font-size: calc(var(--u) * 5.6); }
+.cc-stage3d { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .5s;
+  /* bords fondus : un décor ou un feu qui dépasse ne s'arrête pas net */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 90%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 90%, transparent); }
+.cc-stage3d.ready { opacity: 1; }
+.cc-hero .cc-steps .cc-count { font-size: calc(var(--u) * 16); }
+.cc-jar3d { position: absolute; inset: 0; cursor: pointer; border-radius: calc(var(--u) * 6); }
+.cc-jar3d:active { transform: scale(.98); }
+
 /* Icônes des étapes */
 .cc-icon { position: relative; font-size: calc(var(--u) * 22); line-height: 1; animation: stage-in .7s cubic-bezier(.3, 1.5, .5, 1); }
 .cc-icon.a-squeeze { animation: cc-squeeze .5s ease-in-out infinite alternate; }
@@ -175,6 +193,8 @@
   .cc-weather { grid-template-columns: repeat(3, 1fr); }
   .cc-breath, .cc-steps { flex-direction: column; gap: calc(var(--u) * 3); }
   .cc-visual { width: min(60vw, 34vh); }
+  .cc-hero .cc-breath, .cc-hero .cc-breath.v-dragon, .cc-hero .cc-steps { flex-direction: column; }
+  .cc-hero .cc-visual, .cc-hero .v-dragon .cc-visual { width: 94vw; max-width: none; height: 44vh; aspect-ratio: auto; }
 }
 @media (orientation: landscape) and (max-height: 520px) {
   .cc-pandi { width: calc(var(--u) * 38); }

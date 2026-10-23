@@ -378,6 +378,7 @@ export function createFx() {
       q.s.material.map = emojiTex(ch);
       q.s.material.needsUpdate = true;
       q.s.position.copy(at);
+      q.s.scale.setScalar(1e-4); // minuscule jusqu'à la prochaine mise à jour (sinon une image géante)
       q.s.visible = true;
       q.life = 0;
       q.max = life;

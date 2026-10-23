@@ -81,7 +81,7 @@ export class PandiActor {
   }
 
   update(dt, camera) {
-    dt = Math.min(dt, 0.05);
+    dt = clamp(dt, 0, 0.05);
     const { rig } = this;
     this.time += dt;
     this.cur.t += dt * (this.cur.ctx.tempo || 1);

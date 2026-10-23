@@ -676,3 +676,5 @@ export const ACTS = {
 };
 
 export { actForTask } from './tasks.js';
+// pour les numéros du coin calme (js/mascot/calm/acts.js)
+export { V, TAU, win, ramp, wob, face, prop, emit, gaze, wave, proud };

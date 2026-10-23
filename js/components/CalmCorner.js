@@ -5,6 +5,7 @@ import { EMOTIONS, TECHNIQUES, PARENT_TIPS } from '../lib/emotions.js';
 import { hush } from '../lib/timers.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { Pandi } from './Coin.js';
+import { CalmStage, hasCalmHero, preloadCalmStage } from './CalmStage.js';
 import { sfx } from '../lib/sounds.js';
 import { burst, confettiBurst } from '../anim/fx.js';
 import { rand } from '../lib/util.js';
@@ -125,15 +126,24 @@ function Breath({ tech, color, onDone }) {
   const last = cycle === tech.cycles - 1;
   const anger = Math.max(0, 1 - cycle / Math.max(1, tech.cycles - 1));
   const text = phase === 'ready' ? tech.readyText || 'Prêt ? On commence dans…' : phase === 'calm' ? tech.endText : phase === 'in' ? tech.inText : phase === 'hold' ? tech.holdText : last && tech.lastOutText ? tech.lastOutText : tech.outText;
+  // le personnage 3D suit l'étape : durée, colère qui baisse à chaque souffle…
+  const stage = {
+    phase, cycle, cycles: tech.cycles,
+    secs: { ready: 3, in: tech.inhale, hold: tech.hold || 1, out: tech.exhale, calm: 4.5 }[phase],
+    anger: phase === 'ready' ? 1 : phase === 'calm' ? 0 : anger,
+    next: Math.max(0, 1 - (cycle + 1) / Math.max(1, tech.cycles - 1)),
+  };
   return html`<div class=${`cc-breath v-${tech.visual} b-${phase}`} style=${{ '--c': color, '--secs': `${secs}s` }}>
     <div class="cc-visual">
-      <div class=${`cc-orb ${big ? 'big' : ''}`} />
-      ${tech.visual === 'balloon' && html`<div class=${`cc-balloon ${big ? 'big' : ''}`}><span /></div>`}
-      ${tech.visual === 'flower' && html`<div class="cc-flower-candle">
-        <span class=${`cc-flower ${phase === 'in' || phase === 'hold' ? 'smell' : ''}`}>🌸</span>
-        <span class=${`cc-candle ${phase === 'out' ? 'blow' : ''}`}><i class="flame" /><b /></span>
-      </div>`}
-      ${tech.visual === 'dragon' && html`<${Dragon} phase=${phase} anger=${phase === 'ready' ? 1 : anger} />`}
+      ${hasCalmHero(tech.hero)
+        ? html`<${CalmStage} hero=${tech.hero} ctx=${stage} />`
+        : html`<div class=${`cc-orb ${big ? 'big' : ''}`} />
+          ${tech.visual === 'balloon' && html`<div class=${`cc-balloon ${big ? 'big' : ''}`}><span /></div>`}
+          ${tech.visual === 'flower' && html`<div class="cc-flower-candle">
+            <span class=${`cc-flower ${phase === 'in' || phase === 'hold' ? 'smell' : ''}`}>🌸</span>
+            <span class=${`cc-candle ${phase === 'out' ? 'blow' : ''}`}><i class="flame" /><b /></span>
+          </div>`}
+          ${tech.visual === 'dragon' && html`<${Dragon} phase=${phase} anger=${phase === 'ready' ? 1 : anger} />`}`}
     </div>
     <div class="cc-guide">
       ${phase === 'calm' ? html`<div class="cc-count cc-smile">😊</div>` : html`<div class="cc-count" key=${`${phase}${count}`}>${count}</div>`}
@@ -144,10 +154,12 @@ function Breath({ tech, color, onDone }) {
 }
 
 // --- Étapes guidées (tortue, citron, robot, papillon…) ---------------------------------------
-function Steps({ tech, color, onDone }) {
+function Steps({ tech, color, kidColor, onDone }) {
   const [i, setI] = useState(0);
-  const [side, setSide] = useState(0);
+  const [tap, setTap] = useState(0);
+  const side = tap % 2;
   const step = tech.steps[i];
+  const hero = hasCalmHero(tech.hero);
 
   useEffect(() => {
     sfx.softChime();
@@ -155,7 +167,7 @@ function Steps({ tech, color, onDone }) {
     let beat = null;
     if (step.beat) {
       beat = setInterval(() => {
-        setSide((x) => 1 - x);
+        setTap((x) => x + 1);
         sfx.softTap();
       }, step.beat * 1000);
     }
@@ -165,14 +177,19 @@ function Steps({ tech, color, onDone }) {
     };
   }, [i]);
 
+  // le personnage 3D suit l'étape (move dans js/lib/emotions.js), et chaque tapotement du papillon
+  const stage = { phase: step.move || step.anim || 'pop', step: i, steps: tech.steps.length, secs: step.secs, n: Number(step.big) || 0, tap, beat: step.beat || 0, color: kidColor };
   return html`<div class="cc-steps" style=${{ '--c': color }}>
     <div class="cc-visual">
-      <div class="cc-orb big pulse" />
-      ${step.big
-        ? html`<span class="cc-big-number" key=${i}>${step.big}</span>`
-        : html`<span class=${`cc-icon a-${step.anim || 'pop'} ${step.beat ? `side-${side}` : ''}`} key=${i}>${step.icon}</span>`}
+      ${hero
+        ? html`<${CalmStage} hero=${tech.hero} ctx=${stage} />`
+        : html`<div class="cc-orb big pulse" />
+          ${step.big
+            ? html`<span class="cc-big-number" key=${i}>${step.big}</span>`
+            : html`<span class=${`cc-icon a-${step.anim || 'pop'} ${step.beat ? `side-${side}` : ''}`} key=${i}>${step.icon}</span>`}`}
     </div>
     <div class="cc-guide">
+      ${hero && step.big && html`<div class="cc-count" key=${`n${i}`}>${step.big}</div>`}
       <div class="cc-text" key=${i}>${step.text}</div>
       <div class="cc-progress"><i key=${i} style=${{ animationDuration: `${step.secs}s` }} /></div>
       <div class="cc-cycles">${tech.steps.map((_, k) => html`<i key=${k} class=${k <= i ? 'on' : ''} />`)}</div>
@@ -186,6 +203,7 @@ function Senses({ tech, color, onDone }) {
   const [found, setFound] = useState(0);
   const btn = useRef(null);
   const step = tech.steps[i];
+  const hero = hasCalmHero(tech.hero);
   function hit() {
     const n = found + 1;
     sfx.coin(n);
@@ -200,10 +218,13 @@ function Senses({ tech, color, onDone }) {
     }, 500);
     setFound(n);
   }
+  const stage = { phase: step.move, step: i, found, count: step.count, secs: 3 };
   return html`<div class="cc-steps cc-senses" style=${{ '--c': color }}>
     <div class="cc-visual">
-      <div class="cc-orb big" />
-      <span class="cc-icon a-pop" key=${i}>${step.icon}</span>
+      ${hero
+        ? html`<${CalmStage} hero=${tech.hero} ctx=${stage} />`
+        : html`<div class="cc-orb big" />
+          <span class="cc-icon a-pop" key=${i}>${step.icon}</span>`}
     </div>
     <div class="cc-guide">
       <div class="cc-text" key=${i}>${step.text}</div>
@@ -238,12 +259,16 @@ function Jar({ tech, color, onDone }) {
     return () => clearTimeout(t);
   }, [shaken]);
 
+  const hero = hasCalmHero(tech.hero);
+  const stage = { phase: !shaken ? 'wait' : settle ? 'settle' : 'shake', shakes: shaken, secs: settle ? tech.secs : 0.7 };
   return html`<div class="cc-steps cc-jar-wrap" style=${{ '--c': color }}>
     <div class="cc-visual">
-      <button class=${`cc-jar ${shaken && !settle ? 'shaking' : ''}`} aria-label="Secouer le bocal" onClick=${shake}>
-        <span class="lid" />
-        ${flakes.current.map((f, k) => html`<i key=${f.k} style=${{ left: `${pos[k].x}%`, top: `${pos[k].y}%`, background: f.hue, transform: `scale(${f.s}) rotate(${pos[k].y * 7}deg)`, transitionDuration: `${pos[k].d}s` }} />`)}
-      </button>
+      ${hero
+        ? html`<button class="cc-jar3d" aria-label="Secouer le bocal" onClick=${shake}><${CalmStage} hero=${tech.hero} ctx=${stage} label="Pandi et le bocal à paillettes" /></button>`
+        : html`<button class=${`cc-jar ${shaken && !settle ? 'shaking' : ''}`} aria-label="Secouer le bocal" onClick=${shake}>
+          <span class="lid" />
+          ${flakes.current.map((f, k) => html`<i key=${f.k} style=${{ left: `${pos[k].x}%`, top: `${pos[k].y}%`, background: f.hue, transform: `scale(${f.s}) rotate(${pos[k].y * 7}deg)`, transitionDuration: `${pos[k].d}s` }} />`)}
+        </button>`}
     </div>
     <div class="cc-guide">
       <div class="cc-text" key=${settle ? 's' : shaken ? 'w' : 'i'}>
@@ -282,6 +307,11 @@ export function CalmCorner({ kids, onClose }) {
   const name = child?.name || '';
   const Runner = tech ? RUNNERS[tech.kind] : null;
 
+  // l'exercice proposé a son personnage en 3D : on prépare la scène pendant que l'enfant choisit
+  useEffect(() => {
+    if (hasCalmHero(tech?.hero)) preloadCalmStage();
+  }, [techId]);
+
   function chooseEmotion(e) {
     sfx.pop();
     setEmotion(e);
@@ -319,7 +349,9 @@ export function CalmCorner({ kids, onClose }) {
   else if (step === 'after') bubble = 'Comment tu te sens maintenant ?';
   else if (step === 'end') bubble = `Bravo ${name} ! Tu as calmé ${emotion.id === 'colere' ? 'ton orage' : emotion.id === 'tristesse' ? 'ta pluie' : emotion.id === 'excite' ? 'ta tornade' : 'tes nuages'}. Tu veux un câlin ou en parler ?`;
 
-  return html`<div class=${`calm-corner cc-step-${step}`} style=${{ '--c': color }} role="dialog" aria-modal="true" aria-label="Coin calme" ref=${root}>
+  // exercice avec son personnage en 3D : la scène (le héros et Pandi) prend toute la place
+  const hero = step === 'do' && hasCalmHero(tech?.hero);
+  return html`<div class=${`calm-corner cc-step-${step} ${hero ? 'cc-hero' : ''}`} style=${{ '--c': color }} role="dialog" aria-modal="true" aria-label="Coin calme" ref=${root}>
     <div class="cc-sky" aria-hidden="true">${Array.from({ length: 14 }, (_, i) => html`<span key=${i} style=${{ left: `${(i * 37) % 100}%`, animationDelay: `${-i * 1.7}s`, animationDuration: `${14 + (i % 5) * 3}s` }} />`)}</div>
     <header class="cc-top">
       <button class="btn btn-ghost btn-small" onClick=${() => { sfx.tap(); setTips(!tips); }}>💡 Conseils parents</button>
@@ -360,7 +392,7 @@ export function CalmCorner({ kids, onClose }) {
         </div>`}
 
         ${step === 'do' && html`<div class="cc-run">
-          <${Runner} key=${runId} tech=${tech} color=${color} onDone=${() => { sfx.sparkle(); setStep('after'); }} />
+          <${Runner} key=${runId} tech=${tech} color=${color} kidColor=${child?.color} onDone=${() => { sfx.sparkle(); setStep('after'); }} />
           <button class="ts-link" onClick=${() => setStep('after')}>Passer</button>
         </div>`}
 
