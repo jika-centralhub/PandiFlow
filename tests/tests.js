@@ -372,47 +372,37 @@ test('carte d’équipe : +5 dans la cagnotte commune, une par soirée, rien sur
   r = d.applyTeamCard(s, { familyId: 'f', date: TUESDAY, level: null });
   eq(r.ledger.length, 0);
 });
-test('défi d’équipe : 🌟 et 👍 comptent, ✋ non, ⏸️ et les soirs non notés sortent du total', () => {
-  // Mardi : Léa t1 🌟, t2 ✋ ; Sacha t2 ⏸️. Lundi passé sans aucune note pour personne : il ne compte pas.
-  const { state } = rateAll(fixture(), [['c1', 't1', TUESDAY, 'green'], ['c1', 't2', TUESDAY, 'red'], ['c2', 't2', TUESDAY, 'pause']]);
-  const w = d.teamWeek(state, TUESDAY);
-  // Léa : 2 tâches × 6 soirs (mardi -> dimanche) = 12 ; Sacha : 6 soirs - 1 « pas ce soir » = 5
-  eq([w.total, w.done], [17, 1]);
-  const thumbs = rateAll(state, [['c1', 't2', TUESDAY, 'orange']]);
-  eq(d.teamWeek(thumbs.state, TUESDAY).done, 2, '👍 compte');
-  // Si un seul enfant a été noté un soir, l'autre compte quand même (tâches non faites)
-  const oneKid = rateAll(fixture(), [['c1', 't1', MONDAY, 'green']]);
-  eq(d.teamWeek(oneKid.state, TUESDAY).total, 22);
-});
-test('défi d’équipe : 80 % de tâches faites sur la semaine, cadeau pour les deux une seule fois', () => {
-  // Semaine du lundi 19 vue le mardi, sans note le lundi : le lundi ne compte pas.
-  // Léa a 12 tâches (t1, t2 du mardi au dimanche), Sacha 6 (t2) -> objectif 15
-  let s = fixture();
-  const w0 = d.teamWeek(s, TUESDAY);
-  eq([w0.start, w0.total, w0.goal, w0.reached], [MONDAY, 18, 15, false]);
-  const days = Array.from({ length: 7 }, (_, i) => addDays(MONDAY, i));
-  const list = [];
-  for (const day of days) list.push(['c1', 't1', day, 'green'], ['c1', 't2', day, 'green']);
-  for (const day of days.slice(0, 4)) list.push(['c2', 't2', day, 'green']);
-  let last = null;
-  for (const [childId, taskId, date, color] of list) {
-    const r = d.applyRating(s, { familyId: 'f', childId, taskId, date, color });
-    s = { ...s, ratings: r.ratings, ledger: r.ledger, owned: r.owned };
-    if (r.result.team) last = r.result.team;
-  }
-  ok(last, 'défi d’équipe gagné');
-  eq(last.item, d.TEAM_REWARDS[0]);
-  ok(d.isOwned('c1', last.item, s.owned) && d.isOwned('c2', last.item, s.owned), 'cadeau pour les deux');
-  eq(s.ledger.filter((l) => l.kind === 'team').length, 2);
-  const again = d.applyRating(s, { familyId: 'f', childId: 'c2', taskId: 't2', date: addDays(MONDAY, 5), color: 'green' });
-  eq(again.result.team, null, 'pas deux fois la même semaine');
-});
-test('trésor de la fratrie : toutes les tâches faites comptent (🌟 et 👍), depuis le début choisi', () => {
+test('coffre de l’équipe : 🌟 et 👍 font une pierre, ✋ et ⏸️ non, depuis le début choisi', () => {
   const { state } = rateAll(fixture(), [['c1', 't1', MONDAY, 'green'], ['c2', 't2', TUESDAY, 'green'], ['c1', 't2', TUESDAY, 'red']]);
   eq(d.treasureProgress(state).count, 2);
   eq(d.treasureProgress(rateAll(state, [['c1', 't2', MONDAY, 'orange'], ['c1', 't3', MONDAY, 'pause']]).state).count, 3, '👍 compte, ⏸️ non');
   const later = { ...state, settings: d.mergeSettings({ treasure: { goal: 2, start: TUESDAY } }) };
   eq([d.treasureProgress(later).count, d.treasureProgress(later).reached], [1, false]);
+});
+test('coffre de l’équipe : +10 pandi pour chacun à chaque palier, une seule fois, puis la récompense en vrai', () => {
+  // Paliers de 3 pierres, coffre de 6 : deux paliers, et le coffre plein au bout
+  let s = { ...fixture(), settings: d.mergeSettings({ team: { step: 3, bonus: 10 }, treasure: { goal: 6 } }) };
+  const paliers = [];
+  const list = [['c1', 't1', MONDAY, 'green'], ['c1', 't2', MONDAY, 'orange'], ['c2', 't2', MONDAY, 'red'], ['c2', 't2', TUESDAY, 'green'],
+    ['c1', 't1', TUESDAY, 'green'], ['c1', 't2', TUESDAY, 'green'], ['c1', 't3', MONDAY, 'green']];
+  for (const [childId, taskId, date, color] of list) {
+    const r = d.applyRating(s, { familyId: 'f', childId, taskId, date, color });
+    s = { ...s, ratings: r.ratings, ledger: r.ledger, owned: r.owned };
+    if (r.result.palier) paliers.push(r.result.palier.n);
+  }
+  eq(paliers, [1, 2], 'un palier à 3 pierres, un autre à 6');
+  eq(s.ledger.filter((l) => l.kind === 'team').map((l) => [l.child_id, l.amount]), [['c1', 10], ['c2', 10], ['c1', 10], ['c2', 10]]);
+  const tp = d.treasureProgress(s);
+  eq([tp.count, tp.reached, tp.paliers, tp.totalPaliers], [6, true, 2, 2]);
+  // Une note corrigée en dessous d'un palier ne reprend rien, et le palier n'est pas redonné ensuite
+  const down = d.applyRating(s, { familyId: 'f', childId: 'c1', taskId: 't3', date: MONDAY, color: 'red' });
+  s = { ...s, ratings: down.ratings, ledger: down.ledger };
+  const up = d.applyRating(s, { familyId: 'f', childId: 'c1', taskId: 't3', date: MONDAY, color: 'green' });
+  eq([s.ledger.filter((l) => l.kind === 'team').length, up.result.palier], [4, null]);
+});
+test('coffre de l’équipe : pas de palier avec un seul enfant', () => {
+  const solo = { ...fixture(), children: [{ id: 'c1', name: 'Léa' }], settings: d.mergeSettings({ team: { step: 1, bonus: 10 } }) };
+  eq(d.applyRating(solo, { familyId: 'f', childId: 'c1', taskId: 't1', date: MONDAY, color: 'green' }).result.palier, null);
 });
 test('coup de main et cadeaux entre enfants', () => {
   let s = { ...fixture(), ledger: [{ id: 'l0', child_id: 'c1', kind: 'manual', amount: 10 }] };

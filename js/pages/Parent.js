@@ -318,11 +318,11 @@ function SettingsSection() {
 
     <h3 class="section-title" style="color:var(--ink);margin-top:20px">Équipe</h3>
     <div class="row-list">
-      <div class="row"><span class="emoji">🤝</span><div class="grow"><div class="title">Défi d'équipe : % de tâches faites (🌟 ou 👍)</div><div class="meta">Sur la semaine, tous les enfants ensemble, matin et soir ; une routine où personne n'a été noté ne compte pas</div></div><${NumberInput} value=${s.settings.team.threshold} onChange=${(v) => actions.updateSettings({ team: { ...s.settings.team, threshold: v } })} min=${50} max=${100} step=${5} /></div>
-      <div class="row"><span class="emoji">🎁</span><div class="grow"><div class="title">Bonus du défi d'équipe</div><div class="meta">Pandi pour chaque enfant, en plus du cadeau duo</div></div><${NumberInput} value=${s.settings.team.bonus} onChange=${(v) => actions.updateSettings({ team: { ...s.settings.team, bonus: v } })} max=${50} /></div>
+      <div class="row"><span class="emoji">🧰</span><div class="grow"><div class="title">Coffre de l'équipe : un palier toutes les … tâches faites</div><div class="meta">Chaque 🌟 ou 👍 de n'importe quel enfant met une pierre dans le coffre ; rien ne repart à zéro chaque semaine</div></div><${NumberInput} value=${s.settings.team.step} onChange=${(v) => actions.updateSettings({ team: { ...s.settings.team, step: v } })} min=${5} max=${1000} step=${5} /></div>
+      <div class="row"><span class="emoji">🎁</span><div class="grow"><div class="title">Pandi à chaque palier</div><div class="meta">Pour chaque enfant ; au bout du coffre, la récompense en vrai</div></div><${NumberInput} value=${s.settings.team.bonus} onChange=${(v) => actions.updateSettings({ team: { ...s.settings.team, bonus: v } })} max=${100} /></div>
       <div class="row"><span class="emoji">🙌</span><div class="grow"><div class="title">Coup de main</div><div class="meta">Pandi pour celui qui aide et celui qui est aidé</div></div><${NumberInput} value=${s.settings.helpBonus} onChange=${(v) => actions.updateSettings({ helpBonus: v })} max=${20} /></div>
     </div>
-    <p class="hint" style="margin-top:8px">Le trésor de la fratrie et la cagnotte commune se règlent depuis le bouton 🤝 de l'écran de la soirée.</p>
+    <p class="hint" style="margin-top:8px">La taille du coffre, sa récompense en vrai et la cagnotte commune se règlent depuis le coffre 🧰 de l'écran de la soirée.</p>
 
     <h3 class="section-title" style="color:var(--ink);margin-top:20px">Routine du matin</h3>
     <div class="row-list">

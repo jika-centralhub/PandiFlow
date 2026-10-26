@@ -3,7 +3,7 @@
 //   jardin (yard) au fond, mât du drapeau à droite (x = 196), véhicule au centre,
 //   accessoire (gear) devant à gauche.
 // Les objets « pot » s'achètent avec la cagnotte commune (pour tous les enfants), les objets
-// « team » se gagnent avec le défi d'équipe de la semaine.
+// « team » se gagnaient avec l'ancien défi d'équipe de la semaine (ceux déjà gagnés restent).
 import { html } from '../vendor/preact-htm.js';
 import { starPath, heartPath, mirror, grad, GOLD, sparkle } from './draw.js';
 import { shade } from '../lib/util.js';

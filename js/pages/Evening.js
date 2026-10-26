@@ -531,7 +531,7 @@ export function Evening() {
     if (res.becameComplete && kids.length > 1 && kids.every((k) => routineProgress(k.id, date, st, routine).complete)) {
       await showOverlay('team', { kind: 'highfive', kids: kids.map((k) => k.id), soft: evening });
     }
-    if (res.team) await showOverlay('team', { kind: 'week', kids: res.team.kids, itemId: res.team.item, soft: evening });
+    if (res.palier) await showOverlay('team', { kind: 'palier', kids: res.palier.kids, soft: evening });
     if (res.treasure) await showOverlay('team', { kind: 'treasure', kids: kids.map((k) => k.id), reward: res.treasure, soft: evening });
   }
 

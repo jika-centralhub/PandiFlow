@@ -101,3 +101,8 @@
   .team-moment .title { font-size: calc(var(--u) * 7.4); }
 }
 .dot-btn.gold { background: var(--gold); }
+/* Les paliers du coffre de l'équipe : un trait par palier, doré quand il est atteint */
+.treasure-jar .jar-step { position: absolute; top: 18%; bottom: 18%; width: calc(var(--u) * .6); margin-left: calc(var(--u) * -.3); border-radius: 999px; background: rgba(42, 35, 80, .22); z-index: 1; }
+.treasure-jar .jar-step.on { background: #fff; box-shadow: 0 0 calc(var(--u) * 1) rgba(255, 210, 63, .9); }
+.treasure-jar span { z-index: 2; }
+.coffre-rule { font-size: calc(var(--u) * 3.8); }

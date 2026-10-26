@@ -96,7 +96,8 @@ function PandiMoment({ childId, amount, note, before, onClose }) {
 const TEAM_TEXT = {
   week: (names, d) => ({ title: 'Défi d’équipe réussi !', sub: `Bravo ${names} ! ${d.item ? `${d.item.name} pour tous 🎁` : 'Un cadeau pour tous 🎁'}`, emoji: '🏆' }),
   teamcard: (names) => ({ title: 'La meilleure équipe !', sub: `Bravo ${names} : un trésor tombe dans la cagnotte commune 🏦`, emoji: '🏆' }),
-  treasure: (names, d) => ({ title: 'Le trésor de la fratrie est ouvert !', sub: `Récompense pour ${names} : ${d.reward}`, emoji: '💎' }),
+  palier: (names) => ({ title: 'Un palier du coffre !', sub: `Bravo ${names} : des pandi pour chacun 🎉`, emoji: '🧰' }),
+  treasure: (names, d) => ({ title: 'Le coffre de l’équipe est plein !', sub: `Récompense pour ${names} : ${d.reward}`, emoji: '💎' }),
   help: (names, d, kids) => ({ title: 'Bravo pour l’entraide !', sub: `${kids[0]?.name} a aidé ${kids[1]?.name} : +${d.amount} pandi pour les deux`, emoji: '🙌' }),
   gift: (names, d, kids) => ({ title: `${kids[0]?.name} offre ${d.amount} pandi à ${kids[1]?.name} !`, sub: 'Quel beau cadeau 💝', emoji: '🎁' }),
   pot: (names, d) => ({ title: 'Achat de la cagnotte commune !', sub: `${d.item?.name} pour toute l’équipe`, emoji: '🏦' }),
@@ -115,7 +116,7 @@ function TeamMoment({ kind, kids: ids = [], soft = false, onClose, ...data }) {
   useEffect(() => {
     if (soft) sfx.sparkle();
     else if (kind === 'week' || kind === 'highfive') sfx.fanfare();
-    else if (kind === 'treasure' || kind === 'pot' || kind === 'teamcard') sfx.chest();
+    else if (kind === 'treasure' || kind === 'pot' || kind === 'teamcard' || kind === 'palier') sfx.chest();
     else sfx.happy();
     if (!soft && (kind === 'week' || kind === 'treasure')) fireworks(2600);
     if (!soft && kind === 'week') setTimeout(() => coinRain(2000), 800);

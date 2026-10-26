@@ -210,7 +210,7 @@ export function rate(childId, taskId, date, color) {
   });
   setState({ ratings, ledger, owned });
   commit(ops);
-  // Trésor de la fratrie : on note le jour où la jauge commune est pleine
+  // Coffre de l'équipe : on note le jour où il est plein (la récompense en vrai)
   const treasureAfter = domain.treasureProgress(getState());
   if (!treasureBefore.reached && treasureAfter.reached && !treasureAfter.done) {
     updateSettings({ treasure: { ...getState().settings.treasure, done: date } });
@@ -304,7 +304,7 @@ export function tsedakaCancel(id) {
   return res;
 }
 
-// Nouveau trésor de la fratrie (après en avoir ouvert un, ou pour changer de récompense)
+// Nouveau coffre de l'équipe (après en avoir rempli un, ou pour changer de récompense)
 export function newTreasure({ goal, reward }) {
   updateSettings({ treasure: { goal, reward, start: toISODate(new Date()), done: null } });
 }

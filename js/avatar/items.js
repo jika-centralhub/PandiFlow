@@ -24,7 +24,7 @@ export const SLOTS = {
   magic: { label: 'Trésors des défis', icon: '🏆' },
 };
 
-// --- Cadeaux du défi d'équipe (à porter) ---------------------------------------------------
+// --- Cadeaux de l'ancien défi d'équipe (à porter ; ceux déjà gagnés restent) ----------------
 const teamWear = [
   {
     id: 'medaille_equipe', name: 'Médaille de l’équipe', slot: 'neck',

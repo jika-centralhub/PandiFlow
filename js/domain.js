@@ -2,7 +2,7 @@
 // Elles prennent l'état (ou une partie) et renvoient des valeurs calculées,
 // ce qui les rend testables (tests/index.html) et identiques en démo et en cloud.
 
-import { weekday, addDays } from './lib/dates.js';
+import { weekday } from './lib/dates.js';
 
 // La note d'une tâche dit si l'enfant a coopéré. Les valeurs green/orange/red restent celles de la base
 // (et de l'historique) ; « pause » = pas ce soir (une crise, un moment difficile), sans note.
@@ -29,10 +29,11 @@ export const DEFAULT_SETTINGS = {
   morningSeeded: false,
   // Carte d'équipe de fin de soirée : « La meilleure équipe ! » met ces pandi dans la cagnotte commune
   teamCard: { top: 5 },
-  // Équipe : défi de la semaine, coup de main, trésor de la fratrie
-  team: { threshold: 80, bonus: 10 },
+  // Équipe : le coffre (un palier toutes les `step` tâches faites, `bonus` pandi pour chaque enfant,
+  // puis la récompense en vrai au bout du trésor), coup de main
+  team: { step: 100, bonus: 10 },
   helpBonus: 2,
-  treasure: { goal: 60, reward: 'Une sortie au cinéma 🎬', start: null, done: null },
+  treasure: { goal: 500, reward: 'Une sortie au cinéma 🎬', start: null, done: null },
   // Tsedaka : combien de pandi font 1 € à verser, et les associations proposées aux enfants
   tsedaka: { rate: 10, associations: [] },
 };
@@ -252,16 +253,13 @@ export function applyRating(state, { familyId, childId, taskId, date, color, now
     }
   }
 
-  // Défi d'équipe de la semaine : accordé une seule fois, quand l'objectif est atteint
-  let team = null;
-  const week = teamWeek({ ...next, ledger, owned }, date);
-  if (week.reached && !teamGranted(ledger, week.start)) {
-    const grant = teamRewardRows({ ...next, ledger, owned }, { familyId, week, now });
-    ledger = [...ledger, ...grant.ledgerRows];
-    owned = [...owned, ...grant.ownedRows];
-    if (grant.ledgerRows.length) ops.push({ op: 'put', table: 'ledger', rows: grant.ledgerRows });
-    if (grant.ownedRows.length) ops.push({ op: 'put', table: 'owned_items', rows: grant.ownedRows });
-    team = { item: grant.item, bonus: grant.bonus, kids: week.kids.map((k) => k.id) };
+  // Coffre de l'équipe : chaque palier atteint donne des pandi à chaque enfant, une seule fois
+  let palier = null;
+  const grant = palierRows({ ...next, ledger, owned }, { familyId, now });
+  if (grant.rows.length) {
+    ledger = [...ledger, ...grant.rows];
+    ops.push({ op: 'put', table: 'ledger', rows: grant.rows });
+    palier = { n: grant.n, bonus: grant.bonus, kids: grant.kids };
   }
 
   const finalState = { ...next, ledger, owned };
@@ -271,7 +269,7 @@ export function applyRating(state, { familyId, childId, taskId, date, color, now
     owned,
     ops,
     result: {
-      team,
+      palier,
       delta: balance(childId, finalState) - balanceBefore,
       before,
       after,
@@ -351,63 +349,46 @@ export function applyTeamCard(state, { familyId, date, level, now = new Date().t
   return { ledger, ops, amount };
 }
 
-// --- Équipe : défi de la semaine ---------------------------------------------------------------------
-// Cadeaux « duo » du défi d'équipe, donnés dans cet ordre (puis seulement des pandi)
-export const TEAM_REWARDS = ['medaille_equipe', 'talkie', 'capes_jumelles', 'tandem', 'casquette_equipe'];
-
-// La semaine va du lundi au dimanche
-export function weekStart(date) {
-  return addDays(date, -((weekday(date) + 6) % 7));
-}
-
-// Tous les enfants, matin et soir, sur toute la semaine : on compte les tâches faites (🌟 ou 👍) sur
-// le total prévu. Une routine passée où personne n'a été noté (sortie, soir chez les grands-parents)
-// ne compte pas, et une tâche « pas ce soir » sort du total. date = le jour en cours.
-export function teamWeek(state, date) {
-  const settings = mergeSettings(state.settings);
-  const kids = activeChildren(state.children);
-  const start = weekStart(date);
-  let total = 0;
-  let done = 0;
-  for (let i = 0; i < 7; i++) {
-    const d = addDays(start, i);
-    for (const routine of ['matin', 'soir']) {
-      const byKid = kids.map((k) => tasksForChild(k.id, d, state, routine).map((t) => findRating(state.ratings, k.id, t.id, d)));
-      if (d < date && !byKid.some((rated) => rated.some(Boolean))) continue;
-      for (const rated of byKid) {
-        for (const r of rated) {
-          if (r?.color === 'pause') continue;
-          total++;
-          if (r && isDone(r.color)) done++;
-        }
-      }
-    }
-  }
-  const goal = Math.ceil((total * Math.min(100, Math.max(1, Number(settings.team.threshold) || 80))) / 100);
-  return { start, end: addDays(start, 6), total, done, goal, ratio: goal ? Math.min(1, done / goal) : 0, reached: kids.length > 1 && total > 0 && done >= goal, kids };
-}
-
-export const teamRewardId = (weekStartDate, childId) => `team-${weekStartDate}-${childId}`;
-export const teamGranted = (ledger, weekStartDate) => ledger.some((l) => l.kind === 'team' && l.id.startsWith(`team-${weekStartDate}-`));
-
-function teamRewardRows(state, { familyId, week, now }) {
-  const settings = mergeSettings(state.settings);
-  const bonus = Math.max(0, Number(settings.team.bonus) || 0);
-  const item = TEAM_REWARDS.find((id) => week.kids.some((k) => !isOwned(k.id, id, state.owned))) || null;
-  const ledgerRows = week.kids.map((k) => ({ id: teamRewardId(week.start, k.id), family_id: familyId, child_id: k.id, kind: 'team', amount: bonus, evening_date: null, note: 'Défi d’équipe réussi', created_at: now }));
-  const ownedRows = item ? week.kids.filter((k) => !isOwned(k.id, item, state.owned)).map((k) => ({ family_id: familyId, child_id: k.id, item_id: item, source: 'team', created_at: now })) : [];
-  return { item, bonus, ledgerRows, ownedRows };
-}
-
-// --- Équipe : trésor de la fratrie --------------------------------------------------------------------
-// Une grande jauge que chaque tâche faite (🌟 ou 👍, de n'importe quel enfant) remplit.
+// --- Équipe : le coffre de l'équipe ------------------------------------------------------------------
+// Une seule jauge pour toute la fratrie (il remplace le défi de la semaine et le trésor) : chaque
+// tâche faite (🌟 ou 👍, de n'importe quel enfant) y met une pierre. Tous les settings.team.step
+// pierres, un palier : chaque enfant reçoit settings.team.bonus pandi. Au bout (settings.treasure.goal),
+// la récompense en vrai choisie par les parents. Rien ne repart à zéro chaque semaine : un nouveau
+// coffre commence quand les parents le décident (settings.treasure.start).
 export function treasureProgress(state) {
-  const t = mergeSettings(state.settings).treasure;
+  const s = mergeSettings(state.settings);
+  const t = s.treasure;
   const kids = new Set(activeChildren(state.children).map((c) => c.id));
   let count = 0;
   for (const r of state.ratings) if (isDone(r.color) && kids.has(r.child_id) && (!t.start || r.evening_date >= t.start)) count++;
   const goal = Math.max(1, Number(t.goal) || 1);
-  return { ...t, goal, count: Math.min(count, goal), reached: count >= goal };
+  const step = Math.max(1, Math.min(goal, Math.round(Number(s.team.step) || 100)));
+  const bonus = Math.max(0, Math.round(Number(s.team.bonus) || 0));
+  const capped = Math.min(count, goal);
+  const paliers = Math.floor(capped / step);
+  return { ...t, goal, step, bonus, count: capped, reached: count >= goal, paliers, totalPaliers: Math.floor(goal / step), nextAt: Math.min(goal, (paliers + 1) * step) };
+}
+
+export const palierId = (start, n, childId) => `palier-${start || 'debut'}-${n}-${childId}`;
+
+// Les pandi des paliers atteints et pas encore donnés (un palier n'est donné qu'une fois, et reste
+// acquis même si une note est corrigée ensuite)
+function palierRows(state, { familyId, now }) {
+  const kids = activeChildren(state.children);
+  const tp = treasureProgress(state);
+  const rows = [];
+  let n = 0;
+  if (kids.length < 2 || !tp.bonus) return { rows, n, bonus: tp.bonus, kids: [] };
+  const have = new Set(state.ledger.map((l) => l.id));
+  for (let p = 1; p <= tp.paliers; p++) {
+    for (const k of kids) {
+      const id = palierId(tp.start, p, k.id);
+      if (have.has(id)) continue;
+      rows.push({ id, family_id: familyId, child_id: k.id, kind: 'team', amount: tp.bonus, evening_date: null, note: `Palier ${p} du coffre de l’équipe`, created_at: now });
+      n = p;
+    }
+  }
+  return { rows, n, bonus: tp.bonus, kids: kids.map((k) => k.id) };
 }
 
 // --- Équipe : coup de main ----------------------------------------------------------------------------
