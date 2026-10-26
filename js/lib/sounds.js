@@ -3,6 +3,14 @@ import { getState } from './store.js';
 
 let ctx = null;
 let master = null;
+let soft = false;
+const LEVEL = { normal: 0.5, soft: 0.2 };
+
+// Soirée douce : tout le son baisse en douceur, sans se couper
+export function setSoftSound(on) {
+  soft = Boolean(on);
+  if (master && ctx) master.gain.setTargetAtTime(soft ? LEVEL.soft : LEVEL.normal, ctx.currentTime, 0.8);
+}
 
 function audio() {
   if (!getState().prefs.sound) return null;
@@ -11,7 +19,7 @@ function audio() {
     if (!AC) return null;
     ctx = new AC();
     master = ctx.createGain();
-    master.gain.value = 0.5;
+    master.gain.value = soft ? LEVEL.soft : LEVEL.normal;
     master.connect(ctx.destination);
   }
   if (ctx.state === 'suspended') ctx.resume();
@@ -116,6 +124,10 @@ export const sfx = {
     [784, 1047].forEach((f, i) => tone(f, { at: 0.2 + i * 0.1, dur: i ? 0.32 : 0.1, type: 'triangle', vol: 0.26 }));
   },
   pause: () => [660, 440].forEach((f, i) => tone(f, { at: i * 0.1, dur: 0.14, type: 'triangle', vol: 0.22 })),
+  // Fin du minuteur, en douceur : deux notes de carillon (à la place du réveil)
+  carillon: () => [784, 1175].forEach((f, i) => tone(f, { at: i * 0.4, dur: 1.3, type: 'sine', vol: 0.2, attack: 0.01 })),
+  // « Bonne nuit Pandi » : une petite berceuse qui descend
+  bonneNuit: () => [784, 659, 587, 523].forEach((f, i) => tone(f, { at: i * 0.34, dur: 0.7, type: 'sine', vol: 0.16, attack: 0.03 })),
   resume: () => [440, 660].forEach((f, i) => tone(f, { at: i * 0.1, dur: 0.14, type: 'triangle', vol: 0.22 })),
   // Dernières secondes : un bip par seconde, un demi-ton plus haut à chaque fois, doublé sur 3, 2, 1
   countdown: (n) => {

@@ -2,7 +2,8 @@
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js';
 import { useStore } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { balance, isOwned, challengesForChild, activeChildren, accord, sexOf } from '../domain.js';
+import { balance, isOwned, challengesForChild, activeChildren, accord, sexOf, tasksForChild, findRating, COLOR_META, ROUTINES } from '../domain.js';
+import { routineDate } from '../lib/dates.js';
 import { Avatar, COVERED_BY_SKIN } from '../avatar/Avatar.js';
 import { ITEMS, SLOTS, shopItems, getItem, rayonOf, offeredTo, starredFor } from '../avatar/items.js';
 import { COSTUME_GROUPS } from '../avatar/costumes.js';
@@ -143,17 +144,39 @@ function Shop({ child, owned, bal, rayon, onRayon, onPick }) {
   </div>`;
 }
 
+// Mes notes du jour : c'est ici (et pas sur la télé, qui ne montre que « fait ») que l'enfant voit ses 🌟
+function MyDay({ child, state }) {
+  const rows = ['matin', 'soir']
+    .map((routine) => {
+      const date = routineDate(routine);
+      return { routine, date, list: tasksForChild(child.id, date, state, routine) };
+    })
+    .filter((r) => r.list.length);
+  if (!rows.length) return null;
+  const stars = rows.reduce((n, r) => n + r.list.filter((t) => findRating(state.ratings, child.id, t.id, r.date)?.color === 'green').length, 0);
+  return html`<div class="my-day">
+    <h3>Ma journée</h3>
+    ${rows.map(({ routine, date, list }) => html`<div key=${routine} class="md-row"><em title=${ROUTINES[routine].label}>${ROUTINES[routine].icon}</em>
+      ${list.map((t) => {
+        const r = findRating(state.ratings, child.id, t.id, date);
+        return html`<span key=${t.id} class=${`md-dot ${r?.color || ''}`} title=${`${t.title}${r ? ` : ${COLOR_META[r.color].label}` : ''}`}><i>${t.emoji}</i>${r && html`<b>${COLOR_META[r.color].face}</b>`}</span>`;
+      })}
+    </div>`)}
+    ${stars > 0 && html`<p class="md-sum">🌟 ${stars} fois du premier coup aujourd'hui, bravo !</p>`}
+  </div>`;
+}
+
 function Challenges({ child, state }) {
   const list = challengesForChild(child.id, state);
-  if (!list.length) return html`<p style="padding:20px;text-align:center">Pas encore de défi. Demande à tes parents d'en créer un !</p>`;
-  return html`<div>${list.map(({ challenge, count, target, done }, i) => {
+  if (!list.length) return html`<div><${MyDay} child=${child} state=${state} /><p style="padding:20px;text-align:center">Pas encore de défi. Demande à tes parents d'en créer un !</p></div>`;
+  return html`<div><${MyDay} child=${child} state=${state} />${list.map(({ challenge, count, target, done }, i) => {
     const item = getItem(challenge.reward_item);
     const task = state.tasks.find((t) => t.id === challenge.task_id);
     return html`<div key=${challenge.id} class=${`challenge-card ${done ? 'done' : ''}`} style=${{ '--i': i }}>
       <div class=${`reward-thumb ${done ? '' : 'locked'}`}>${item && html`<${ItemThumb} item=${item} look=${child.look} />`}${!done && html`<span class="lock">🔒</span>`}</div>
       <div class="info">
         <h3>${challenge.title}</h3>
-        <p>${task ? `${target} × ${task.emoji} ${task.title} en vert` : 'Tâche supprimée'}${challenge.bonus ? ` · +${challenge.bonus} pandi` : ''}</p>
+        <p>${task ? `${target} × ${task.emoji} ${task.title} du premier coup 🌟` : 'Tâche supprimée'}${challenge.bonus ? ` · +${challenge.bonus} pandi` : ''}</p>
         <div class="progress"><i style=${{ width: `${(count / target) * 100}%` }} /><span>${done ? 'Débloqué ! 🎉' : `${count} / ${target}`}</span></div>
       </div>
     </div>`;

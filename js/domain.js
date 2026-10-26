@@ -4,25 +4,31 @@
 
 import { weekday, addDays } from './lib/dates.js';
 
-export const COLORS = ['green', 'orange', 'red'];
+// La note d'une tâche dit si l'enfant a coopéré. Les valeurs green/orange/red restent celles de la base
+// (et de l'historique) ; « pause » = pas ce soir (une crise, un moment difficile), sans note.
+export const COLORS = ['green', 'orange', 'red', 'pause'];
 
 export const COLOR_META = {
-  green: { label: 'Bravo !', face: '😄', css: 'var(--green)' },
-  orange: { label: 'Presque !', face: '😐', css: 'var(--orange)' },
-  red: { label: 'À retravailler', face: '😟', css: 'var(--red)' },
+  green: { label: 'Du premier coup !', face: '🌟', sub: 'Tu as écouté tout de suite' },
+  orange: { label: 'Après un rappel', face: '👍', sub: 'Il a fallu redemander une fois' },
+  red: { label: 'Il a fallu répéter', face: '✋', sub: 'Demain, du premier coup ?' },
+  pause: { label: 'Pas ce soir', face: '⏸️', sub: 'On met en pause, sans note' },
 };
 
+// Une tâche « faite » pour l'équipe (défi de la semaine, trésor) : du premier coup ou après un rappel
+export const isDone = (color) => color === 'green' || color === 'orange';
+
 export const DEFAULT_SETTINGS = {
-  points: { green: 3, orange: 1, red: 0 },
-  perfectBonus: 5,
+  // Barème selon l'âge (petit = moins de 6 ans) ; « pas ce soir » ne rapporte jamais rien
+  scales: { petit: { green: 3, orange: 2, red: 1 }, grand: { green: 3, orange: 2, red: 0 } },
   pinHash: null,
   photoConsent: false,
   // Routine du matin : heure du départ à l'école (null = pas de compte à rebours) et jours d'école
   departure: '08:15',
   departureDays: [1, 2, 3, 4, 5],
   morningSeeded: false,
-  // Comportement de fin de soirée (carte du carrousel)
-  behaviorPoints: { super: 5, bien: 2 },
+  // Carte d'équipe de fin de soirée : « La meilleure équipe ! » met ces pandi dans la cagnotte commune
+  teamCard: { top: 5 },
   // Équipe : défi de la semaine, coup de main, trésor de la fratrie
   team: { threshold: 80, bonus: 10 },
   helpBonus: 2,
@@ -44,8 +50,11 @@ export function mergeSettings(settings) {
   return {
     ...DEFAULT_SETTINGS,
     ...s,
-    points: { ...DEFAULT_SETTINGS.points, ...(s.points || {}) },
-    behaviorPoints: { ...DEFAULT_SETTINGS.behaviorPoints, ...(s.behaviorPoints || {}) },
+    scales: {
+      petit: { ...DEFAULT_SETTINGS.scales.petit, ...(s.scales?.petit || {}) },
+      grand: { ...DEFAULT_SETTINGS.scales.grand, ...(s.scales?.grand || {}) },
+    },
+    teamCard: { ...DEFAULT_SETTINGS.teamCard, ...(s.teamCard || {}) },
     team: { ...DEFAULT_SETTINGS.team, ...(s.team || {}) },
     treasure: { ...DEFAULT_SETTINGS.treasure, ...(s.treasure || {}) },
     tsedaka: { ...DEFAULT_SETTINGS.tsedaka, ...(s.tsedaka || {}) },
@@ -88,15 +97,22 @@ export function findRating(ratings, childId, taskId, date) {
   return ratings.find((r) => r.child_id === childId && r.task_id === taskId && r.evening_date === date) || null;
 }
 
-export function pointsFor(color, settings) {
-  const s = mergeSettings(settings);
-  return Number(s.points[color]) || 0;
+// Le barème des petits va jusqu'à 5 ans ; âge inconnu = barème des grands
+export const PETIT_AGE = 6;
+export function scaleOf(child) {
+  const age = Number(child?.age);
+  return child?.age != null && child.age !== '' && age > 0 && age < PETIT_AGE ? 'petit' : 'grand';
+}
+
+export function pointsFor(color, settings, child = null) {
+  if (!color || color === 'pause') return 0;
+  return Math.max(0, Number(mergeSettings(settings).scales[scaleOf(child)][color]) || 0);
 }
 
 // Avancement d'une routine (soir ou matin) d'un enfant : sert à la jauge et aux célébrations.
 export function routineProgress(childId, date, state, routine = 'soir') {
   const list = tasksForChild(childId, date, state, routine);
-  const counts = { green: 0, orange: 0, red: 0 };
+  const counts = { green: 0, orange: 0, red: 0, pause: 0 };
   let points = 0;
   const segments = list.map((task) => {
     const r = findRating(state.ratings, childId, task.id, date);
@@ -106,7 +122,7 @@ export function routineProgress(childId, date, state, routine = 'soir') {
     }
     return { task, color: r ? r.color : null };
   });
-  const rated = counts.green + counts.orange + counts.red;
+  const rated = counts.green + counts.orange + counts.red + counts.pause;
   const total = list.length;
   return {
     segments,
@@ -122,15 +138,17 @@ export function routineProgress(childId, date, state, routine = 'soir') {
 
 export const eveningProgress = (childId, date, state) => routineProgress(childId, date, state, 'soir');
 
-// Les achats faits avec la cagnotte commune (potbuy) ne touchent pas la cagnotte de l'enfant.
+// Les achats faits avec la cagnotte commune (potbuy) et la carte d'équipe (teamcard, versée dans la
+// cagnotte commune) ne touchent pas la cagnotte de l'enfant.
+const SHARED_KINDS = new Set(['potbuy', 'teamcard']);
 export function balance(childId, { ratings, ledger }) {
   let sum = 0;
   for (const r of ratings) if (r.child_id === childId) sum += Number(r.points) || 0;
-  for (const l of ledger) if (l.child_id === childId && l.kind !== 'potbuy') sum += Number(l.amount) || 0;
+  for (const l of ledger) if (l.child_id === childId && !SHARED_KINDS.has(l.kind)) sum += Number(l.amount) || 0;
   return sum;
 }
 
-// Total gagné sur une soirée (notes + bonus de soirée parfaite).
+// Total gagné sur une soirée (notes, et les anciens bonus de soirée parfaite).
 export function earnedOn(childId, date, { ratings, ledger }) {
   let sum = 0;
   for (const r of ratings) if (r.child_id === childId && r.evening_date === date) sum += Number(r.points) || 0;
@@ -138,7 +156,6 @@ export function earnedOn(childId, date, { ratings, ledger }) {
   return sum;
 }
 
-export const perfectBonusId = (childId, date, routine = 'soir') => (routine === 'matin' ? `perfect-matin-${childId}-${date}` : `perfect-${childId}-${date}`);
 export const challengeBonusId = (challengeId, childId) => `challenge-${challengeId}-${childId}`;
 
 export function isOwned(childId, itemId, owned) {
@@ -151,7 +168,7 @@ export function challengeAppliesTo(challenge, childId, state) {
   return state.childTasks.some((ct) => ct.child_id === childId && ct.task_id === challenge.task_id);
 }
 
-// Défis cumulatifs : nombre de notes vertes sur la tâche depuis le début du défi.
+// Défis cumulatifs : nombre de 🌟 « du premier coup » (green) sur la tâche depuis le début du défi.
 export function challengeProgress(challenge, childId, ratings) {
   let n = 0;
   for (const r of ratings) {
@@ -192,6 +209,7 @@ export function newlyUnlocked(childId, state) {
 // Renvoie { ratings, ledger, owned, ops, result } : le nouvel état et les opérations de stockage.
 export function applyRating(state, { familyId, childId, taskId, date, color, now = new Date().toISOString() }) {
   const settings = mergeSettings(state.settings);
+  const child = state.children?.find((c) => c.id === childId) || null;
   const routine = routineOf(state.tasks.find((t) => t.id === taskId));
   const before = routineProgress(childId, date, state, routine);
   const balanceBefore = balance(childId, state);
@@ -205,7 +223,7 @@ export function applyRating(state, { familyId, childId, taskId, date, color, now
       task_id: taskId,
       evening_date: date,
       color,
-      points: pointsFor(color, settings),
+      points: pointsFor(color, settings, child),
       updated_at: now,
     };
     ratings = [...ratings, rating];
@@ -218,22 +236,7 @@ export function applyRating(state, { familyId, childId, taskId, date, color, now
   let owned = state.owned;
   const next = { ...state, ratings, ledger, owned };
   const after = routineProgress(childId, date, next, routine);
-
-  // Bonus de soirée (ou matinée) parfaite : ajouté quand tout est vert, retiré si une note est corrigée.
-  const bonusId = perfectBonusId(childId, date, routine);
-  const hasBonus = ledger.some((l) => l.id === bonusId);
-  let perfectGained = false;
-  let perfectLost = false;
-  if (after.perfect && !hasBonus && settings.perfectBonus > 0) {
-    const row = { id: bonusId, family_id: familyId, child_id: childId, kind: 'perfect', amount: settings.perfectBonus, evening_date: date, note: ROUTINES[routine].perfect, created_at: now };
-    ledger = [...ledger, row];
-    ops.push({ op: 'put', table: 'ledger', rows: [row] });
-    perfectGained = true;
-  } else if (!after.perfect && hasBonus) {
-    ledger = ledger.filter((l) => l.id !== bonusId);
-    ops.push({ op: 'del', table: 'ledger', match: { id: bonusId } });
-    perfectLost = true;
-  }
+  // (Plus de bonus « soirée parfaite » : les anciens bonus déjà gagnés restent dans la cagnotte.)
 
   // Défis : une récompense acquise reste acquise, même si une note est corrigée ensuite.
   const unlocked = newlyUnlocked(childId, { ...next, ledger, owned });
@@ -252,7 +255,7 @@ export function applyRating(state, { familyId, childId, taskId, date, color, now
   // Défi d'équipe de la semaine : accordé une seule fois, quand l'objectif est atteint
   let team = null;
   const week = teamWeek({ ...next, ledger, owned }, date);
-  if (week.done && !teamGranted(ledger, week.start)) {
+  if (week.reached && !teamGranted(ledger, week.start)) {
     const grant = teamRewardRows({ ...next, ledger, owned }, { familyId, week, now });
     ledger = [...ledger, ...grant.ledgerRows];
     owned = [...owned, ...grant.ownedRows];
@@ -274,8 +277,6 @@ export function applyRating(state, { familyId, childId, taskId, date, color, now
       after,
       routine,
       becameComplete: !before.complete && after.complete,
-      perfectGained,
-      perfectLost,
       unlocked,
     },
   };
@@ -319,35 +320,35 @@ export function applyPurchase(state, { familyId, childId, item, now = new Date()
   };
 }
 
-// --- Comportement de fin de soirée --------------------------------------------------------------
-export const BEHAVIOR = {
-  super: { label: 'Super comportement', face: '😇' },
-  bien: { label: 'Bon comportement', face: '🙂' },
-  non: { label: 'Comportement à revoir', face: '😕' },
+// --- Carte d'équipe de fin de soirée ------------------------------------------------------------
+// La même pour tous les enfants (elle remplace l'ancienne carte Comportement de chacun, dont les
+// pandi déjà gagnés restent). Elle ne peut qu'ajouter : « La meilleure équipe ! » verse
+// settings.teamCard.top pandi dans la cagnotte commune, « On fera mieux demain » ne retire rien.
+export const TEAM_CARD = {
+  top: { label: 'La meilleure équipe !', face: '🏆' },
+  demain: { label: 'On fera mieux demain', face: '🌙' },
 };
-export const behaviorId = (childId, date) => `behavior-${childId}-${date}`;
-export const findBehavior = (ledger, childId, date) => ledger.find((l) => l.id === behaviorId(childId, date)) || null;
-export function behaviorLevel(row) {
-  if (!row) return null;
-  return Object.keys(BEHAVIOR).find((k) => BEHAVIOR[k].label === row.note) || (row.amount > 0 ? 'bien' : 'non');
-}
+export const teamCardId = (date) => `teamcard-${date}`;
+export const findTeamCard = (ledger, date) => ledger.find((l) => l.id === teamCardId(date)) || null;
+export const teamCardLevel = (row) => (!row ? null : row.note === TEAM_CARD.demain.label ? 'demain' : 'top');
 
-// level : 'super' | 'bien' | 'non' | null (effacer). Une seule note de comportement par soirée.
-export function applyBehavior(state, { familyId, childId, date, level, now = new Date().toISOString() }) {
-  const settings = mergeSettings(state.settings);
-  const id = behaviorId(childId, date);
-  const before = balance(childId, state);
+// level : 'top' | 'demain' | null (effacer). Une carte par soirée pour toute la fratrie.
+export function applyTeamCard(state, { familyId, date, level, now = new Date().toISOString() }) {
+  const kids = activeChildren(state.children);
+  const id = teamCardId(date);
   let ledger = state.ledger.filter((l) => l.id !== id);
   const ops = [];
-  if (level) {
-    const amount = level === 'super' ? Number(settings.behaviorPoints.super) || 0 : level === 'bien' ? Number(settings.behaviorPoints.bien) || 0 : 0;
-    const row = { id, family_id: familyId, child_id: childId, kind: 'behavior', amount, evening_date: date, note: BEHAVIOR[level].label, created_at: now };
+  let amount = 0;
+  if (level && TEAM_CARD[level] && kids.length) {
+    amount = level === 'top' ? Math.max(0, Math.round(Number(mergeSettings(state.settings).teamCard.top) || 0)) : 0;
+    // La table rattache chaque ligne à un enfant : le premier, sans effet sur sa cagnotte (voir balance)
+    const row = { id, family_id: familyId, child_id: kids[0].id, kind: 'teamcard', amount, evening_date: date, note: TEAM_CARD[level].label, created_at: now };
     ledger = [...ledger, row];
     ops.push({ op: 'put', table: 'ledger', rows: [row] });
   } else {
     ops.push({ op: 'del', table: 'ledger', match: { id } });
   }
-  return { ledger, ops, delta: balance(childId, { ...state, ledger }) - before };
+  return { ledger, ops, amount };
 }
 
 // --- Équipe : défi de la semaine ---------------------------------------------------------------------
@@ -359,26 +360,31 @@ export function weekStart(date) {
   return addDays(date, -((weekday(date) + 6) % 7));
 }
 
-// Tous les enfants, matin et soir, sur toute la semaine : on compte les verts sur le total prévu.
+// Tous les enfants, matin et soir, sur toute la semaine : on compte les tâches faites (🌟 ou 👍) sur
+// le total prévu. Une routine passée où personne n'a été noté (sortie, soir chez les grands-parents)
+// ne compte pas, et une tâche « pas ce soir » sort du total. date = le jour en cours.
 export function teamWeek(state, date) {
   const settings = mergeSettings(state.settings);
   const kids = activeChildren(state.children);
   const start = weekStart(date);
   let total = 0;
-  let greens = 0;
+  let done = 0;
   for (let i = 0; i < 7; i++) {
     const d = addDays(start, i);
-    for (const k of kids) {
-      for (const routine of ['matin', 'soir']) {
-        for (const t of tasksForChild(k.id, d, state, routine)) {
+    for (const routine of ['matin', 'soir']) {
+      const byKid = kids.map((k) => tasksForChild(k.id, d, state, routine).map((t) => findRating(state.ratings, k.id, t.id, d)));
+      if (d < date && !byKid.some((rated) => rated.some(Boolean))) continue;
+      for (const rated of byKid) {
+        for (const r of rated) {
+          if (r?.color === 'pause') continue;
           total++;
-          if (findRating(state.ratings, k.id, t.id, d)?.color === 'green') greens++;
+          if (r && isDone(r.color)) done++;
         }
       }
     }
   }
   const goal = Math.ceil((total * Math.min(100, Math.max(1, Number(settings.team.threshold) || 80))) / 100);
-  return { start, end: addDays(start, 6), total, greens, goal, ratio: goal ? Math.min(1, greens / goal) : 0, done: kids.length > 1 && total > 0 && greens >= goal, kids };
+  return { start, end: addDays(start, 6), total, done, goal, ratio: goal ? Math.min(1, done / goal) : 0, reached: kids.length > 1 && total > 0 && done >= goal, kids };
 }
 
 export const teamRewardId = (weekStartDate, childId) => `team-${weekStartDate}-${childId}`;
@@ -394,12 +400,12 @@ function teamRewardRows(state, { familyId, week, now }) {
 }
 
 // --- Équipe : trésor de la fratrie --------------------------------------------------------------------
-// Une grande jauge que chaque note verte (de n'importe quel enfant) remplit.
+// Une grande jauge que chaque tâche faite (🌟 ou 👍, de n'importe quel enfant) remplit.
 export function treasureProgress(state) {
   const t = mergeSettings(state.settings).treasure;
   const kids = new Set(activeChildren(state.children).map((c) => c.id));
   let count = 0;
-  for (const r of state.ratings) if (r.color === 'green' && kids.has(r.child_id) && (!t.start || r.evening_date >= t.start)) count++;
+  for (const r of state.ratings) if (isDone(r.color) && kids.has(r.child_id) && (!t.start || r.evening_date >= t.start)) count++;
   const goal = Math.max(1, Number(t.goal) || 1);
   return { ...t, goal, count: Math.min(count, goal), reached: count >= goal };
 }
@@ -428,12 +434,14 @@ export function applyGift(state, { familyId, from, to, amount, ids, now = new Da
 
 // --- Équipe : cagnotte commune -----------------------------------------------------------------------
 // On y met des pandi (kind 'pot', montant négatif pour l'enfant) ; on y achète des objets partagés
-// (kind 'potbuy', ignoré dans la cagnotte de l'enfant) que tous les enfants reçoivent.
+// (kind 'potbuy', ignoré dans la cagnotte de l'enfant) que tous les enfants reçoivent. La carte
+// d'équipe de fin de soirée (kind 'teamcard') l'alimente aussi.
 export function potBalance({ ledger }) {
   let sum = 0;
   for (const l of ledger) {
     if (l.kind === 'pot') sum -= Number(l.amount) || 0;
     else if (l.kind === 'potbuy') sum -= Number(l.amount) || 0;
+    else if (l.kind === 'teamcard') sum += Number(l.amount) || 0;
   }
   return sum;
 }

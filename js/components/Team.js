@@ -1,12 +1,12 @@
 // L'espace Équipe : tout ce que les enfants font ensemble.
-//   - le défi d'équipe de la semaine (au moins 80 % de vert à plusieurs -> cadeau pour tous)
-//   - le trésor de la fratrie (chaque vert remplit une jauge commune -> récompense en vrai)
-//   - la cagnotte commune (on y met des pandi, on y achète des objets pour tous)
+//   - le défi d'équipe de la semaine (au moins 80 % de tâches faites, 🌟 ou 👍, à plusieurs -> cadeau pour tous)
+//   - le trésor de la fratrie (chaque tâche faite remplit une jauge commune -> récompense en vrai)
+//   - la cagnotte commune (on y met des pandi, la carte d'équipe du soir l'alimente, on y achète pour tous)
 //   - les cadeaux entre enfants et le coup de main (récompensé par les parents)
 import { html, useState } from '../vendor/preact-htm.js';
 import { useStore } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { activeChildren, balance, teamWeek, treasureProgress, potBalance, potContributions, isOwned, TEAM_REWARDS } from '../domain.js';
+import { activeChildren, balance, teamWeek, treasureProgress, potBalance, isOwned, TEAM_REWARDS } from '../domain.js';
 import { routineDate, currentRoutine, fromISODate } from '../lib/dates.js';
 import { getItem, potItems } from '../avatar/items.js';
 import { Avatar } from '../avatar/Avatar.js';
@@ -42,7 +42,7 @@ const LOOT = [
   [43, 35, 6, '#FFC21A'], [57, 34, 6.5, '#48E0A4'], [50, 29, 5.5, '#9B7BFF'],
 ];
 
-// Écran de la soirée : le coffre de la fratrie, qui se remplit à chaque vert (trésor commun) et brille
+// Écran de la soirée : le coffre de la fratrie, qui se remplit à chaque tâche faite (trésor commun) et brille
 // quand le défi d'équipe de la semaine est réussi. On le touche pour ouvrir l'espace équipe.
 export function TeamPill({ onOpen }) {
   const s = useStore();
@@ -50,8 +50,8 @@ export function TeamPill({ onOpen }) {
   const ratio = Math.max(0, Math.min(1, treasure.goal ? treasure.count / treasure.goal : 0));
   const shown = ratio > 0 ? Math.max(1, Math.ceil(ratio * LOOT.length)) : 0;
   const lift = ratio > 0 ? 5 + ratio * 13 : 0; // le couvercle se soulève à mesure qu'il se remplit
-  const label = `Le coffre de l'équipe : ${treasure.count} sur ${treasure.goal}${week.done ? ', défi de la semaine réussi' : ''}. Ouvrir l'espace équipe`;
-  return html`<button class=${`team-chest ${week.done ? 'done' : ''} ${ratio >= 1 ? 'full' : ''}`} onClick=${() => { sfx.chest?.(); onOpen(); }} aria-label=${label} title=${`${treasure.count} / ${treasure.goal}`}>
+  const label = `Le coffre de l'équipe : ${treasure.count} sur ${treasure.goal}${week.reached ? ', défi de la semaine réussi' : ''}. Ouvrir l'espace équipe`;
+  return html`<button class=${`team-chest ${week.reached ? 'done' : ''} ${ratio >= 1 ? 'full' : ''}`} onClick=${() => { sfx.chest?.(); onOpen(); }} aria-label=${label} title=${`${treasure.count} / ${treasure.goal}`}>
     <svg viewBox="0 0 100 80" aria-hidden="true">
       <defs>
         <linearGradient id="tc-wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C98A5B" /><stop offset="1" stop-color="#8B5A2B" /></linearGradient>
@@ -71,7 +71,7 @@ export function TeamPill({ onOpen }) {
       <rect x="72" y="46" width="6" height="28" fill="#FFC21A" opacity=".85" />
       <rect x="43" y="52" width="14" height="13" rx="3" fill="#FFD23F" stroke="#B07A00" stroke-width="1.5" />
       <circle cx="50" cy="57.5" r="2" fill="#6b4300" />
-      ${week.done && html`<g class="tc-stars"><text x="12" y="22" font-size="13">⭐</text><text x="78" y="18" font-size="11">✨</text></g>`}
+      ${week.reached && html`<g class="tc-stars"><text x="12" y="22" font-size="13">⭐</text><text x="78" y="18" font-size="11">✨</text></g>`}
     </svg>
   </button>`;
 }
@@ -127,15 +127,15 @@ export function TeamPanel({ me = null }) {
   }
 
   return html`<div class="team">
-    <section class=${`team-card week ${week.done ? 'done' : ''}`}>
+    <section class=${`team-card week ${week.reached ? 'done' : ''}`}>
       <h3>🤝 Défi d'équipe de la semaine</h3>
-      <p class="meta">Du ${shortDay(week.start)} au ${shortDay(week.end)} · ${s.settings.team.threshold} % de vert, tous ensemble, matin et soir</p>
+      <p class="meta">Du ${shortDay(week.start)} au ${shortDay(week.end)} · ${s.settings.team.threshold} % de tâches faites (🌟 ou 👍), tous ensemble, matin et soir</p>
       <div class="team-row">${kids.map((k) => html`<${Head} key=${k.id} child=${k} />`)}</div>
-      <div class="team-bar"><i style=${{ width: `${week.ratio * 100}%` }} /><span>${week.greens} / ${week.goal} verts</span></div>
-      ${week.done
+      <div class="team-bar"><i style=${{ width: `${week.ratio * 100}%` }} /><span>${week.done} / ${week.goal} tâches</span></div>
+      ${week.reached
         ? html`<p class="team-win">Réussi cette semaine ! 🎉 Bravo l'équipe.</p>`
         : html`<div class="team-reward">
-            <span>Encore <b>${Math.max(0, week.goal - week.greens)}</b> vert${week.goal - week.greens > 1 ? 's' : ''} ensemble pour gagner :</span>
+            <span>Encore <b>${Math.max(0, week.goal - week.done)}</b> tâche${week.goal - week.done > 1 ? 's' : ''} faite${week.goal - week.done > 1 ? 's' : ''} ensemble pour gagner :</span>
             ${nextReward && html`<div class="team-thumb"><${ItemThumb} item=${nextReward} look=${kids[0].look} /></div>`}
             <b>${nextReward ? nextReward.name : ''}${s.settings.team.bonus ? ` + ${s.settings.team.bonus} pandi chacun` : ''}</b>
           </div>`}
@@ -148,14 +148,14 @@ export function TeamPanel({ me = null }) {
       ${treasure.reached
         ? html`<p class="team-win">Trésor ouvert ! 🎉 À vous la récompense.</p>
             <button class="p-btn" onClick=${() => asParent(() => setNewTreasure({ goal: treasure.goal, reward: '' }))}>Nouveau trésor</button>`
-        : html`<p class="meta">Chaque note verte de ${kids.map((k) => k.name).join(', ').replace(/, ([^,]*)$/, ' ou $1')} remplit le trésor.</p>
+        : html`<p class="meta">Chaque tâche faite (🌟 ou 👍) par ${kids.map((k) => k.name).join(', ').replace(/, ([^,]*)$/, ' ou $1')} remplit le trésor.</p>
             <button class="p-btn" onClick=${() => asParent(() => setNewTreasure({ goal: treasure.goal, reward: treasure.reward }))}>Modifier</button>`}
     </section>
 
     <section class="team-card pot">
       <h3>🏦 Cagnotte commune</h3>
       <div class="pot-balance"><${Coin} /> ${pot} pandi</div>
-      <div class="pot-kids">${potContributions(s).map(({ child, amount }) => html`<span key=${child.id} class="kid-chip on" style=${{ '--kid': child.color }}><i />${child.name} : ${amount}</span>`)}</div>
+      <p class="meta">Tout le monde y participe : les dépôts de chacun et la carte d'équipe « La meilleure équipe ! » du soir.</p>
       <div class="team-form">
         ${!me && html`<${KidPicker} kids=${kids} value=${depositor} onChange=${setDepositor} label="Qui met des pandi ?" />`}
         <div class="chip-row">${AMOUNTS.map((n) => html`<button key=${n} class=${`p-btn ${deposit === n ? 'primary' : ''}`} onClick=${() => setDeposit(n)}>${n}</button>`)}</div>
@@ -195,9 +195,9 @@ export function TeamPanel({ me = null }) {
     ${newTreasure && html`<${Modal} onClose=${() => setNewTreasure(null)}>
       <h2>💎 Trésor de la fratrie</h2>
       <div class="field"><label>Récompense en vrai</label><input class="input" value=${newTreasure.reward} maxLength="60" placeholder="Ex. : une sortie au cinéma 🎬" onInput=${(e) => setNewTreasure({ ...newTreasure, reward: e.target.value })} /></div>
-      <div class="field"><label>Nombre de notes vertes à réunir</label><${NumberInput} value=${newTreasure.goal} onChange=${(goal) => setNewTreasure({ ...newTreasure, goal })} min=${5} max=${500} step=${5} /></div>
+      <div class="field"><label>Nombre de tâches faites (🌟 ou 👍) à réunir</label><${NumberInput} value=${newTreasure.goal} onChange=${(goal) => setNewTreasure({ ...newTreasure, goal })} min=${5} max=${500} step=${5} /></div>
       <div class="sheet-actions">
-        ${!treasure.reached && html`<button class="btn btn-ghost" style="color:var(--ink)" onClick=${() => { actions.updateSettings({ treasure: { ...s.settings.treasure, goal: newTreasure.goal, reward: newTreasure.reward.trim() || treasure.reward } }); setNewTreasure(null); }}>Garder les verts déjà gagnés</button>`}
+        ${!treasure.reached && html`<button class="btn btn-ghost" style="color:var(--ink)" onClick=${() => { actions.updateSettings({ treasure: { ...s.settings.treasure, goal: newTreasure.goal, reward: newTreasure.reward.trim() || treasure.reward } }); setNewTreasure(null); }}>Garder les tâches déjà comptées</button>`}
         <button class="btn btn-green" disabled=${!newTreasure.reward.trim()} onClick=${() => { actions.newTreasure({ goal: newTreasure.goal, reward: newTreasure.reward.trim() }); sfx.sparkle(); setNewTreasure(null); }}>Nouveau trésor (repart de zéro)</button>
       </div>
     <//>`}

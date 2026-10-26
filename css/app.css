@@ -204,11 +204,17 @@ h1, h2, h3, p { margin: 0; }
 .rate-choice .face { font-size: calc(var(--u) * 13); line-height: 1; filter: drop-shadow(0 calc(var(--u) * .8) 0 rgba(0, 0, 0, .15)); transition: transform .2s; }
 .rate-choice:hover .face { transform: scale(1.1) rotate(-6deg); }
 .rate-choice:active { transform: scale(.92); }
-.rate-choice.green { background: linear-gradient(180deg, #6ff0a3, var(--green)); box-shadow: 0 calc(var(--u) * 1.4) 0 var(--green-d); }
-.rate-choice.orange { background: linear-gradient(180deg, #ffd08a, var(--orange)); box-shadow: 0 calc(var(--u) * 1.4) 0 var(--orange-d); }
-.rate-choice.red { background: linear-gradient(180deg, #ffb3b9, var(--red)); box-shadow: 0 calc(var(--u) * 1.4) 0 var(--red-d); }
+/* Notes de coopération : 🌟 du premier coup, 👍 après un rappel, ✋ il a fallu répéter, ⏸️ pas ce soir.
+   La feuille passe sur la télé : pas de prix, pas de rouge, des couleurs douces. */
+.rate-choices.four { grid-template-columns: repeat(4, 1fr); gap: calc(var(--u) * 2.4); }
+.rate-choice.green { background: linear-gradient(180deg, #ffe58f, #ffc21a); color: #5a3d00; box-shadow: 0 calc(var(--u) * 1.4) 0 #d49a00; }
+.rate-choice.orange { background: linear-gradient(180deg, #c4b5ff, #8b6cf0); box-shadow: 0 calc(var(--u) * 1.4) 0 #6447c8; }
+.rate-choice.red { background: linear-gradient(180deg, #e4e1f2, #b3add0); color: #3d3858; box-shadow: 0 calc(var(--u) * 1.4) 0 #8d86ae; }
+.rate-choice.pause { background: linear-gradient(180deg, #f4f2fa, #d8d4ea); color: #4a4566; box-shadow: 0 calc(var(--u) * 1.4) 0 #aca6c8; }
 .rate-choice.current { outline: calc(var(--u) * 1) solid #fff; outline-offset: calc(var(--u) * -2.4); }
 .rate-choice .pts { font-size: calc(var(--u) * 3.2); opacity: .9; font-weight: 600; }
+.rate-choice .sub { font-size: calc(var(--u) * 3); opacity: .85; font-weight: 600; line-height: 1.15; }
+.rate-choices.four .face { font-size: calc(var(--u) * 11); }
 .rate-clear { display: block; margin: calc(var(--u) * 3) auto 0; color: var(--ink-soft); text-decoration: underline; font-size: calc(var(--u) * 3.6); }
 
 /* ===== Célébrations ===== */
@@ -316,6 +322,17 @@ h1, h2, h3, p { margin: 0; }
 .portrait-card p { font-size: calc(var(--u) * 3.2); opacity: .85; margin-bottom: calc(var(--u) * 1.6); }
 
 /* Défis */
+/* Coin de l'enfant : ses notes du jour (la télé, elle, ne montre que « fait ») */
+.my-day { padding: calc(var(--u) * 2.4) calc(var(--u) * 3); border-radius: calc(var(--u) * 4.4); background: var(--paper); color: var(--ink); margin-bottom: calc(var(--u) * 2.4); box-shadow: 0 calc(var(--u) * 1) 0 rgba(42, 35, 80, .25); animation: tile-in .5s cubic-bezier(.3, 1.5, .5, 1) both; }
+.my-day h3 { font-size: calc(var(--u) * 4.6); margin-bottom: calc(var(--u) * 1.4); }
+.md-row { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--u) * 1.4); margin: calc(var(--u) * 1) 0; }
+.md-row em { font-style: normal; font-size: calc(var(--u) * 4.6); margin-right: calc(var(--u) * 1); }
+.md-dot { position: relative; width: calc(var(--u) * 9); height: calc(var(--u) * 9); border-radius: 50%; display: grid; place-items: center; background: #ece8fb; }
+.md-dot i { font-style: normal; font-size: calc(var(--u) * 4.4); opacity: .55; }
+.md-dot b { position: absolute; right: calc(var(--u) * -1.2); bottom: calc(var(--u) * -1.2); font-size: calc(var(--u) * 4.4); line-height: 1; }
+.md-dot.green { background: #fff1c2; } .md-dot.orange { background: #e5ddff; } .md-dot.red, .md-dot.pause { background: #ecebf3; }
+.md-dot.green i, .md-dot.orange i { opacity: 1; }
+.md-sum { margin-top: calc(var(--u) * 1.4); font-weight: 700; font-size: calc(var(--u) * 3.8); color: #8a6100; }
 .challenge-card { display: flex; align-items: center; gap: calc(var(--u) * 3); padding: calc(var(--u) * 2.4); border-radius: calc(var(--u) * 4.4); background: var(--paper); color: var(--ink); margin-bottom: calc(var(--u) * 2.4); box-shadow: 0 calc(var(--u) * 1) 0 rgba(42, 35, 80, .25); animation: tile-in .5s cubic-bezier(.3, 1.5, .5, 1) both; animation-delay: calc(var(--i, 0) * 60ms); }
 .challenge-card .reward-thumb { flex: none; width: calc(var(--u) * 20); height: calc(var(--u) * 20); border-radius: calc(var(--u) * 3.4); background: radial-gradient(circle at 50% 40%, #3b2a8c, #1a1450); overflow: hidden; position: relative; }
 .challenge-card .reward-thumb.locked svg { filter: brightness(0) invert(1) opacity(.35); }
@@ -375,7 +392,7 @@ h1, h2, h3, p { margin: 0; }
 .history-line .who { width: calc(var(--u) * 24); font-weight: 600; display: flex; align-items: center; gap: calc(var(--u) * 1.4); }
 .dot-btn { width: calc(var(--u) * 9.5); height: calc(var(--u) * 9.5); border-radius: calc(var(--u) * 2.6); display: grid; place-items: center; font-size: calc(var(--u) * 5); background: #ece8fb; position: relative; transition: transform .12s; }
 .dot-btn:active { transform: scale(.9); }
-.dot-btn.green { background: var(--green); } .dot-btn.orange { background: var(--orange); } .dot-btn.red { background: var(--red); }
+.dot-btn.green { background: var(--green); } .dot-btn.orange { background: var(--orange); } .dot-btn.red { background: var(--red); } .dot-btn.pause { background: #d8d4ea; }
 .number-input { display: inline-flex; align-items: center; gap: calc(var(--u) * 1.4); }
 .number-input button { width: calc(var(--u) * 9); height: calc(var(--u) * 9); border-radius: 50%; background: #e6e0fb; font-weight: 700; font-size: calc(var(--u) * 5); color: var(--ink); }
 .number-input output { min-width: 3ch; text-align: center; font-weight: 700; font-size: calc(var(--u) * 5); }

@@ -72,18 +72,10 @@ export function clockText(t, now = Date.now()) {
   return left > 0 ? mmss(Math.ceil(left / 1000) * 1000) : `+${mmss(-left)}`;
 }
 
-// Intensité de la musique : on suit le minuteur le plus proche de la fin.
+// Musique du minuteur : calme et régulière du début à la fin (elle n'accélère plus).
 // Renvoie null s'il n'y a rien à accompagner (tout est en pause, fini ou sonné).
+export const CALM_BPM = 92;
 export function musicMood(timers, now = Date.now()) {
-  let best = null;
-  for (const t of timers) {
-    if (t.finished || isPaused(t)) continue;
-    const left = remainingMs(t, now);
-    if (left <= 0) continue;
-    const p = progressOf(t, now);
-    const level = left <= FINAL_MS ? 3 : p < 0.5 ? 0 : p < 0.8 ? 1 : 2;
-    if (!best || level > best.level || (level === best.level && p > best.p)) best = { level, p };
-  }
-  if (!best) return null;
-  return { level: best.level, bpm: best.level === 3 ? 176 : Math.round(96 + 64 * best.p ** 1.5) };
+  const running = timers.some((t) => !t.finished && !isPaused(t) && remainingMs(t, now) > 0);
+  return running ? { level: 0, bpm: CALM_BPM } : null;
 }

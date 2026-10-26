@@ -219,10 +219,10 @@ export function rate(childId, taskId, date, color) {
   return result;
 }
 
-// --- Comportement de fin de soirée ----------------------------------------------------
-export function setBehavior(childId, date, level) {
+// --- Carte d'équipe de fin de soirée (la même pour tous, versée dans la cagnotte commune) ------------
+export function setTeamCard(date, level) {
   const s = getState();
-  const res = domain.applyBehavior(s, { familyId: familyId(), childId, date, level });
+  const res = domain.applyTeamCard(s, { familyId: familyId(), date, level });
   setState({ ledger: res.ledger });
   commit(res.ops);
   return res;

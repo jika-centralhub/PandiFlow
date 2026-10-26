@@ -2,7 +2,7 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { useStore, setPrefs } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { SEXES, activeChildren, tasksForChild, findRating, balance, challengesForChild, COLOR_META, ROUTINES, routineOf, BEHAVIOR, findBehavior, behaviorLevel } from '../domain.js';
+import { SEXES, activeChildren, tasksForChild, findRating, balance, challengesForChild, COLOR_META, ROUTINES, routineOf, TEAM_CARD, findTeamCard, teamCardLevel } from '../domain.js';
 import { eveningDate, addDays, formatLong, WEEKDAYS_SHORT, currentRoutine } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { CHILD_COLORS } from '../avatar/palette.js';
@@ -185,7 +185,7 @@ function ChallengeForm({ challenge, onClose }) {
     <div class="field-row">
       <div class="field"><label>Tâche</label>
         <select class="input" value=${taskId} onChange=${(e) => setTaskId(e.target.value)}>${tasks.map((t) => html`<option key=${t.id} value=${t.id}>${t.emoji} ${t.title}</option>`)}</select></div>
-      <div class="field"><label>Nombre de verts à cumuler</label><${NumberInput} value=${target} onChange=${setTarget} min=${2} max=${60} /></div>
+      <div class="field"><label>Nombre de 🌟 « du premier coup » à cumuler</label><${NumberInput} value=${target} onChange=${setTarget} min=${2} max=${60} /></div>
     </div>
     <div class="field-row">
       <div class="field"><label>Pandi en bonus</label><${NumberInput} value=${bonus} onChange=${setBonus} min=${0} max=${200} step=${5} /></div>
@@ -202,7 +202,7 @@ function ChallengeForm({ challenge, onClose }) {
         </button>`)}
       </div>
     </div>
-    ${challenge && html`<label class="chip-row" style="align-items:center;gap:10px;margin-bottom:10px"><${Toggle} on=${restart} onChange=${setRestart} label="Repartir de zéro" /> Repartir de zéro (les verts d'avant ne comptent plus)</label>`}
+    ${challenge && html`<label class="chip-row" style="align-items:center;gap:10px;margin-bottom:10px"><${Toggle} on=${restart} onChange=${setRestart} label="Repartir de zéro" /> Repartir de zéro (les 🌟 d'avant ne comptent plus)</label>`}
     <div class="sheet-actions">
       ${challenge && html`<button class="p-btn danger" onClick=${() => { actions.deleteChallenge(challenge.id); onClose(); }}>Supprimer</button>`}
       <button class="btn btn-green" onClick=${save} disabled=${!taskId}>Enregistrer</button>
@@ -216,7 +216,7 @@ function ChallengesSection() {
   const kids = activeChildren(s.children);
   return html`<div>
     <h2>Les défis</h2>
-    <p class="hint">Un défi se gagne en cumulant des notes vertes sur une tâche (les soirs ratés ne remettent pas à zéro). La récompense est un trésor animé que l'enfant ne peut pas acheter.</p>
+    <p class="hint">Un défi se gagne en cumulant des 🌟 « du premier coup » sur une tâche (les soirs ratés ne remettent pas à zéro). La récompense est un trésor animé que l'enfant ne peut pas acheter.</p>
     <div class="row-list">
       ${s.challenges.map((c) => {
         const task = s.tasks.find((t) => t.id === c.task_id);
@@ -225,7 +225,7 @@ function ChallengesSection() {
           <div style="width:calc(var(--u)*14);height:calc(var(--u)*14);border-radius:12px;background:radial-gradient(circle,#3b2a8c,#1a1450);flex:none"><${ItemThumb} item=${item} /></div>
           <div class="grow">
             <div class="title">${c.title}</div>
-            <div class="meta">${c.target} × ${task ? `${task.emoji} ${task.title}` : '?'} en vert · depuis le ${formatLong(c.start_date)}${c.bonus ? ` · +${c.bonus} pandi` : ''}</div>
+            <div class="meta">${c.target} × ${task ? `${task.emoji} ${task.title}` : '?'} du premier coup 🌟 · depuis le ${formatLong(c.start_date)}${c.bonus ? ` · +${c.bonus} pandi` : ''}</div>
             <div class="chip-row" style="margin-top:6px">${kids.filter((k) => !c.child_id || c.child_id === k.id).map((k) => {
               const p = challengesForChild(k.id, s).find((x) => x.challenge.id === c.id);
               return p ? html`<span key=${k.id} class="kid-chip on" style=${{ '--kid': k.color }}><i />${k.name} ${p.done ? '✅' : `${p.count}/${p.target}`}</span>` : null;
@@ -241,9 +241,9 @@ function ChallengesSection() {
 }
 
 // --- Historique ------------------------------------------------------------------------
-const NEXT = { undefined: 'green', green: 'orange', orange: 'red', red: null };
-const NEXT_BEHAVIOR = { null: 'super', super: 'bien', bien: 'non', non: null };
-const BEHAVIOR_DOT = { super: 'gold', bien: 'green', non: 'red' };
+// Une pastille corrigée passe : vide → 🌟 → 👍 → ✋ → ⏸️ → vide
+const NEXT = { undefined: 'green', green: 'orange', orange: 'red', red: 'pause', pause: null };
+const NEXT_TEAM_CARD = { null: 'top', top: 'demain', demain: null };
 
 function HistorySection() {
   const s = useStore();
@@ -253,7 +253,7 @@ function HistorySection() {
   const days = Array.from({ length: 14 }, (_, i) => addDays(today, -i));
   return html`<div>
     <h2>Historique</h2>
-    <p class="hint">Touche une pastille pour corriger une note (vert → orange → rouge → vide). Les pandi et les bonus sont recalculés.</p>
+    <p class="hint">Touche une pastille pour corriger une note (🌟 du premier coup → 👍 après un rappel → ✋ il a fallu répéter → ⏸️ pas ce soir → vide). Les pandi sont recalculés.</p>
     <div class="row-list" style="margin-bottom:16px">${kids.map((k) => html`<div key=${k.id} class="row" style=${{ '--kid': k.color }}>
       <div class="mini-head" style=${{ background: k.color }}><${Avatar} look=${k.look} mode="head" still=${true} /></div>
       <div class="grow"><div class="title">${k.name}</div><div class="meta">${balance(k.id, s)} pandi</div></div>
@@ -269,45 +269,56 @@ function HistorySection() {
           return html`<span key=${routine} class="history-routine"><em title=${ROUTINES[routine].label}>${ROUTINES[routine].icon}</em>${list.map((t) => {
             const r = findRating(s.ratings, k.id, t.id, d);
             return html`<button key=${t.id} class=${`dot-btn ${r?.color || ''}`} title=${`${t.title}${r ? ` : ${COLOR_META[r.color].label}` : ''}`}
-              onClick=${() => { sfx.tap(); actions.rate(k.id, t.id, d, NEXT[r?.color]); }}>${t.emoji}</button>`;
-          })}${routine === 'soir' && (() => {
-            const level = behaviorLevel(findBehavior(s.ledger, k.id, d));
-            return html`<button class=${`dot-btn ${level ? BEHAVIOR_DOT[level] : ''}`} title=${`Comportement${level ? ` : ${BEHAVIOR[level].label}` : ''}`}
-              onClick=${() => { sfx.tap(); actions.setBehavior(k.id, d, NEXT_BEHAVIOR[level]); }}>${level ? BEHAVIOR[level].face : '😇'}</button>`;
-          })()}</span>`;
+              onClick=${() => { sfx.tap(); actions.rate(k.id, t.id, d, NEXT[r?.color]); }}>${r ? COLOR_META[r.color].face : t.emoji}</button>`;
+          })}</span>`;
         })}
-      </div>`)}</div>
+      </div>`)}
+      ${kids.length > 1 && (() => {
+        const level = teamCardLevel(findTeamCard(s.ledger, d));
+        return html`<div class="history-line">
+          <span class="who"><span class="kid-chip on"><i />Équipe</span></span>
+          <span class="history-routine"><em title="Carte d'équipe du soir">🤝</em><button class=${`dot-btn ${level === 'top' ? 'gold' : level ? 'pause' : ''}`} title=${`Carte d'équipe${level ? ` : ${TEAM_CARD[level].label}` : ''}`}
+            onClick=${() => { sfx.tap(); actions.setTeamCard(d, NEXT_TEAM_CARD[level]); }}>${level ? TEAM_CARD[level].face : '🤝'}</button></span>
+        </div>`;
+      })()}</div>
     </div>`)}
     ${adjust && html`<${PandiBank} child=${adjust} onClose=${() => setAdjust(null)} />`}
   </div>`;
 }
 
 // --- Réglages ---------------------------------------------------------------------------
+// Le barème d'une tranche d'âge : 🌟 👍 ✋ (⏸️ « pas ce soir » ne rapporte jamais rien)
+function ScaleRows({ scale, label, meta }) {
+  const s = useStore();
+  const pts = s.settings.scales[scale];
+  const setPoints = (color) => (v) => actions.updateSettings({ scales: { ...s.settings.scales, [scale]: { ...pts, [color]: v } } });
+  return html`<div class="row-list" style="margin-bottom:10px">
+    <div class="row"><span class="emoji">${scale === 'petit' ? '🧸' : '🎒'}</span><div class="grow"><div class="title">${label}</div><div class="meta">${meta}</div></div></div>
+    ${['green', 'orange', 'red'].map((c) => html`<div key=${c} class="row"><span class="emoji">${COLOR_META[c].face}</span><div class="grow"><div class="title">${COLOR_META[c].label}</div><div class="meta">${COLOR_META[c].sub}</div></div><${NumberInput} value=${pts[c]} onChange=${setPoints(c)} max=${20} /></div>`)}
+    <div class="row"><span class="emoji">${COLOR_META.pause.face}</span><div class="grow"><div class="title">${COLOR_META.pause.label}</div><div class="meta">Une crise, un moment difficile : la tâche ne compte ni pour ni contre</div></div><b style="padding:0 12px">0</b></div>
+  </div>`;
+}
+
 function SettingsSection() {
   const s = useStore();
-  const pts = s.settings.points;
   const [changingPin, setChangingPin] = useState(false);
-  const setPoints = (color) => (v) => actions.updateSettings({ points: { ...pts, [color]: v } });
   return html`<div>
     <h2>Réglages</h2>
-    <h3 class="section-title" style="color:var(--ink)">Barème des pandi</h3>
-    <div class="row-list">
-      <div class="row"><span class="emoji">😄</span><div class="grow"><div class="title">Vert : bravo !</div></div><${NumberInput} value=${pts.green} onChange=${setPoints('green')} max=${20} /></div>
-      <div class="row"><span class="emoji">😐</span><div class="grow"><div class="title">Orange : presque</div></div><${NumberInput} value=${pts.orange} onChange=${setPoints('orange')} max=${20} /></div>
-      <div class="row"><span class="emoji">😟</span><div class="grow"><div class="title">Rouge : à retravailler</div></div><${NumberInput} value=${pts.red} onChange=${setPoints('red')} max=${20} /></div>
-      <div class="row"><span class="emoji">⭐</span><div class="grow"><div class="title">Bonus soirée ou matinée parfaite</div><div class="meta">Quand toutes les tâches de la routine sont vertes</div></div><${NumberInput} value=${s.settings.perfectBonus} onChange=${(v) => actions.updateSettings({ perfectBonus: v })} max=${50} /></div>
-    </div>
-    <p class="hint" style="margin-top:8px">Un nouveau barème s'applique aux prochaines notes : les pandi déjà gagnés ne changent pas.</p>
+    <h3 class="section-title" style="color:var(--ink)">Barème des pandi : la coopération</h3>
+    <p class="hint" style="margin:0 0 10px">Chaque note dit si l'enfant a écouté : il démarre après une demande, sans négocier, sans traîner, et s'arrête quand on le lui demande. Être aidé ne compte pas contre lui.</p>
+    <${ScaleRows} scale="petit" label="Moins de 6 ans" meta="D'après l'âge de la fiche de l'enfant" />
+    <${ScaleRows} scale="grand" label="6 ans et plus" meta="Aussi quand l'âge n'est pas renseigné" />
+    <p class="hint" style="margin-top:8px">Un nouveau barème s'applique aux prochaines notes : les pandi déjà gagnés ne changent pas. Sur la télé, une tâche notée devient simplement « faite » : le détail se voit ici et dans le coin de l'enfant.</p>
 
-    <h3 class="section-title" style="color:var(--ink);margin-top:20px">Comportement de fin de soirée</h3>
+    <h3 class="section-title" style="color:var(--ink);margin-top:20px">Carte d'équipe de fin de soirée</h3>
     <div class="row-list">
-      <div class="row"><span class="emoji">😇</span><div class="grow"><div class="title">Super comportement</div><div class="meta">Dernière carte du carrousel, le soir</div></div><${NumberInput} value=${s.settings.behaviorPoints.super} onChange=${(v) => actions.updateSettings({ behaviorPoints: { ...s.settings.behaviorPoints, super: v } })} max=${20} /></div>
-      <div class="row"><span class="emoji">🙂</span><div class="grow"><div class="title">Bon comportement</div></div><${NumberInput} value=${s.settings.behaviorPoints.bien} onChange=${(v) => actions.updateSettings({ behaviorPoints: { ...s.settings.behaviorPoints, bien: v } })} max=${20} /></div>
+      <div class="row"><span class="emoji">${TEAM_CARD.top.face}</span><div class="grow"><div class="title">${TEAM_CARD.top.label}</div><div class="meta">La même pour tous les enfants, quand toutes les tâches du soir sont notées : pandi versés dans la cagnotte commune</div></div><${NumberInput} value=${s.settings.teamCard.top} onChange=${(v) => actions.updateSettings({ teamCard: { ...s.settings.teamCard, top: v } })} max=${50} /></div>
+      <div class="row"><span class="emoji">${TEAM_CARD.demain.face}</span><div class="grow"><div class="title">${TEAM_CARD.demain.label}</div><div class="meta">Rien n'est retiré</div></div><b style="padding:0 12px">0</b></div>
     </div>
 
     <h3 class="section-title" style="color:var(--ink);margin-top:20px">Équipe</h3>
     <div class="row-list">
-      <div class="row"><span class="emoji">🤝</span><div class="grow"><div class="title">Défi d'équipe : % de vert à réunir</div><div class="meta">Sur la semaine, tous les enfants ensemble, matin et soir</div></div><${NumberInput} value=${s.settings.team.threshold} onChange=${(v) => actions.updateSettings({ team: { ...s.settings.team, threshold: v } })} min=${50} max=${100} step=${5} /></div>
+      <div class="row"><span class="emoji">🤝</span><div class="grow"><div class="title">Défi d'équipe : % de tâches faites (🌟 ou 👍)</div><div class="meta">Sur la semaine, tous les enfants ensemble, matin et soir ; une routine où personne n'a été noté ne compte pas</div></div><${NumberInput} value=${s.settings.team.threshold} onChange=${(v) => actions.updateSettings({ team: { ...s.settings.team, threshold: v } })} min=${50} max=${100} step=${5} /></div>
       <div class="row"><span class="emoji">🎁</span><div class="grow"><div class="title">Bonus du défi d'équipe</div><div class="meta">Pandi pour chaque enfant, en plus du cadeau duo</div></div><${NumberInput} value=${s.settings.team.bonus} onChange=${(v) => actions.updateSettings({ team: { ...s.settings.team, bonus: v } })} max=${50} /></div>
       <div class="row"><span class="emoji">🙌</span><div class="grow"><div class="title">Coup de main</div><div class="meta">Pandi pour celui qui aide et celui qui est aidé</div></div><${NumberInput} value=${s.settings.helpBonus} onChange=${(v) => actions.updateSettings({ helpBonus: v })} max=${20} /></div>
     </div>

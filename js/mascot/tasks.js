@@ -33,16 +33,25 @@ export function actForTask(task) {
   return { act: 'pancarte', ctx: { emoji: task.emoji || '⭐' } };
 }
 
-// Ce que fait Pandi sur une carte ou dans le minuteur : la tâche (au rythme du minuteur s'il tourne),
-// ou sa réaction à la note. timer : { look, progress } (voir timerView dans Timer.js)
-const TEMPO = { calm: 1, hurry: 1.2, rush: 1.5, final: 1.9 };
-export function pandiFor(task, { rating, timer } = {}) {
-  if (rating) return { act: { green: 'bravo', orange: 'ok', red: 'calin' }[rating] || 'idle', ctx: {} };
+// Ce que fait Pandi sur une carte ou dans le minuteur : la tâche (au rythme calme du minuteur s'il
+// tourne), ou sa réaction à la note. timer : { look, progress } (voir timerView dans Timer.js).
+// night : la « soirée douce » est commencée, Pandi s'endort sur la carte du coucher.
+export function pandiFor(task, { rating, timer, night = false } = {}) {
+  if (night && actForTask(task).act === 'dodo') return { act: 'endormi', ctx: {} };
+  if (rating) return { act: { green: 'bravo', orange: 'ok', red: 'calin', pause: 'sieste' }[rating] || 'idle', ctx: {} };
   if (timer?.look === 'won') return { act: 'bravo', ctx: {} };
-  if (timer?.look === 'over') return { act: 'alarme', ctx: {} };
   if (timer?.look === 'paused') return { act: 'sieste', ctx: {} };
+  // Minuteur calme : Pandi garde son rythme jusqu'au bout, sans s'agiter ni paniquer
   const a = actForTask(task);
   // les dents : un quart du minuteur pour chaque coin de la bouche
-  if (timer) Object.assign(a.ctx, { tempo: TEMPO[timer.look] || 1, zone: Math.min(3, Math.floor((timer.progress || 0) * 4)) });
+  if (timer) Object.assign(a.ctx, { tempo: 1, zone: Math.min(3, Math.floor((timer.progress || 0) * 4)) });
   return a;
+}
+
+// La soirée douce commence à l'histoire du soir (ou, sans histoire, juste avant le coucher)
+export function storyIndex(list) {
+  const story = list.findIndex((t) => actForTask(t).act === 'lecture');
+  if (story >= 0) return story;
+  const bed = list.findIndex((t) => actForTask(t).act === 'dodo');
+  return bed > 0 ? bed - 1 : Math.max(0, list.length - 1);
 }

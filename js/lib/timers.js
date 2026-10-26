@@ -80,17 +80,11 @@ function tick() {
   const next = timers.map((t) => {
     if (!cd.needsWatch(t)) return t;
     const left = cd.remainingMs(t, now);
+    // Minuteur calme : pas de bips des dernières secondes, un carillon doux à la fin
     if (left <= 0) {
       changed = true;
-      if (-left < RING_GRACE_MS) sfx.alarm();
+      if (-left < RING_GRACE_MS) sfx.carillon();
       return { ...t, alarmed: true };
-    }
-    if (left <= cd.FINAL_MS) {
-      const n = Math.ceil(left / 1000);
-      if (lastBeep[t.key] !== n) {
-        lastBeep[t.key] = n;
-        sfx.countdown(n);
-      }
     }
     return t;
   });

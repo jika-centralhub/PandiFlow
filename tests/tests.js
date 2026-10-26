@@ -83,35 +83,47 @@ test('progression de la soirée', () => {
   eq([p.rated, p.total, p.complete, p.perfect], [1, 2, false, false]);
 });
 
-// --- Points et bonus ------------------------------------------------------------------
-test('barème vert 3 / orange 1 / rouge 0', () => {
-  const { state } = rateAll(fixture(), [
+// --- Points (coopération) -------------------------------------------------------------
+const withAge = (s, age) => ({ ...s, children: s.children.map((c) => (c.id === 'c1' ? { ...c, age } : c)) });
+test('barème des grands : 🌟 3 / 👍 2 / ✋ 0', () => {
+  const { state } = rateAll(withAge(fixture(), 7), [
     ['c1', 't1', MONDAY, 'green'],
     ['c1', 't2', MONDAY, 'orange'],
     ['c1', 't3', MONDAY, 'red'],
   ]);
-  eq(d.balance('c1', state), 4);
+  eq(d.balance('c1', state), 5);
 });
-test('soirée parfaite : +5 une seule fois', () => {
+test('barème des petits (moins de 6 ans) : 🌟 3 / 👍 2 / ✋ 1', () => {
+  const { state } = rateAll(withAge(fixture(), 4), [
+    ['c1', 't1', MONDAY, 'green'],
+    ['c1', 't2', MONDAY, 'orange'],
+    ['c1', 't3', MONDAY, 'red'],
+  ]);
+  eq(d.balance('c1', state), 6);
+});
+test('6 ans pile ou âge inconnu : barème des grands', () => {
+  eq([d.scaleOf({ age: 5 }), d.scaleOf({ age: 6 }), d.scaleOf({ age: null }), d.scaleOf({}), d.scaleOf(null)], ['petit', 'grand', 'grand', 'grand', 'grand']);
+});
+test('⏸️ pas ce soir : 0 pandi, la routine compte comme notée', () => {
+  const { state, result } = rateAll(withAge(fixture(), 4), [
+    ['c1', 't1', TUESDAY, 'pause'],
+    ['c1', 't2', TUESDAY, 'green'],
+  ]);
+  eq(d.balance('c1', state), 3);
+  ok(result.becameComplete, 'routine finie');
+});
+test('plus de bonus de soirée parfaite', () => {
   const { state, result } = rateAll(fixture(), [
     ['c1', 't1', TUESDAY, 'green'],
     ['c1', 't2', TUESDAY, 'green'],
   ]);
-  ok(result.perfectGained, 'bonus attendu');
   ok(result.becameComplete, 'soirée complète attendue');
-  eq(d.balance('c1', state), 3 + 3 + 5);
-  const again = rateAll(state, [['c1', 't2', TUESDAY, 'green']]);
-  eq(d.balance('c1', again.state), 11, 'pas de double bonus');
+  eq([d.balance('c1', state), state.ledger.length], [6, 0]);
 });
-test('bonus parfait retiré si une note est corrigée', () => {
-  const first = rateAll(fixture(), [
-    ['c1', 't1', TUESDAY, 'green'],
-    ['c1', 't2', TUESDAY, 'green'],
-  ]);
-  const { state, result } = rateAll(first.state, [['c1', 't2', TUESDAY, 'orange']]);
-  ok(result.perfectLost, 'bonus perdu attendu');
-  eq(d.balance('c1', state), 3 + 1);
-  eq(result.delta, -7);
+test('un ancien bonus parfait déjà gagné reste acquis si on corrige une note', () => {
+  const s = { ...fixture(), ledger: [{ id: 'perfect-c1-' + TUESDAY, child_id: 'c1', kind: 'perfect', amount: 5, evening_date: TUESDAY }] };
+  const { state } = rateAll(s, [['c1', 't1', TUESDAY, 'orange']]);
+  eq(d.balance('c1', state), 2 + 5);
 });
 test('effacer une note retire ses points', () => {
   const first = rateAll(fixture(), [['c1', 't1', MONDAY, 'green']]);
@@ -122,7 +134,7 @@ test('effacer une note retire ses points', () => {
 test('points figés au moment de la note', () => {
   let s = fixture();
   ({ state: s } = rateAll(s, [['c1', 't1', MONDAY, 'green']]));
-  s = { ...s, settings: d.mergeSettings({ points: { green: 10 } }) };
+  s = { ...s, settings: d.mergeSettings({ scales: { grand: { green: 10 } } }) };
   ({ state: s } = rateAll(s, [['c1', 't2', MONDAY, 'green']]));
   eq(d.balance('c1', s), 13);
 });
@@ -264,20 +276,19 @@ test('tâches séparées entre matin et soir', () => {
   eq(d.tasksForChild('c1', TUESDAY, s).map((t) => t.id), ['t1', 't2'], 'le soir par défaut');
   eq(d.tasksForChild('c1', '2026-10-24', s, 'matin').length, 0, 'pas d’école le samedi');
 });
-test('matinée parfaite et soirée parfaite le même jour : deux bonus distincts', () => {
+test('matin et soir le même jour : même barème, chaque routine se termine', () => {
   const { state, result } = rateAll(morningFixture(), [
     ['c1', 'm1', TUESDAY, 'green'],
     ['c1', 'm2', TUESDAY, 'green'],
   ]);
-  ok(result.perfectGained, 'bonus du matin attendu');
+  ok(result.becameComplete, 'matin fini');
   eq(result.routine, 'matin');
-  ok(state.ledger.some((l) => l.id === d.perfectBonusId('c1', TUESDAY, 'matin') && l.note === 'Matinée parfaite'));
   const evening = rateAll(state, [
     ['c1', 't1', TUESDAY, 'green'],
     ['c1', 't2', TUESDAY, 'green'],
   ]);
-  ok(evening.result.perfectGained, 'bonus du soir attendu aussi');
-  eq(d.balance('c1', evening.state), 6 + 5 + 6 + 5);
+  ok(evening.result.becameComplete, 'soir fini aussi');
+  eq(d.balance('c1', evening.state), 6 + 6);
 });
 test('heure du départ à une date donnée', () => {
   eq(atTime(TUESDAY, '08:15'), new Date(2026, 9, 20, 8, 15).getTime());
@@ -319,14 +330,14 @@ test('minuteur : résultat à temps ou en retard', () => {
   const late = cd.timerResult(cd.finishTimer(t, T0 + 345000), T0 + 345000);
   eq([late.inTime, late.elapsedMs - late.durationMs], [false, 45000]);
 });
-test('musique : suit le minuteur le plus proche de la fin', () => {
+test('musique : calme et régulière, même à la fin', () => {
   const a = cd.createTimer({ childId: 'c1', taskId: 't1', date: TUESDAY, minutes: 10, now: T0 });
   const b = cd.createTimer({ childId: 'c2', taskId: 't2', date: TUESDAY, minutes: 1, now: T0 });
   eq(cd.musicMood([a], T0).level, 0);
-  eq(cd.musicMood([a, b], T0 + 55000).level, 3, 'dernières secondes de b');
+  eq(cd.musicMood([a, b], T0 + 55000).level, 0, 'pas d’emballement dans les dernières secondes');
   eq(cd.musicMood([cd.pauseTimer(a, T0)], T0 + 1000), null, 'rien quand tout est en pause');
-  eq(cd.musicMood([b], T0 + 61000), null, 'rien après la sonnerie');
-  ok(cd.musicMood([a], T0 + 500000).bpm > cd.musicMood([a], T0).bpm, 'le tempo accélère');
+  eq(cd.musicMood([b], T0 + 61000), null, 'rien après la fin');
+  eq(cd.musicMood([a], T0 + 500000).bpm, cd.musicMood([a], T0).bpm, 'le tempo ne change pas');
 });
 
 // --- Code parent ------------------------------------------------------------------------------------
@@ -349,23 +360,36 @@ if (globalThis.crypto?.subtle) {
   });
 }
 
-// --- Comportement et équipe ------------------------------------------------------------------------------
-test('comportement : +5, corrigé en +2, puis effacé', () => {
+// --- Carte d'équipe et équipe ------------------------------------------------------------------------------
+test('carte d’équipe : +5 dans la cagnotte commune, une par soirée, rien sur les cagnottes des enfants', () => {
   let s = fixture();
-  let r = d.applyBehavior(s, { familyId: 'f', childId: 'c1', date: TUESDAY, level: 'super' });
+  let r = d.applyTeamCard(s, { familyId: 'f', date: TUESDAY, level: 'top' });
   s = { ...s, ledger: r.ledger };
-  eq([d.balance('c1', s), r.delta, d.behaviorLevel(d.findBehavior(s.ledger, 'c1', TUESDAY))], [5, 5, 'super']);
-  r = d.applyBehavior(s, { familyId: 'f', childId: 'c1', date: TUESDAY, level: 'bien' });
+  eq([d.potBalance(s), d.balance('c1', s), d.balance('c2', s), r.amount, d.teamCardLevel(d.findTeamCard(s.ledger, TUESDAY))], [5, 0, 0, 5, 'top']);
+  r = d.applyTeamCard(s, { familyId: 'f', date: TUESDAY, level: 'demain' });
   s = { ...s, ledger: r.ledger };
-  eq([d.balance('c1', s), s.ledger.length], [2, 1], 'une seule note par soirée');
-  r = d.applyBehavior(s, { familyId: 'f', childId: 'c1', date: TUESDAY, level: null });
-  eq(d.balance('c1', { ...s, ledger: r.ledger }), 0);
+  eq([d.potBalance(s), s.ledger.length, d.teamCardLevel(d.findTeamCard(s.ledger, TUESDAY))], [0, 1, 'demain'], '« On fera mieux demain » ne retire rien');
+  r = d.applyTeamCard(s, { familyId: 'f', date: TUESDAY, level: null });
+  eq(r.ledger.length, 0);
 });
-test('défi d’équipe : 80 % de vert sur la semaine, cadeau pour les deux une seule fois', () => {
-  // Semaine du lundi 19 : Léa a 15 tâches (t1, t2 chaque soir + t3 le lundi), Sacha 7 (t2) -> objectif 18 verts
+test('défi d’équipe : 🌟 et 👍 comptent, ✋ non, ⏸️ et les soirs non notés sortent du total', () => {
+  // Mardi : Léa t1 🌟, t2 ✋ ; Sacha t2 ⏸️. Lundi passé sans aucune note pour personne : il ne compte pas.
+  const { state } = rateAll(fixture(), [['c1', 't1', TUESDAY, 'green'], ['c1', 't2', TUESDAY, 'red'], ['c2', 't2', TUESDAY, 'pause']]);
+  const w = d.teamWeek(state, TUESDAY);
+  // Léa : 2 tâches × 6 soirs (mardi -> dimanche) = 12 ; Sacha : 6 soirs - 1 « pas ce soir » = 5
+  eq([w.total, w.done], [17, 1]);
+  const thumbs = rateAll(state, [['c1', 't2', TUESDAY, 'orange']]);
+  eq(d.teamWeek(thumbs.state, TUESDAY).done, 2, '👍 compte');
+  // Si un seul enfant a été noté un soir, l'autre compte quand même (tâches non faites)
+  const oneKid = rateAll(fixture(), [['c1', 't1', MONDAY, 'green']]);
+  eq(d.teamWeek(oneKid.state, TUESDAY).total, 22);
+});
+test('défi d’équipe : 80 % de tâches faites sur la semaine, cadeau pour les deux une seule fois', () => {
+  // Semaine du lundi 19 vue le mardi, sans note le lundi : le lundi ne compte pas.
+  // Léa a 12 tâches (t1, t2 du mardi au dimanche), Sacha 6 (t2) -> objectif 15
   let s = fixture();
   const w0 = d.teamWeek(s, TUESDAY);
-  eq([w0.start, w0.total, w0.goal, w0.done], [MONDAY, 22, 18, false]);
+  eq([w0.start, w0.total, w0.goal, w0.reached], [MONDAY, 18, 15, false]);
   const days = Array.from({ length: 7 }, (_, i) => addDays(MONDAY, i));
   const list = [];
   for (const day of days) list.push(['c1', 't1', day, 'green'], ['c1', 't2', day, 'green']);
@@ -383,9 +407,10 @@ test('défi d’équipe : 80 % de vert sur la semaine, cadeau pour les deux une 
   const again = d.applyRating(s, { familyId: 'f', childId: 'c2', taskId: 't2', date: addDays(MONDAY, 5), color: 'green' });
   eq(again.result.team, null, 'pas deux fois la même semaine');
 });
-test('trésor de la fratrie : tous les verts comptent, depuis le début choisi', () => {
+test('trésor de la fratrie : toutes les tâches faites comptent (🌟 et 👍), depuis le début choisi', () => {
   const { state } = rateAll(fixture(), [['c1', 't1', MONDAY, 'green'], ['c2', 't2', TUESDAY, 'green'], ['c1', 't2', TUESDAY, 'red']]);
   eq(d.treasureProgress(state).count, 2);
+  eq(d.treasureProgress(rateAll(state, [['c1', 't2', MONDAY, 'orange'], ['c1', 't3', MONDAY, 'pause']]).state).count, 3, '👍 compte, ⏸️ non');
   const later = { ...state, settings: d.mergeSettings({ treasure: { goal: 2, start: TUESDAY } }) };
   eq([d.treasureProgress(later).count, d.treasureProgress(later).reached], [1, false]);
 });

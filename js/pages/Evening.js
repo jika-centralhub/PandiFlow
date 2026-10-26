@@ -1,26 +1,28 @@
 // Écran de la routine (matin ou soir) : celui qui est projeté sur la télé.
 // Chaque enfant a sa colonne avec un carrousel de ses tâches, dans l'ordre de la routine.
+// La télé ne compare pas les enfants : une tâche notée devient « faite » (dorée), sans couleur ni chiffre ;
+// la note de coopération (🌟 👍 ✋ ⏸️) se voit dans le coin de l'enfant et dans l'historique des parents.
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js';
 import { useStore, setPrefs, getState } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import * as timers from '../lib/timers.js';
 import { timerKey } from '../lib/countdown.js';
-import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, BEHAVIOR, findBehavior, behaviorLevel } from '../domain.js';
+import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, TEAM_CARD, findTeamCard, teamCardLevel } from '../domain.js';
 import { routineDate, currentRoutine, addDays, formatLong } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { Modal } from '../components/ui.js';
-import { Coin } from '../components/Coin.js';
+import { Coin, Pandi } from '../components/Coin.js';
 import { Pandi3D, has3D } from '../components/Pandi3D.js';
-import { pandiFor } from '../mascot/tasks.js';
+import { pandiFor, storyIndex } from '../mascot/tasks.js';
 import { showOverlay } from '../components/Overlays.js';
 import { TimerRing, TimerPicker, TimerStage, TimerResult, timerView, useClock } from '../components/Timer.js';
 import { DepartureBar } from '../components/Departure.js';
 import { CalmCorner } from '../components/CalmCorner.js';
 import { TeamPill, TeamSheet } from '../components/Team.js';
-import { flyCoins, burst, floatText, replay } from '../anim/fx.js';
-import { sfx } from '../lib/sounds.js';
+import { flyCoins, burst, replay } from '../anim/fx.js';
+import { sfx, setSoftSound } from '../lib/sounds.js';
 import { navigate } from '../router.js';
-import { keepScreenOn, toggleFullscreen, isFullscreen } from '../lib/device.js';
+import { keepScreenOn, releaseScreen, toggleFullscreen, isFullscreen } from '../lib/device.js';
 
 // Matin ou soir : la routine change toute seule (à 4 h et à 13 h), on n'affiche que celle du moment
 export function TopBar({ onCalm, chest = null }) {
@@ -40,26 +42,30 @@ export function TopBar({ onCalm, chest = null }) {
   </header>`;
 }
 
+// Ce que la télé garde d'une note : « fait » (doré) ou « pas ce soir », jamais la couleur
+const doneClass = (r) => (!r ? '' : r.color === 'pause' ? 'pause' : 'done');
+
 // Une carte du carrousel. d = écart avec la carte du centre (0 = au centre, -1 à gauche, 1 à droite…)
 // Sur la carte du milieu, Pandi fait la tâche avec l'enfant (ou réagit à la note)
-function CardPandi({ task, rating, view, color, active }) {
+function CardPandi({ task, rating, view, color, active, night }) {
   const prev = useRef(rating);
   const [voice, setVoice] = useState(false);
   useEffect(() => {
     if (rating && rating !== prev.current) setVoice(true);
     prev.current = rating;
   }, [rating]);
-  const { act, ctx } = pandiFor(task, { rating, timer: view });
+  const { act, ctx } = pandiFor(task, { rating, timer: view, night });
   return html`<div class="cr-pandi"><${Pandi3D} act=${act} ctx=${{ ...ctx, color }} framing="auto" fps=${30} sound=${voice} active=${active} brushColor=${color} /></div>`;
 }
 
-function TaskCard({ task, index, total, d, rating, timer, canTime, cardRef, onClick, onTimer, color, pandiActive }) {
+function TaskCard({ task, index, total, d, rating, timer, canTime, cardRef, onClick, onTimer, color, pandiActive, night }) {
   const ad = Math.abs(d);
   const withPandi = d === 0 && has3D();
   const now = useClock(Boolean(timer));
   const v = timer ? timerView(timer, now) : null;
-  const cls = ['cr-card', rating?.color || '', d === 0 ? 'center' : '', v ? `timing t-${v.look}` : '', ad > 2 ? 'far' : ''].filter(Boolean).join(' ');
-  const status = rating ? ` : ${COLOR_META[rating.color].label}` : v ? ` : minuteur ${v.clock}` : '';
+  const over = v?.phase === 'over';
+  const cls = ['cr-card', doneClass(rating), d === 0 ? 'center' : '', v ? `timing t-${v.look}` : '', ad > 2 ? 'far' : ''].filter(Boolean).join(' ');
+  const status = rating ? (rating.color === 'pause' ? ' : pas ce soir' : ' : fait') : v ? ` : minuteur ${v.clock}` : '';
   return html`<div
     class=${cls}
     role="button"
@@ -74,63 +80,45 @@ function TaskCard({ task, index, total, d, rating, timer, canTime, cardRef, onCl
     <div class=${`cr-emoji-wrap ${withPandi ? 'has-pandi' : ''}`}>
       ${v && html`<${TimerRing} progress=${v.progress} />`}
       ${withPandi
-        ? html`<${CardPandi} task=${task} rating=${rating?.color} view=${v} color=${color} active=${pandiActive} />
-          <span class="cr-badge">${v?.phase === 'over' ? '⏰' : task.emoji}</span>`
-        : html`<span class="cr-emoji">${v?.phase === 'over' ? '⏰' : task.emoji}</span>`}
+        ? html`<${CardPandi} task=${task} rating=${rating?.color} view=${v} color=${color} active=${pandiActive} night=${night} />
+          <span class="cr-badge">${over ? '🔔' : task.emoji}</span>`
+        : html`<span class="cr-emoji">${over ? '🔔' : task.emoji}</span>`}
     </div>
     <div class="cr-title">${task.title}</div>
     ${v
-      ? html`<div class="cr-clock" key=${v.phase === 'final' ? v.second : 'c'}>${v.look === 'paused' ? '⏸ ' : ''}${v.clock}</div>`
+      ? html`<div class="cr-clock">${v.look === 'paused' ? '⏸ ' : ''}${over ? 'On finit 🙂' : v.clock}</div>`
       : rating
-        ? html`<div class="cr-status">${COLOR_META[rating.color].label}</div>`
+        ? html`<div class="cr-status">${rating.color === 'pause' ? 'Pas ce soir' : 'Fait ✓'}</div>`
         : d === 0 && html`<div class="cr-hint">Touche la carte pour noter</div>`}
     ${canTime && !rating && !timer && d === 0 && html`<button class="cr-timer-btn" onClick=${(e) => { e.stopPropagation(); onTimer(); }}>⏱️ Minuteur</button>`}
-    ${rating && html`<span class="tile-badge" key=${rating.color}>${COLOR_META[rating.color].face}</span>`}
+    ${rating && html`<span class="tile-badge" key=${doneClass(rating)}>${rating.color === 'pause' ? '⏸️' : '✓'}</span>`}
   </div>`;
 }
 
-// Dernière carte de la soirée : le comportement (😇 +5, 🙂 +2, 😕 0)
-const BEHAVIOR_CARD = '__comportement';
-const BEHAVIOR_CLASS = { super: 'gold', bien: 'green', non: 'red' };
+// Dernière carte de la soirée : l'enfant touche « Bonne nuit Pandi » quand toutes ses tâches sont notées
+const NIGHT_CARD = '__bonnenuit';
 
-function BehaviorCard({ index, total, d, level, points, cardRef, onClick }) {
+function NightCard({ child, index, total, d, ready, asleep, cardRef, onClick, pandiActive }) {
   const ad = Math.abs(d);
-  const cls = ['cr-card', 'behavior', level ? BEHAVIOR_CLASS[level] : '', d === 0 ? 'center' : '', ad > 2 ? 'far' : ''].filter(Boolean).join(' ');
-  return html`<div class=${cls} role="button" tabIndex=${d === 0 ? 0 : -1} aria-label=${`Comportement${level ? ` : ${BEHAVIOR[level].label}` : ''}`}
+  const withPandi = d === 0 && has3D();
+  const cls = ['cr-card', 'night', ready ? '' : 'locked', asleep ? 'asleep' : '', d === 0 ? 'center' : '', ad > 2 ? 'far' : ''].filter(Boolean).join(' ');
+  return html`<div class=${cls} role="button" tabIndex=${d === 0 ? 0 : -1} aria-label=${asleep ? `Pandi dort. Bonne nuit ${child.name} !` : 'Bonne nuit Pandi'}
     style=${{ '--d': d, '--ad': Math.min(ad, 3), zIndex: 10 - ad }} ref=${cardRef} onClick=${onClick}
     onKeyDown=${(e) => (e.key === 'Enter' || e.key === ' ') && onClick(e)}>
     <span class="cr-step">${index + 1} / ${total}</span>
-    <div class="cr-emoji-wrap"><span class="cr-emoji">${level ? BEHAVIOR[level].face : '😇'}</span></div>
-    <div class="cr-title">Comportement</div>
-    ${level
-      ? html`<div class="cr-status">${BEHAVIOR[level].label}${points ? ` · +${points}` : ''}</div>`
-      : d === 0 && html`<div class="cr-hint">Comment s'est passée la soirée ?</div>`}
-    ${level && html`<span class="tile-badge" key=${level}>${BEHAVIOR[level].face}</span>`}
-  </div>`;
-}
-
-function BehaviorSheet({ child, current, settings, onPick, onClose }) {
-  const pts = settings.behaviorPoints;
-  const choices = [['super', 'gold', pts.super], ['bien', 'green', pts.bien], ['non', 'red', 0]];
-  return html`<${Modal} onClose=${onClose} class="rate-sheet" style=${{ '--kid': child.color }}>
-    <div class="rate-avatar"><${Avatar} look=${child.look} equipped=${child.equipped} expr="happy" mode="full" seed=${child.id} /></div>
-    <div>
-      <div class="rate-title"><span class="big-emoji">😇</span> Comportement</div>
-      <p class="rate-sub">Comment s'est passée la soirée de ${child.name} ?</p>
-      <div class="rate-choices">
-        ${choices.map(([level, cls, p]) => html`<button key=${level} class=${`rate-choice ${cls} ${current === level ? 'current' : ''}`} onClick=${() => onPick(level)}>
-          <span class="face">${BEHAVIOR[level].face}</span>${BEHAVIOR[level].label}
-          <span class="pts">${p > 0 ? `+${p} pandi` : 'On fera mieux demain'}</span>
-        </button>`)}
-      </div>
-      ${current && html`<button class="rate-clear" onClick=${() => onPick(null)}>Effacer</button>`}
+    <div class=${`cr-emoji-wrap ${withPandi ? 'has-pandi' : ''}`}>
+      ${withPandi
+        ? html`<div class="cr-pandi"><${Pandi3D} act="endormi" framing="auto" fps=${20} active=${pandiActive} brushColor=${child.color} /></div><span class="cr-badge">🌙</span>`
+        : html`<span class="cr-emoji">${asleep ? '😴' : '🌙'}</span>`}
     </div>
-  <//>`;
+    <div class="cr-title">${asleep ? `Bonne nuit ${child.name} !` : 'Bonne nuit Pandi'}</div>
+    ${d === 0 && html`<div class="cr-hint">${asleep ? 'Pandi dort… chut !' : ready ? 'Touche pour dire bonne nuit' : 'Après toutes les tâches'}</div>`}
+  </div>`;
 }
 
 // Le carrousel d'un enfant : la tâche du moment au centre, les voisines inclinées sur les côtés.
 // On balaie, on touche une carte voisine, une flèche ou une pastille pour se déplacer.
-function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFor, cards, onOpen, onTimer, behavior, onBehavior, paused }) {
+function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFor, cards, onOpen, onTimer, night, onNight, paused, doux }) {
   const s = useStore();
   const start = useRef(null);
   const swiped = useRef(false);
@@ -143,7 +131,7 @@ function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFo
       dots.current.scrollTo({ left: dot.offsetLeft - dots.current.clientWidth / 2 + dot.offsetWidth / 2, behavior: 'smooth' });
     }
   }, [focus, list.length]);
-  const ids = [...list.map((t) => t.id), ...(behavior ? [BEHAVIOR_CARD] : [])];
+  const ids = [...list.map((t) => t.id), ...(night ? [NIGHT_CARD] : [])];
   const total = ids.length;
   const go = (i) => {
     const j = Math.max(0, Math.min(total - 1, i));
@@ -181,6 +169,7 @@ function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFo
           canTime=${canTime}
           color=${child.color}
           pandiActive=${!paused}
+          night=${doux}
           cardRef=${(n) => (cards.current[key] = n)}
           onTimer=${() => onTimer(task)}
           onClick=${() => {
@@ -190,18 +179,20 @@ function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFo
           }}
         />`;
       })}
-      ${behavior && html`<${BehaviorCard}
-        key=${BEHAVIOR_CARD}
+      ${night && html`<${NightCard}
+        key=${NIGHT_CARD}
+        child=${child}
         index=${list.length}
         total=${total}
         d=${list.length - focus}
-        level=${behavior.level}
-        points=${behavior.points}
-        cardRef=${(n) => (cards.current[`${child.id}:${BEHAVIOR_CARD}`] = n)}
+        ready=${night.ready}
+        asleep=${night.asleep}
+        pandiActive=${!paused}
+        cardRef=${(n) => (cards.current[`${child.id}:${NIGHT_CARD}`] = n)}
         onClick=${() => {
           if (swiped.current) return;
           if (list.length !== focus) return go(list.length);
-          onBehavior();
+          onNight();
         }}
       />`}
       <button class="cr-arrow prev" aria-label="Tâche précédente" disabled=${focus <= 0} onClick=${() => go(focus - 1)}>‹</button>
@@ -212,40 +203,43 @@ function Carousel({ child, list, routine, date, focus, onFocus, canTime, timerFo
         const r = findRating(s.ratings, child.id, task.id, date);
         const t = timerFor(child.id, task.id);
         return html`<button key=${task.id} role="tab" aria-selected=${i === focus} aria-label=${task.title} style=${{ '--i': i }}
-          class=${`cr-dot ${r?.color || ''} ${i === focus ? 'on' : ''} ${t ? 'timing' : ''}`} onClick=${() => go(i)}>
+          class=${`cr-dot ${doneClass(r)} ${i === focus ? 'on' : ''} ${t ? 'timing' : ''}`} onClick=${() => go(i)}>
           <span class="cr-dot-ico">${task.emoji}</span>${(r || t) && html`<i class="cr-dot-spark" />`}
         </button>`;
       })}
-      ${behavior && html`<button key=${BEHAVIOR_CARD} role="tab" aria-selected=${focus === list.length} aria-label="Comportement" style=${{ '--i': list.length }}
-        class=${`cr-dot ${behavior.level ? BEHAVIOR_CLASS[behavior.level] : ''} ${focus === list.length ? 'on' : ''}`} onClick=${() => go(list.length)}>
-        <span class="cr-dot-ico">${behavior.level ? BEHAVIOR[behavior.level].face : '😇'}</span>${behavior.level && html`<i class="cr-dot-spark" />`}
+      ${night && html`<button key=${NIGHT_CARD} role="tab" aria-selected=${focus === list.length} aria-label="Bonne nuit Pandi" style=${{ '--i': list.length }}
+        class=${`cr-dot ${night.asleep ? 'gold' : ''} ${focus === list.length ? 'on' : ''}`} onClick=${() => go(list.length)}>
+        <span class="cr-dot-ico">🌙</span>${night.asleep && html`<i class="cr-dot-spark" />`}
       </button>`}
     </div>
   </div>`;
 }
 
-function RatingSheet({ child, task, current, settings, timerResult, onPick, onClose }) {
+// La feuille de notation (elle passe sur la télé) : la coopération, sans prix
+const RATE_ORDER = ['green', 'orange', 'red', 'pause'];
+const PREVIEW = { green: 'joy', orange: 'encourage', red: 'encourage', pause: 'happy' };
+
+function RatingSheet({ child, task, current, timerResult, onPick, onClose }) {
   const [expr, setExpr] = useState('happy');
-  const preview = { green: 'joy', orange: 'encourage', red: 'focus' };
   return html`<${Modal} onClose=${onClose} class="rate-sheet" style=${{ '--kid': child.color }}>
     <div class="rate-avatar">
       <${Avatar} look=${child.look} equipped=${child.equipped} expr=${expr} mode="full" seed=${child.id} pose=${expr === 'joy' ? 'cheer' : 'idle'} />
     </div>
     <div>
       <div class="rate-title"><span class="big-emoji">${task.emoji}</span> ${task.title}</div>
-      <p class="rate-sub">Comment ça s'est passé, ${child.name} ?</p>
+      <p class="rate-sub">Est-ce que ${child.name} a écouté ?</p>
       <${TimerResult} result=${timerResult} />
-      <div class="rate-choices">
-        ${['green', 'orange', 'red'].map((c) => html`<button
+      <div class="rate-choices four">
+        ${RATE_ORDER.map((c) => html`<button
           key=${c}
           class=${`rate-choice ${c} ${current === c ? 'current' : ''}`}
-          onPointerEnter=${() => setExpr(preview[c])}
+          onPointerEnter=${() => setExpr(PREVIEW[c])}
           onPointerLeave=${() => setExpr('happy')}
           onClick=${() => onPick(c)}
         >
           <span class="face">${COLOR_META[c].face}</span>
           ${COLOR_META[c].label}
-          <span class="pts">${pointsFor(c, settings) > 0 ? `+${pointsFor(c, settings)} pandi` : 'On fera mieux demain'}</span>
+          <span class="sub">${COLOR_META[c].sub}</span>
         </button>`)}
       </div>
       ${current && html`<button class="rate-clear" onClick=${() => onPick(null)}>Effacer la note</button>`}
@@ -253,10 +247,57 @@ function RatingSheet({ child, task, current, settings, timerResult, onPick, onCl
   <//>`;
 }
 
+// Carte d'équipe de fin de soirée : la même pour toute la fratrie, elle ne peut qu'ajouter
+function TeamCardBar({ level, ready, onOpen }) {
+  if (level) {
+    return html`<button class=${`teamcard-bar ${level}`} onClick=${onOpen} aria-label=${`Carte d'équipe : ${TEAM_CARD[level].label}`}>
+      <span class="tcb-ico">${TEAM_CARD[level].face}</span>${TEAM_CARD[level].label}
+    </button>`;
+  }
+  if (!ready) return null;
+  return html`<button class="teamcard-bar ask" onClick=${onOpen}><span class="tcb-ico">🤝</span>Carte d'équipe : comment s'est passée la soirée ensemble ?</button>`;
+}
+
+function TeamCardSheet({ kids, current, onPick, onClose }) {
+  return html`<${Modal} onClose=${onClose} class="rate-sheet teamcard-sheet">
+    <div>
+      <div class="rate-title"><span class="big-emoji">🤝</span> La soirée de l'équipe</div>
+      <p class="rate-sub">${kids.map((k) => k.name).join(', ').replace(/, ([^,]*)$/, ' et $1')}, ensemble ce soir :</p>
+      <div class="rate-choices two">
+        <button class=${`rate-choice top ${current === 'top' ? 'current' : ''}`} onClick=${() => onPick('top')}>
+          <span class="face">${TEAM_CARD.top.face}</span>${TEAM_CARD.top.label}<span class="sub">Un trésor pour la cagnotte commune</span>
+        </button>
+        <button class=${`rate-choice demain ${current === 'demain' ? 'current' : ''}`} onClick=${() => onPick('demain')}>
+          <span class="face">${TEAM_CARD.demain.face}</span>${TEAM_CARD.demain.label}<span class="sub">Rien de perdu, demain on réessaie</span>
+        </button>
+      </div>
+      ${current && html`<button class="rate-clear" onClick=${() => onPick(null)}>Effacer</button>`}
+    </div>
+  <//>`;
+}
+
+// Tout le monde a dit bonne nuit : la télé s'endort avec Pandi. On touche l'écran pour la réveiller.
+function NightScreen({ kids, onWake }) {
+  useEffect(() => {
+    releaseScreen();
+    return () => keepScreenOn();
+  }, []);
+  const names = kids.map((k) => k.name).join(', ').replace(/, ([^,]*)$/, ' et $1');
+  return html`<div class="night-screen" role="dialog" aria-label="Bonne nuit" onClick=${onWake}>
+    <div class="ns-stars" aria-hidden="true">${Array.from({ length: 28 }, (_, i) => html`<i key=${i} style=${{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 70}%`, animationDelay: `${(i % 7) * 0.6}s` }} />`)}</div>
+    <div class="ns-pandi">${has3D() ? html`<${Pandi3D} act="endormi" framing="auto" base="full" fps=${12} />` : html`<${Pandi} mood="happy" wave=${false} />`}</div>
+    <div class="ns-text">Bonne nuit ${names} 🌙</div>
+    <div class="ns-hint">Touche l'écran pour réveiller PandiFlow</div>
+  </div>`;
+}
+
 // Routine choisie à la main : on la garde en revenant de l'espace parent ou du coin d'un enfant,
 // jusqu'au prochain changement automatique (13 h ou 4 h).
 let manualRoutine = null; // { routine, auto }
 const startRoutine = () => (manualRoutine && manualRoutine.auto === currentRoutine() ? manualRoutine.routine : currentRoutine());
+
+// Les enfants qui ont dit bonne nuit, par soirée (gardé si on passe par l'espace parent)
+const asleepByDate = {};
 
 // Prochaine tâche sans note après celle du centre (on boucle au début si besoin)
 function nextOpen(list, from, isRated) {
@@ -277,7 +318,9 @@ export function Evening() {
   const [stageKey, setStageKey] = useState(null);
   const [calm, setCalm] = useState(false);
   const [team, setTeam] = useState(false);
-  const [behaviorFor, setBehaviorFor] = useState(null);
+  const [teamCardOpen, setTeamCardOpen] = useState(false);
+  const [asleep, setAsleep] = useState(() => asleepByDate[date] || []);
+  const [nightScreen, setNightScreen] = useState(false);
   const [moods, setMoods] = useState({});
   const cards = useRef({});
   const heads = useRef({});
@@ -317,12 +360,36 @@ export function Evening() {
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => setFocus({}), [date]);
+  useEffect(() => {
+    setFocus({});
+    setAsleep(asleepByDate[date] || []);
+    setNightScreen(false);
+  }, [date]);
 
   const kids = activeChildren(s.children);
   const today = routineDate(routine);
   const canTime = date === today;
   const timerFor = (childId, taskId) => s.timers.find((t) => t.key === timerKey(childId, taskId) && t.date === date && !t.finished) || null;
+  const evening = routine === 'soir';
+  const progress = Object.fromEntries(kids.map((k) => [k.id, routineProgress(k.id, date, s, routine)]));
+  const withTasks = kids.filter((k) => progress[k.id].total > 0);
+  const allDone = withTasks.length > 0 && withTasks.every((k) => progress[k.id].complete);
+
+  // Soirée douce : dès qu'un enfant arrive à l'histoire du soir, tout l'écran se calme
+  // (ciel plus sombre, son plus bas, plus de fanfare ni de feu d'artifice)
+  const isRated = (child, t) => Boolean(findRating(s.ratings, child.id, t.id, date));
+  const doux = evening && withTasks.some((k) => {
+    const list = tasksForChild(k.id, date, s, routine);
+    return list.slice(0, storyIndex(list)).every((t) => isRated(k, t));
+  });
+  useEffect(() => {
+    document.getElementById('sky')?.classList.toggle('doux', doux);
+    setSoftSound(doux);
+    return () => {
+      document.getElementById('sky')?.classList.remove('doux');
+      setSoftSound(false);
+    };
+  }, [doux]);
 
   // Une tâche notée (ici ou par l'autre parent) n'a plus besoin de son minuteur
   useEffect(() => {
@@ -334,42 +401,52 @@ export function Evening() {
     if (stageKey && !stageTimer) setStageKey(null);
   }, [stageKey, stageTimer]);
 
-  function focusIndex(child, list, withBehavior) {
-    if (withBehavior && focus[child.id] === BEHAVIOR_CARD) return list.length;
+  // Tous les enfants ont dit bonne nuit : la télé s'endort quelques secondes après
+  useEffect(() => {
+    if (!evening || !withTasks.length || !withTasks.every((k) => asleep.includes(k.id))) return;
+    const t = setTimeout(() => setNightScreen(true), 3500);
+    return () => clearTimeout(t);
+  }, [asleep.join(','), evening, withTasks.length]);
+
+  function focusIndex(child, list, withNight) {
+    if (withNight && focus[child.id] === NIGHT_CARD) return list.length;
     const i = list.findIndex((t) => t.id === focus[child.id]);
     if (i >= 0) return i;
     const first = list.findIndex((t) => !findRating(s.ratings, child.id, t.id, date));
     if (first >= 0) return first;
-    if (withBehavior) return list.length;
+    if (withNight) return list.length;
     return Math.max(0, list.length - 1);
   }
 
-  async function pickBehavior(child, level) {
-    setBehaviorFor(null);
-    const res = actions.setBehavior(child.id, date, level);
-    const card = cards.current[`${child.id}:${BEHAVIOR_CARD}`];
-    const head = heads.current[child.id];
+  function sayGoodNight(child) {
+    if (!progress[child.id]?.complete) {
+      sfx.tap();
+      replay(cards.current[`${child.id}:${NIGHT_CARD}`], 'wobble', 600);
+      return;
+    }
+    if (asleep.includes(child.id)) return;
+    sfx.bonneNuit();
+    burst(cards.current[`${child.id}:${NIGHT_CARD}`], { count: 8, chars: ['⭐', '✨', '🌙'], spread: 100, duration: 1.4 });
+    const next = [...asleep, child.id];
+    asleepByDate[date] = next;
+    setAsleep(next);
+  }
+
+  function wake() {
+    sfx.tap();
+    asleepByDate[date] = [];
+    setAsleep([]);
+    setNightScreen(false);
+  }
+
+  async function pickTeamCard(level) {
+    setTeamCardOpen(false);
+    const before = teamCardLevel(findTeamCard(s.ledger, date));
+    actions.setTeamCard(date, level);
     if (!level) return sfx.pop();
-    if (level === 'super') {
-      sfx.happy();
-      replay(card, 'pop', 700);
-      burst(card, { count: 16, chars: ['😇', '⭐', '✨'] });
-      replay(head?.querySelector('.avatar'), 'av-jump', 900);
-      setMood(child.id, 'joy', 2800);
-    } else if (level === 'bien') {
-      sfx.green();
-      replay(card, 'pop', 700);
-      burst(card, { count: 8, chars: ['🙂', '✨'] });
-      setMood(child.id, 'happy', 2400);
-    } else {
-      sfx.red();
-      replay(card, 'deflate', 800);
-      setMood(child.id, 'focus', 2400);
-    }
-    if (res.delta > 0) {
-      floatText(card, `+${res.delta}`);
-      await flyCoins(card, head, Math.min(10, res.delta));
-    }
+    if (level === 'top' && before !== 'top') {
+      await showOverlay('team', { kind: 'teamcard', kids: kids.map((k) => k.id), soft: true });
+    } else sfx.pop();
   }
 
   function setMood(childId, expr, ms) {
@@ -406,24 +483,25 @@ export function Evening() {
     }
     const card = cards.current[`${child.id}:${task.id}`];
     const head = heads.current[child.id];
-    const points = pointsFor(color, s.settings);
+    const points = pointsFor(color, s.settings, child);
 
+    // Le positif se voit, le négatif se dit (par le parent, pas par l'écran)
     if (color === 'green') {
       sfx.green();
       replay(card, 'pop', 700);
-      burst(card, { count: 14 });
+      burst(card, { count: doux ? 6 : 14 });
       replay(head?.querySelector('.avatar'), 'av-jump', 900);
       setMood(child.id, 'joy', 2800);
     } else if (color === 'orange') {
       sfx.orange();
-      replay(card, 'wobble', 700);
-      burst(card, { count: 6, chars: ['✨', '💫'], spread: 90 });
-      replay(head?.querySelector('.avatar'), 'av-wobble', 900);
-      setMood(child.id, 'encourage', 2400);
+      replay(card, 'pop', 700);
+      burst(card, { count: 5, chars: ['👍', '✨'], spread: 90 });
+      setMood(child.id, 'happy', 2200);
+    } else if (color === 'red') {
+      sfx.pop();
+      setMood(child.id, 'encourage', 1800);
     } else {
-      sfx.red();
-      replay(card, 'deflate', 800);
-      setMood(child.id, 'focus', 2400);
+      sfx.pause();
     }
 
     // La carte suivante glisse au centre pendant que les pièces volent
@@ -433,21 +511,17 @@ export function Evening() {
       const from = list.findIndex((t) => t.id === task.id);
       const after = list.slice(from + 1).find((t) => !findRating(st.ratings, child.id, t.id, date));
       const next = nextOpen(list, from, (t) => findRating(st.ratings, child.id, t.id, date));
-      const wantBehavior = routine === 'soir' && !findBehavior(st.ledger, child.id, date);
-      const target = after ? after.id : wantBehavior ? BEHAVIOR_CARD : next >= 0 ? list[next].id : null;
+      const target = after ? after.id : next >= 0 ? list[next].id : evening ? NIGHT_CARD : null;
       if (target) {
         sfx.slide();
         setFocus((f) => ({ ...f, [child.id]: target }));
       }
     }, 950);
 
-    if (points > 0 && res.delta > 0) {
-      floatText(card, `+${points}`);
-      await flyCoins(card, head, Math.min(points, res.delta));
-    }
+    if (points > 0 && res.delta > 0) await flyCoins(card, head, Math.min(points, res.delta));
 
     if (res.becameComplete) {
-      await showOverlay('celebrate', { childId: child.id, perfect: res.after.perfect, bonus: res.perfectGained ? s.settings.perfectBonus : 0, routine });
+      await showOverlay('celebrate', { childId: child.id, routine, soft: evening });
     }
     for (const c of res.unlocked) {
       await showOverlay('reveal', { childId: child.id, itemId: c.reward_item, challengeTitle: c.title });
@@ -455,10 +529,10 @@ export function Evening() {
     // Toute l'équipe a fini sa routine : « tape là ! »
     const st = getState();
     if (res.becameComplete && kids.length > 1 && kids.every((k) => routineProgress(k.id, date, st, routine).complete)) {
-      await showOverlay('team', { kind: 'highfive', kids: kids.map((k) => k.id) });
+      await showOverlay('team', { kind: 'highfive', kids: kids.map((k) => k.id), soft: evening });
     }
-    if (res.team) await showOverlay('team', { kind: 'week', kids: res.team.kids, itemId: res.team.item, bonus: res.team.bonus });
-    if (res.treasure) await showOverlay('team', { kind: 'treasure', kids: kids.map((k) => k.id), reward: res.treasure });
+    if (res.team) await showOverlay('team', { kind: 'week', kids: res.team.kids, itemId: res.team.item, soft: evening });
+    if (res.treasure) await showOverlay('team', { kind: 'treasure', kids: kids.map((k) => k.id), reward: res.treasure, soft: evening });
   }
 
   const openChild = open && kids.find((k) => k.id === open.childId);
@@ -472,21 +546,22 @@ export function Evening() {
     .filter((t) => t.key !== stageKey && !t.finished && t.date === date)
     .map((t) => ({ timer: t, child: kids.find((k) => k.id === t.childId), task: s.tasks.find((x) => x.id === t.taskId) }))
     .filter((o) => o.child && o.task);
+  const teamCard = evening && kids.length > 1 ? teamCardLevel(findTeamCard(s.ledger, date)) : null;
 
-  return html`<div class=${`evening routine-${routine} page-enter`}>
+  return html`<div class=${`evening routine-${routine} ${doux ? 'soir-doux' : ''} page-enter`}>
     <${TopBar} onCalm=${() => setCalm(true)} chest=${kids.length > 1 && html`<${TeamPill} onOpen=${() => setTeam(true)} />`} />
     ${date !== today && html`<div class="past-banner">Tu modifies ${routine === 'matin' ? 'le matin' : 'la soirée'} du ${formatLong(date)}</div>`}
     <div class="strip">
       ${routine === 'matin' && date === today && html`<${DepartureBar} date=${date} />`}
+      ${evening && kids.length > 1 && html`<${TeamCardBar} level=${teamCard} ready=${allDone} onOpen=${() => { sfx.tap(); setTeamCardOpen(true); }} />`}
     </div>
     <div class="columns" style=${{ '--n': Math.max(1, kids.length) }}>
       ${kids.length === 0 && html`<div class="empty-col">Ajoute un enfant dans l'espace parent ⚙️ pour commencer !</div>`}
       ${kids.map((child) => {
-        const prog = routineProgress(child.id, date, s, routine);
+        const prog = progress[child.id];
         const list = tasksForChild(child.id, date, s, routine);
-        const behaviorRow = routine === 'soir' && list.length ? findBehavior(s.ledger, child.id, date) : null;
-        const behavior = routine === 'soir' && list.length ? { level: behaviorLevel(behaviorRow), points: behaviorRow?.amount || 0 } : null;
-        return html`<section key=${child.id} class=${`kid-col ${prog.complete ? 'done' : ''}`} style=${{ '--kid': child.color }}>
+        const night = evening && list.length ? { ready: prog.complete, asleep: asleep.includes(child.id) } : null;
+        return html`<section key=${child.id} class=${`kid-col ${prog.complete ? 'done' : ''} ${night?.asleep ? 'asleep' : ''}`} style=${{ '--kid': child.color }}>
           <div class="kid-head">
             <button class="kid-avatar" ref=${(n) => (heads.current[child.id] = n)} onClick=${() => navigate(`enfant/${child.id}`)} aria-label=${`Le coin de ${child.name}`}>
               <${Avatar} look=${child.look} equipped=${child.equipped} expr=${moods[child.id] || 'happy'} mode="head" seed=${child.id} />
@@ -500,16 +575,17 @@ export function Evening() {
             list=${list}
             routine=${routine}
             date=${date}
-            focus=${focusIndex(child, list, Boolean(behavior))}
-            behavior=${behavior}
-            onBehavior=${() => { sfx.tap(); setBehaviorFor(child.id); }}
+            focus=${focusIndex(child, list, Boolean(night))}
+            night=${night}
+            onNight=${() => sayGoodNight(child)}
             onFocus=${(taskId) => setFocus((f) => ({ ...f, [child.id]: taskId }))}
             canTime=${canTime}
             timerFor=${timerFor}
             cards=${cards}
             onOpen=${(task) => openTask(child, task)}
             onTimer=${(task) => { sfx.tap(); setPicker({ childId: child.id, taskId: task.id }); }}
-            paused=${Boolean(stageTimer)}
+            paused=${Boolean(stageTimer) || nightScreen}
+            doux=${doux}
           />
         </section>`;
       })}
@@ -538,19 +614,13 @@ export function Evening() {
       child=${openChild}
       task=${openTaskObj}
       current=${openRating?.color}
-      settings=${s.settings}
       timerResult=${open.timerResult}
       onPick=${(c) => pick(openChild, openTaskObj, c)}
       onClose=${closeRating}
     />`}
     ${calm && html`<${CalmCorner} kids=${kids} onClose=${() => setCalm(false)} />`}
     ${team && html`<${TeamSheet} onClose=${() => setTeam(false)} />`}
-    ${behaviorFor && kids.some((k) => k.id === behaviorFor) && html`<${BehaviorSheet}
-      child=${kids.find((k) => k.id === behaviorFor)}
-      current=${behaviorLevel(findBehavior(s.ledger, behaviorFor, date))}
-      settings=${s.settings}
-      onPick=${(level) => pickBehavior(kids.find((k) => k.id === behaviorFor), level)}
-      onClose=${() => setBehaviorFor(null)}
-    />`}
+    ${teamCardOpen && html`<${TeamCardSheet} kids=${kids} current=${teamCard} onPick=${pickTeamCard} onClose=${() => setTeamCardOpen(false)} />`}
+    ${nightScreen && html`<${NightScreen} kids=${withTasks} onWake=${wake} />`}
   </div>`;
 }

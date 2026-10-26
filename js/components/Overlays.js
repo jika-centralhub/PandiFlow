@@ -5,7 +5,7 @@ import { getState, setState, useStore } from '../lib/store.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { getItem } from '../avatar/items.js';
 import { ItemThumb } from './ItemThumb.js';
-import { Coin, Pandi } from './Coin.js';
+import { Pandi } from './Coin.js';
 import { PandiCounter } from './ui.js';
 import { sfx } from '../lib/sounds.js';
 import { fireworks, coinRain, confettiBurst, flyCoins, dropCoins } from '../anim/fx.js';
@@ -92,8 +92,10 @@ function PandiMoment({ childId, amount, note, before, onClose }) {
 }
 
 // Les grands moments d'équipe : défi de la semaine, trésor, coup de main, cadeau, achat commun, « tape là »
+// (aucun chiffre pendant la routine : les pandi gagnés se voient ensuite dans le coin de chaque enfant)
 const TEAM_TEXT = {
-  week: (names, d) => ({ title: 'Défi d’équipe réussi !', sub: `Bravo ${names} ! ${d.bonus ? `+${d.bonus} pandi chacun` : ''}${d.item ? ` et ${d.item.name.toLowerCase()} pour tous` : ''}`, emoji: '🏆' }),
+  week: (names, d) => ({ title: 'Défi d’équipe réussi !', sub: `Bravo ${names} ! ${d.item ? `${d.item.name} pour tous 🎁` : 'Un cadeau pour tous 🎁'}`, emoji: '🏆' }),
+  teamcard: (names) => ({ title: 'La meilleure équipe !', sub: `Bravo ${names} : un trésor tombe dans la cagnotte commune 🏦`, emoji: '🏆' }),
   treasure: (names, d) => ({ title: 'Le trésor de la fratrie est ouvert !', sub: `Récompense pour ${names} : ${d.reward}`, emoji: '💎' }),
   help: (names, d, kids) => ({ title: 'Bravo pour l’entraide !', sub: `${kids[0]?.name} a aidé ${kids[1]?.name} : +${d.amount} pandi pour les deux`, emoji: '🙌' }),
   gift: (names, d, kids) => ({ title: `${kids[0]?.name} offre ${d.amount} pandi à ${kids[1]?.name} !`, sub: 'Quel beau cadeau 💝', emoji: '🎁' }),
@@ -101,7 +103,8 @@ const TEAM_TEXT = {
   highfive: (names) => ({ title: 'Toute l’équipe a fini !', sub: `Tape là, ${names} ! 🙌`, emoji: '🙌' }),
 };
 
-function TeamMoment({ kind, kids: ids = [], onClose, ...data }) {
+// soft : le soir (soirée douce), pas de fanfare, de feu d'artifice ni de pluie de pièces
+function TeamMoment({ kind, kids: ids = [], soft = false, onClose, ...data }) {
   const all = getState().children;
   const kids = ids.map((id) => all.find((c) => c.id === id)).filter(Boolean);
   const item = data.itemId ? getItem(data.itemId) : null;
@@ -110,12 +113,13 @@ function TeamMoment({ kind, kids: ids = [], onClose, ...data }) {
   const [canClose, setCanClose] = useState(false);
   const center = useRef(null);
   useEffect(() => {
-    if (kind === 'week' || kind === 'highfive') sfx.fanfare();
-    else if (kind === 'treasure' || kind === 'pot') sfx.chest();
+    if (soft) sfx.sparkle();
+    else if (kind === 'week' || kind === 'highfive') sfx.fanfare();
+    else if (kind === 'treasure' || kind === 'pot' || kind === 'teamcard') sfx.chest();
     else sfx.happy();
-    if (kind === 'week' || kind === 'treasure') fireworks(2600);
-    if (kind === 'week') setTimeout(() => coinRain(2000), 800);
-    setTimeout(() => confettiBurst(center.current), 400);
+    if (!soft && (kind === 'week' || kind === 'treasure')) fireworks(2600);
+    if (!soft && kind === 'week') setTimeout(() => coinRain(2000), 800);
+    if (!soft) setTimeout(() => confettiBurst(center.current), 400);
     const t1 = setTimeout(() => setCanClose(true), 1200);
     const t2 = setTimeout(onClose, 9000);
     return () => {
@@ -123,7 +127,7 @@ function TeamMoment({ kind, kids: ids = [], onClose, ...data }) {
       clearTimeout(t2);
     };
   }, []);
-  return html`<div class=${`team-moment tm-${kind}`} onClick=${() => canClose && onClose()}>
+  return html`<div class=${`team-moment tm-${kind} ${soft ? 'soft' : ''}`} onClick=${() => canClose && onClose()}>
     <div class="tm-stage">
       ${kids.map((k, i) => html`<div key=${k.id} class="tm-kid" style=${{ '--kid': k.color, '--i': i }}>
         <${Avatar} look=${k.look} equipped=${k.equipped} expr="joy" pose=${i % 2 ? 'cheer' : 'dance'} mode="full" seed=${k.id} class="overflow" />
@@ -142,13 +146,17 @@ function useChild(childId) {
   return getState().children.find((c) => c.id === childId);
 }
 
-function Celebration({ childId, perfect, bonus, routine = 'soir', onClose }) {
+// Fin de routine. Le soir (soft), c'est une fête douce avant le coucher : ni fanfare ni feu d'artifice.
+// (Plus de bonus « soirée parfaite » ni de chiffre à l'écran.)
+function Celebration({ childId, routine = 'soir', soft = false, onClose }) {
   const child = useChild(childId);
   const [canClose, setCanClose] = useState(false);
   useEffect(() => {
-    sfx.fanfare();
-    fireworks(2800);
-    if (perfect) setTimeout(() => coinRain(2400), 900);
+    if (soft) sfx.sparkle();
+    else {
+      sfx.fanfare();
+      fireworks(2800);
+    }
     const t1 = setTimeout(() => setCanClose(true), 1200);
     const t2 = setTimeout(onClose, 9000);
     return () => {
@@ -157,15 +165,14 @@ function Celebration({ childId, perfect, bonus, routine = 'soir', onClose }) {
     };
   }, []);
   if (!child) return null;
-  return html`<div class="celebrate" style=${{ '--kid': child.color }} onClick=${() => canClose && onClose()}>
+  return html`<div class=${`celebrate ${soft ? 'soft' : ''}`} style=${{ '--kid': child.color }} onClick=${() => canClose && onClose()}>
     <div class="stage">
       <div class="rays" />
-      <${Avatar} look=${child.look} equipped=${child.equipped} expr="joy" pose="dance" mode="full" seed=${child.id} class="overflow" />
+      <${Avatar} look=${child.look} equipped=${child.equipped} expr="joy" pose=${soft ? 'idle' : 'dance'} mode="full" seed=${child.id} class="overflow" />
     </div>
     <div class="text">
       <div class="title">Bravo ${child.name} !</div>
-      <div class="subtitle">${(ROUTINES[routine] || ROUTINES.soir).done}</div>
-      ${perfect && html`<div class="perfect-banner"><${Coin} /> ${(ROUTINES[routine] || ROUTINES.soir).perfect} ! +${bonus}</div>`}
+      <div class="subtitle">${soft ? 'Toute ta soirée est faite. Il est l’heure de dire bonne nuit à Pandi 🌙' : (ROUTINES[routine] || ROUTINES.soir).done}</div>
       <div class="tap-hint">Touche l'écran pour continuer</div>
     </div>
   </div>`;

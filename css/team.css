@@ -1,10 +1,24 @@
-/* ===== PandiFlow — comportement, espace équipe et moments d'équipe ===== */
+/* ===== PandiFlow — carte d'équipe, bonne nuit, espace équipe et moments d'équipe ===== */
 
-/* Carte « Comportement » (super = doré) */
-.cr-card.gold { background: linear-gradient(160deg, #fff3b0, var(--gold)); color: #6b4300; }
-.cr-card.gold .cr-emoji-wrap { background: rgba(255, 255, 255, .55); }
-.cr-card.behavior:not(.gold):not(.green):not(.red) { background: linear-gradient(160deg, #ffffff, #f1ecff); }
-.rate-choice.gold { background: linear-gradient(180deg, #fff2b0, var(--gold)); color: #6b4300; box-shadow: 0 calc(var(--u) * 1.4) 0 var(--gold-d); }
+/* Carte d'équipe de fin de soirée (la même pour toute la fratrie), sous la barre du haut */
+.teamcard-bar { flex: 1; display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 2.4); min-width: 0; padding: calc(var(--u) * 1.6) calc(var(--u) * 4);
+  border-radius: 999px; background: rgba(255, 255, 255, .14); box-shadow: inset 0 0 0 2px rgba(255, 210, 63, .55); color: #fff; font-weight: 700; font-size: calc(var(--u) * 4.2);
+  animation: fade-up .5s ease both; cursor: pointer; }
+.teamcard-bar .tcb-ico { font-size: calc(var(--u) * 6); }
+.teamcard-bar.ask { animation: fade-up .5s ease both, tcb-glow 2.4s ease-in-out .5s infinite alternate; }
+.teamcard-bar.top { background: linear-gradient(90deg, rgba(255, 210, 63, .35), rgba(255, 210, 63, .12)); }
+@keyframes tcb-glow { to { box-shadow: inset 0 0 0 2px rgba(255, 210, 63, .9), 0 0 calc(var(--u) * 4) rgba(255, 210, 63, .45); } }
+.rate-choice.top { background: linear-gradient(180deg, #ffe58f, #ffc21a); color: #5a3d00; box-shadow: 0 calc(var(--u) * 1.4) 0 #d49a00; }
+.rate-choice.demain { background: linear-gradient(180deg, #c9d4ff, #8b9cf0); box-shadow: 0 calc(var(--u) * 1.4) 0 #6070c8; }
+.rate-choices.two { grid-template-columns: repeat(2, 1fr); }
+
+/* Dernière carte du soir : « Bonne nuit Pandi » */
+.cr-card.night { background: linear-gradient(160deg, #3b3478, #1d1650); color: #fff; }
+.cr-card.night .cr-emoji-wrap { background: radial-gradient(circle at 40% 35%, #5a4fb0, #2a2266); }
+.cr-card.night .cr-hint { color: rgba(255, 255, 255, .75); }
+.cr-card.night.locked { opacity: .82; }
+.cr-card.night.asleep { background: linear-gradient(160deg, #241d58, #0f0b30); }
+.kid-col.asleep { filter: brightness(.7) saturate(.8); transition: filter 1.6s ease; }
 
 /* Bandeau sous la barre du haut : départ à l'école (matin) ; le coffre de l'équipe est au milieu de la barre du haut */
 .strip { display: flex; align-items: center; gap: calc(var(--u) * 2); margin: 0 calc(var(--u) * 3.5) calc(var(--u) * 2); }

@@ -63,22 +63,23 @@ export function TimerPicker({ child, task, last, onPick, onClose }) {
   <//>`;
 }
 
+// Minuteur calme : on encourage sans presser, et la fin est un rendez-vous, pas une alarme
 const BUBBLE = {
   calm: (name) => `C'est parti, ${name} !`,
   hurry: () => 'Ça avance bien !',
-  rush: () => 'Vite, vite, on accélère !',
-  final: () => 'Dernières secondes !',
-  over: () => 'Temps écoulé !',
+  rush: () => 'Encore un petit moment…',
+  final: () => 'On termine tranquillement',
+  over: () => "C'est le moment de finir 🙂",
   paused: () => 'Petite pause…',
-  won: () => 'Bravo, à temps ! 🎉',
+  won: () => 'Bravo, c’est fait ! 🎉',
 };
 
 const DECO = {
   calm: ['✨'],
-  hurry: ['💨', '✨'],
-  rush: ['💦', '💨', '💦'],
-  final: ['💦', '⏰', '💦', '❗'],
-  over: ['⏰', '❗', '⏰'],
+  hurry: ['✨'],
+  rush: ['✨', '🌙'],
+  final: ['✨', '🌙'],
+  over: ['🔔'],
   paused: ['💤', '💤'],
   won: ['⭐', '💖', '⭐', '✨'],
 };
@@ -96,7 +97,7 @@ export function TimerStage({ timer, child, task, others, onRate, onClose, onSwit
   const musicOn = s.prefs.timerMusic !== false;
 
   useEffect(() => {
-    if (v.phase === 'over' && prev.current !== 'over') burst(clock.current, { count: 12, chars: ['⏰', '❗', '💥'], spread: 220 });
+    if (v.phase === 'over' && prev.current !== 'over') burst(clock.current, { count: 6, chars: ['🔔', '✨'], spread: 160 });
     prev.current = v.phase;
   }, [v.phase]);
 
@@ -118,8 +119,8 @@ export function TimerStage({ timer, child, task, others, onRate, onClose, onSwit
     <div class="ts-clock" ref=${clock}>
       <${TimerRing} progress=${won ? 1 : v.progress} ticks=${true} />
       <div class="ts-center">
-        <span class="ts-emoji">${over && !won ? '⏰' : task.emoji}</span>
-        <span class="ts-digits" key=${v.phase === 'final' && !won ? v.second : 'd'}>${won ? '🎉' : v.clock}</span>
+        <span class="ts-emoji">${over && !won ? '🔔' : task.emoji}</span>
+        <span class="ts-digits">${won ? '🎉' : over ? '🙂' : v.clock}</span>
       </div>
     </div>
     <div class="ts-side">
@@ -158,12 +159,8 @@ export function TimerStage({ timer, child, task, others, onRate, onClose, onSwit
   </div>`;
 }
 
-// Petite phrase sous les choix de notation : combien de temps la tâche a pris
+// Petite phrase sous les choix de notation : combien de temps la tâche a pris, sans compter le retard
 export function TimerResult({ result }) {
   if (!result) return null;
-  const spent = cd.mmss(result.elapsedMs);
-  if (result.inTime) {
-    return html`<div class="rate-timer ok">⏱️ Fini en ${spent}${result.extended ? ', avec du temps en plus' : ` sur ${cd.mmss(result.plannedMs)}`} : à temps !</div>`;
-  }
-  return html`<div class="rate-timer late">⏰ Fini en ${spent} : ${cd.mmss(result.elapsedMs - result.durationMs)} de plus que prévu</div>`;
+  return html`<div class="rate-timer ok">⏱️ Fini en ${cd.mmss(result.elapsedMs)}${result.inTime ? ' : à temps !' : ''}</div>`;
 }

@@ -405,6 +405,31 @@ export const ACTS = {
     },
   },
 
+  // Fin de soirée : bonnet de nuit et oreiller, un grand bâillement… et il s'endort pour de bon
+  // (sans le réveil en sursaut de « dodo ») : il montre aux enfants que c'est l'heure de dormir
+  endormi: {
+    pose(t, P) {
+      P.hide.tete = 1;
+      P.hide.yeux = 1;
+      prop(P, 'bonnetNuit', { at: 'head' });
+      P.handR.set(0.2, 0.34, 0.52);
+      P.handL.set(-0.2, 0.34, 0.52);
+      P.poleR.set(1, -0.7, -0.2);
+      P.poleL.set(-1, -0.7, -0.2);
+      prop(P, 'oreiller', { at: 'torso', pos: [0, 0.38, 0.64], rot: [0.1, 0, 0.12] });
+      const yawn = win(t, 0.3, 2.2, 0.5);
+      const doze = ramp(t, 2.4, 4.2);
+      const breathe = Math.sin(t * 1.1);
+      P.headX = -0.18 * yawn + doze * (0.32 + breathe * 0.03);
+      P.headZ = doze * 0.18;
+      P.squash = breathe * 0.025 * (0.4 + doze);
+      P.side = doze * Math.sin(t * 0.5) * 0.02;
+      face(P, { open: 0.1 * yawn, round: yawn, lidUp: Math.max(0.35, yawn * 0.95, doze), lidLo: 0.35 + doze * 0.4, smile: 0.6 });
+      emit(P, { kind: 'emoji', ch: '💤', rate: doze * 0.6, at: [0.4, 1.55, 0.3], size: 0.2 });
+      if (t > 0.4 && t < 0.5) P.cue = 'baille';
+    },
+  },
+
   // Se lever : le réveil sonne, il sursaute, s'étire, éteint le réveil et saute « debout ! »
   lever: {
     frame: 'full',

@@ -1,7 +1,7 @@
 // Routine du matin : compte à rebours jusqu'au départ à l'école.
 // Un petit bonhomme court vers l'école ; la barre change de couleur en approchant de l'heure,
 // un « ding-dong » prévient à 10 et 5 minutes, puis le réveil sonne à l'heure du départ.
-import { html, useEffect, useRef } from '../vendor/preact-htm.js';
+import { html, useEffect } from '../vendor/preact-htm.js';
 import { useStore } from '../lib/store.js';
 import { atTime, weekday } from '../lib/dates.js';
 import { sfx } from '../lib/sounds.js';
@@ -35,21 +35,14 @@ export function DepartureBar({ date }) {
   const s = useStore();
   const at = departureAt(s.settings, date);
   const now = useClock(Boolean(at), 500);
-  const lastBeep = useRef(null);
   const left = at ? at - now : null;
 
   useEffect(() => {
     if (left == null || left < -60000) return;
     if (left <= 10 * 60000 && left > 9.5 * 60000) once(`${date}-10`, () => sfx.chime(1));
     if (left <= 5 * 60000 && left > 4.5 * 60000) once(`${date}-5`, () => sfx.chime(2));
-    if (left > 0 && left <= 10000) {
-      const n = Math.ceil(left / 1000);
-      if (lastBeep.current !== n) {
-        lastBeep.current = n;
-        sfx.countdown(n);
-      }
-    }
-    if (left <= 0) once(`${date}-go`, () => sfx.alarm());
+    // Calme : pas de bips des dernières secondes, un carillon doux à l'heure du départ
+    if (left <= 0) once(`${date}-go`, () => sfx.carillon());
   }, [Math.ceil((left ?? 0) / 500)]);
 
   if (left == null || left < -HIDE_AFTER_MS) return null;
