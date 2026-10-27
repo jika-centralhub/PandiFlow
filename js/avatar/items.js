@@ -106,7 +106,7 @@ const hats = [
     </g>`,
   },
   {
-    id: 'chat', name: 'Oreilles de chat', price: 25,
+    id: 'chat', name: 'Oreilles de chat', price: 25, zones: ['serre-tete'],
     render: () => html`<g>
       <path d="M38 72 C44 32 156 32 162 72" stroke="#3B3B48" stroke-width="7" fill="none" stroke-linecap="round" />
       <g class="ear-l"><path d="M50 46 L54 6 L84 30 Z" fill="#3B3B48" stroke="#22222c" stroke-width="2" stroke-linejoin="round" /><path d="M57 38 L59 17 L75 31 Z" fill="#FF9EC7" /></g>
@@ -114,7 +114,7 @@ const hats = [
     </g>`,
   },
   {
-    id: 'fleurs', name: 'Couronne de fleurs', price: 35,
+    id: 'fleurs', name: 'Couronne de fleurs', price: 35, zones: ['serre-tete'],
     render: () => {
       const pts = [[42, 72], [54, 52], [74, 38], [100, 33], [126, 38], [146, 52], [158, 72]];
       const cols = ['#FF7EB6', '#FFD23F', '#B490FF', '#FF7EB6', '#5EC8FF', '#FFD23F', '#B490FF'];
@@ -149,7 +149,7 @@ const hats = [
     </g>`,
   },
   {
-    id: 'astronaute', name: "Casque d'astronaute", price: 90, free: true,
+    id: 'astronaute', name: "Casque d'astronaute", price: 90, free: true, zones: ['sommet', 'serre-tete', 'yeux', 'bouche'],
     render: () => html`<g>
       <path d="M44 162 C70 178 130 178 156 162 L160 174 C130 192 70 192 40 174 Z" fill="#CFD8E6" stroke="#9AA8BD" stroke-width="2" />
       <circle cx="100" cy="98" r="80" fill="rgba(170,215,255,0.16)" stroke="#EAF2FF" stroke-width="6" />
@@ -194,7 +194,7 @@ const faces = [
     </g>`,
   },
   {
-    id: 'moustache', name: 'Moustache rigolote', price: 15, anchor: 'nose',
+    id: 'moustache', name: 'Moustache rigolote', price: 15, anchor: 'nose', zones: ['bouche'],
     render: () => html`<path class="wiggle" d="M100 127 C92 121 80 123 74 131 C70 137 62 135 60 129 C62 141 76 143 86 135 C92 131 96 131 100 133 C104 131 108 131 114 135 C124 143 138 141 140 129 C138 135 130 137 126 131 C120 123 108 121 100 127 Z" fill="#3A2A22" />`,
   },
 ];

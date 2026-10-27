@@ -80,7 +80,7 @@ const KIPPAS = [
       </g><path d="M100 27 L86 26 M100 27 L114 26 M100 15 L92 11 M100 15 L108 11" stroke="#2B2B33" stroke-width="0.9" />`,
     }),
   },
-].map((k) => ({ ...k, slot: 'hat', rayon: 'judaica', only: 'garcon', wornThumb: 'head' }));
+].map((k) => ({ ...k, slot: 'hat', zones: ['sommet'], rayon: 'judaica', only: 'garcon', wornThumb: 'head' }));
 
 // --- Talit katan (sur le haut, sous la veste comme par-dessus le t-shirt) -----------------------
 // Les quatre coins portent les tsitsit : on voit les deux de devant, qui se balancent

@@ -5,6 +5,7 @@ import { html, useEffect, useMemo } from '../vendor/preact-htm.js';
 import { SKIN_TONES, HAIR_COLORS, EYE_COLORS, OUTFIT_COLORS, GLASSES_COLORS, PORTRAIT_EXPRS, normalizeLook } from './palette.js';
 import { HAIR } from './hair.js';
 import { getItem } from './items.js';
+import { headItems, withTryOn, zonesOf } from './wear.js';
 import { Body, BodyDefs } from './body.js';
 import { Body3D, HeadCover, bodyGeometry } from './body3d.js';
 import { shade, mix, hashString } from '../lib/util.js';
@@ -290,15 +291,23 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
   const hair = HAIR[look.hair] || HAIR.court;
   const deep = ['brun', 'cacao', 'ebene', 'cannelle'].includes(look.skin);
 
+  // Ce qui est porté, avec l'objet essayé en boutique (il retire seulement ce qui le gêne)
+  const worn = withTryOn(equipped, tryOn);
   const items = {};
   for (const slot of SLOT_ORDER) {
-    const itemId = tryOn && tryOn.slot === slot ? tryOn.itemId : equipped?.[slot];
-    const item = itemId ? getItem(itemId) : null;
+    if (slot === 'hat' || slot === 'face') continue;
+    const item = worn?.[slot] ? getItem(worn[slot]) : null;
     if (item && item.slot === slot) items[slot] = item;
   }
   // Costume complet : il prend la place du haut, du chapeau, du masque, du cou et du dos
   const costume = items.skin || null;
   if (costume) for (const slot of COVERED_BY_SKIN) delete items[slot];
+  // Sur la tête, plusieurs objets compatibles : le serre-tête d'abord, ce qui se pose dessus ensuite
+  const heads = costume ? [] : headItems(worn);
+  const layer = (it) => (zonesOf(it).every((z) => z === 'serre-tete') ? 0 : 1);
+  const hats = heads.filter((it) => it.slot === 'hat').sort((a, b) => layer(a) - layer(b));
+  const faces = heads.filter((it) => it.slot === 'face');
+  const eyesCovered = heads.some((it) => zonesOf(it).includes('yeux'));
   const shirt = costume?.shirt || items.outfit?.color || outfit;
   const sleeve = costume?.bareArms ? skin : costume?.sleeve || shirt;
   const showHair = !costume?.hideHair;
@@ -342,7 +351,6 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
   const bw = BROW_WIDTH[look.browThickness];
   const browL = expr === 'focus' ? 'M68 85 Q79 86 88 91' : expr === 'encourage' ? 'M68 85 Q78 77 88 83' : BROWS[look.brows](-1);
   const browR = expr === 'focus' ? 'M132 85 Q121 86 112 91' : BROWS[look.brows](1);
-  const funFace = items.face;
 
   // Dans une autre image SVG, la taille CSS en px vaut des unités de cette image
   const box = nest ? { x: nest.x, y: nest.y, width: nest.w, height: nest.h } : {};
@@ -445,9 +453,9 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
         ${geo && costume && (costume.face || costume.hood) && !costume.tint3d && html`<${HeadCover} id=${id} pic=${pic} img=${pImg} costume=${costume} ctx=${ctx} />`}
         ${!pic && showHair && html`<g class="av-hair-front">${hair.front(hairC)}</g>`}
         ${costume?.faceTop && html`<g class="av-costume-face-top" transform=${pic?.headFit}>${costume.faceTop(ctx)}</g>`}
-        ${!pic && !funFace && !costume?.hidesGlasses && html`<${Glasses} shape=${look.glasses} color=${GLASSES_COLORS[look.glassesColor].color} />`}
-        ${funFace && html`<g class="av-face-item" transform=${pic && funFace.anchor === 'nose' ? pic.nose : faceTransform}>${funFace.render(ctx)}</g>`}
-        ${items.hat && html`<g class="av-hat" transform=${items.hat.free ? faceTransform : hatTransform}>${items.hat.render(ctx)}</g>`}
+        ${!pic && !eyesCovered && !costume?.hidesGlasses && html`<${Glasses} shape=${look.glasses} color=${GLASSES_COLORS[look.glassesColor].color} />`}
+        ${faces.map((it) => html`<g key=${it.id} class="av-face-item" transform=${pic && it.anchor === 'nose' ? pic.nose : faceTransform}>${it.render(ctx)}</g>`)}
+        ${hats.map((it) => html`<g key=${it.id} class="av-hat" transform=${it.free ? faceTransform : hatTransform}>${it.render(ctx)}</g>`)}
         ${costume?.hat && html`<g class="av-hat" transform=${hatTransform}>${costume.hat(ctx)}</g>`}
         ${costume?.headFree && html`<g class="av-hat" transform=${pic ? pic.headFit : faceTransform}>${costume.headFree(ctx)}</g>`}
       </g>

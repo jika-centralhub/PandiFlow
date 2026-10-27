@@ -10,6 +10,7 @@ import { uid, sleep, measure } from './util.js';
 import { toISODate, nextRoutineStart, addDays } from './dates.js';
 import { hashPin, checkPin } from './pin.js';
 import { getItem } from '../avatar/items.js';
+import { HEAD_SLOTS, headItems, isWorn, wear, unwear } from '../avatar/wear.js';
 import { getTheme, giftOptions, themeLooks } from '../avatar/themes.js';
 import { setThemeLooks } from '../mascot/themeLook.js';
 import { normalizeLook, randomLook } from '../avatar/palette.js';
@@ -383,13 +384,27 @@ export function buy(childId, itemId) {
   return { ok: true };
 }
 
+// Mettre un objet (il retire seulement ce qui le gêne : sur la tête, plusieurs objets compatibles se
+// portent ensemble), ou vider un emplacement (itemId null)
 export function equip(childId, slot, itemId) {
   const child = getState().children.find((c) => c.id === childId);
   if (!child) return;
-  const equipped = { ...(child.equipped || {}) };
-  if (itemId) equipped[slot] = itemId;
-  else delete equipped[slot];
-  put('children', [{ ...child, equipped }]);
+  const item = itemId ? getItem(itemId) : null;
+  let equipped = child.equipped || {};
+  if (item) equipped = wear(equipped, item);
+  else if (HEAD_SLOTS.includes(slot)) for (const it of headItems(equipped).filter((x) => x.slot === slot)) equipped = unwear(equipped, it);
+  else equipped = { ...equipped, [slot]: undefined };
+  put('children', [{ ...child, equipped: JSON.parse(JSON.stringify(equipped)) }]);
+}
+
+// Mettre ou enlever un objet précis (la garde-robe de l'enfant)
+export function toggleWear(childId, itemId) {
+  const child = getState().children.find((c) => c.id === childId);
+  const item = getItem(itemId);
+  if (!child || !item) return false;
+  const on = isWorn(child.equipped, item);
+  put('children', [{ ...child, equipped: on ? unwear(child.equipped, item) : wear(child.equipped, item) }]);
+  return !on;
 }
 
 export function saveLook(childId, look) {

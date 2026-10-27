@@ -6,6 +6,7 @@ import { normalizeLook, DEFAULT_LOOK, randomLook } from '../js/avatar/palette.js
 import { getItem, offeredTo, starredFor, rayonOf } from '../js/avatar/items.js';
 import { THEME_CATALOG, getTheme, giftOptions, vitrineItems, themeLooks, GIFT_MAX } from '../js/avatar/themes.js';
 import { setThemeLooks, themeLookFor } from '../js/mascot/themeLook.js';
+import * as w from '../js/avatar/wear.js';
 
 const results = [];
 function test(name, fn) {
@@ -725,6 +726,48 @@ test('thème : Pandi porte la tenue du thème pendant ses dates, sinon son tirag
   eq(themeLookFor('2026-10-30'), getTheme('espace').pandi);
   eq(themeLookFor('2026-11-03'), null);
   setThemeLooks([]);
+});
+
+// --- Plusieurs objets sur la tête --------------------------------------------------------------------
+const headOf = (eq) => w.headItems(eq).map((it) => it.id).sort();
+const put = (eq, ...ids) => ids.reduce((e, id) => w.wear(e, getItem(id)), eq);
+
+test('tête : kippa et lunettes, lunettes et moustache, kippa et oreilles de chat se portent ensemble', () => {
+  eq(headOf(put({}, 'kippa_velours', 'soleil')), ['kippa_velours', 'soleil']);
+  eq(headOf(put({}, 'soleil', 'moustache')), ['moustache', 'soleil']);
+  eq(headOf(put({}, 'kippa_velours', 'chat', 'soleil', 'moustache')), ['chat', 'kippa_velours', 'moustache', 'soleil']);
+  eq(headOf(put({}, 'kippa_srouga', 'fleurs', 'coeurs')), ['coeurs', 'fleurs', 'kippa_srouga']);
+});
+
+test('tête : deux objets qui se gênent ne se portent pas ensemble, le dernier mis gagne', () => {
+  eq(headOf(put({}, 'soleil', 'masque')), ['masque'], 'deux objets sur les yeux');
+  eq(headOf(put({}, 'kippa_velours', 'casquette')), ['casquette'], 'deux objets sur le sommet');
+  eq(headOf(put({}, 'chat', 'fleurs')), ['fleurs'], 'deux serre-têtes');
+  eq(headOf(put({}, 'chat', 'couronne')), ['couronne'], 'une couronne couvre le serre-tête');
+  eq(headOf(put({}, 'kippa_velours', 'licorne_corne')), ['licorne_corne']);
+  eq(headOf(put({}, 'chat', 'licorne_corne')), ['licorne_corne'], 'le serre-tête licorne a ses propres oreilles');
+  eq(headOf(put({}, 'kippa_velours', 'soleil', 'moustache', 'astronaute')), ['astronaute'], 'le casque prend toute la tête');
+  eq(w.wouldRemove(put({}, 'soleil', 'moustache'), getItem('masque')).map((it) => it.id), ['soleil']);
+});
+
+test('tête : enlever un objet garde les autres ; hors de la tête, un objet par emplacement', () => {
+  let e = put({}, 'kippa_velours', 'soleil', 'moustache');
+  e = w.unwear(e, getItem('soleil'));
+  eq(headOf(e), ['kippa_velours', 'moustache']);
+  ok(w.isWorn(e, getItem('moustache')) && !w.isWorn(e, getItem('soleil')));
+  e = put(e, 'cape', 'fee');
+  eq(e.back, 'fee', 'les ailes remplacent la cape');
+  eq(headOf(e), ['kippa_velours', 'moustache'], 'la tête ne bouge pas');
+});
+
+test('tête : rangé pour les anciennes versions, et une ancienne version ne fait jamais porter deux objets qui se gênent', () => {
+  const e = put({}, 'kippa_velours', 'chat', 'soleil', 'moustache');
+  eq([e.hat, e.face], ['chat', 'moustache'], 'le dernier mis de chaque emplacement');
+  eq([...e.head].sort(), ['kippa_velours', 'soleil']);
+  // Une ancienne version change seulement equipped.hat : le plus récent gagne, rien d'incompatible
+  eq(headOf({ ...e, hat: 'casquette' }), ['casquette', 'moustache', 'soleil']);
+  eq(headOf({ hat: 'couronne', face: 'masque' }), ['couronne', 'masque'], 'les anciens réglages se lisent tels quels');
+  eq(headOf(w.withTryOn(e, { slot: 'face', itemId: 'masque' })), ['chat', 'kippa_velours', 'masque', 'moustache'], 'essai en boutique');
 });
 
 // --- Affichage ------------------------------------------------------------------------------------

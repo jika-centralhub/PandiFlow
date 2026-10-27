@@ -6,6 +6,7 @@ import { balance, isOwned, challengesForChild, activeChildren, accord, sexOf, ta
 import { routineDate, toISODate } from '../lib/dates.js';
 import { getTheme, giftOptions, vitrineItems } from '../avatar/themes.js';
 import { ThemeBook } from '../components/Themes.js';
+import { isWorn, wouldRemove } from '../avatar/wear.js';
 import { Avatar, COVERED_BY_SKIN } from '../avatar/Avatar.js';
 import { ITEMS, SLOTS, shopItems, getItem, rayonOf, offeredTo, starredFor } from '../avatar/items.js';
 import { COSTUME_GROUPS } from '../avatar/costumes.js';
@@ -115,7 +116,7 @@ function Inventory({ child, owned, rayon, onRayon, onEquip }) {
     ${grouped(rayon, mine.filter((it) => rayonOf(it) === rayon)).map((g) => html`<div key=${g.id}>
       ${g.label && html`<h3 class="section-title">${g.icon} ${g.label}</h3>`}
       <div class="item-grid">${g.items.map((it) => {
-        const worn = child.equipped?.[it.slot] === it.id;
+        const worn = isWorn(child.equipped, it);
         const hidden = worn && costumeOn && COVERED_BY_SKIN.includes(it.slot);
         return html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${worn ? 'equipped' : ''} note=${hidden ? 'Sous le costume' : null} onClick=${() => onEquip(it)} />`;
       })}</div>
@@ -165,7 +166,7 @@ function Vitrine({ child, theme, owned, bal, gift, giftOpts, onBack, onPick, onG
     ${giftItem && html`<p class="vt-got">🎁 Ton cadeau du thème : <b>${giftItem.name}</b></p>`}
     <div class="item-grid">${items.map((it) => {
       if (!owned.has(it.id)) return html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${bal < it.price ? 'locked' : ''} price=${it.price} onClick=${() => onPick(it)} />`;
-      const worn = child.equipped?.[it.slot] === it.id;
+      const worn = isWorn(child.equipped, it);
       return html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${worn ? 'equipped' : 'mine'} note=${worn ? null : 'À toi'} onClick=${() => onEquip(it)} />`;
     })}</div>
     <p class="vt-note">À regarder, à rêver : ces objets restent dans la boutique.</p>
@@ -332,10 +333,16 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
   const WEAR = ['skin', 'hat', 'face', 'neck', 'back', 'outfit', 'pet', 'fx'];
   const focus = current === 'look' || ((current === 'boutique' || current === 'affaires') && WEAR.includes(rayon)) ? 'kid' : 'all';
 
+  // Sur la tête, un objet ne retire que ceux qui le gênent ; on le dit, pour que l'enfant comprenne
+  const replaced = (item) => {
+    const gone = wouldRemove(child.equipped, item);
+    if (gone.length) toast(`🔁 « ${item.short || item.name} » remplace « ${gone.map((it) => it.short || it.name).join(' » et « ')} »`);
+  };
+
   function equipToggle(item) {
-    const on = child.equipped?.[item.slot] === item.id;
-    actions.equip(child.id, item.slot, on ? null : item.id);
-    if (on) sfx.pop();
+    if (!isWorn(child.equipped, item)) replaced(item);
+    const on = actions.toggleWear(child.id, item.id);
+    if (!on) sfx.pop();
     else {
       sfx.sparkle();
       celebrateStage();
@@ -358,7 +365,9 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
   }
 
   async function buy(item) {
+    const gone = wouldRemove(child.equipped, item);
     const res = actions.buy(child.id, item.id);
+    if (!res.error && gone.length) replaced(item);
     setBuying(null);
     if (res.error) {
       sfx.error();
