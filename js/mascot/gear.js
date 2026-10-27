@@ -365,7 +365,8 @@ function place(obj, pos, rot, s = 1) {
 }
 
 export const getAccessory = (id) => ACCESSORIES.find((a) => a.id === id);
-const bySlot = (slot) => ACCESSORIES.filter((a) => a.slot === slot);
+// Le tirage du jour ignore les tenues des thèmes (elles ne sortent que pendant leur thème)
+const bySlot = (slot) => ACCESSORIES.filter((a) => a.slot === slot && !a.theme);
 
 // Le « Pandi du jour » : même tirage pour une même date, sur tous les écrans.
 // Il porte toujours quelque chose sur la tête, souvent au cou, parfois des lunettes ou une cape.
