@@ -7,7 +7,7 @@ import { getItem } from '../avatar/items.js';
 import { ItemThumb } from './ItemThumb.js';
 import { Pandi } from './Coin.js';
 import { PandiCounter } from './ui.js';
-import { sfx } from '../lib/sounds.js';
+import { sfx, say, canSay, stopSaying } from '../lib/sounds.js';
 import { fireworks, coinRain, confettiBurst, flyCoins, dropCoins } from '../anim/fx.js';
 import { sleep } from '../lib/util.js';
 import { ROUTINES } from '../domain.js';
@@ -34,7 +34,76 @@ export function OverlayHost() {
   if (overlay.type === 'reveal') return html`<${Reveal} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
   if (overlay.type === 'pandi') return html`<${PandiMoment} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
   if (overlay.type === 'team') return html`<${TeamMoment} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
+  if (overlay.type === 'surprise') return html`<${SurpriseReveal} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
   return null;
+}
+
+// Le paquet cadeau de Pandi : il frétille, le couvercle saute, la carte privilège monte.
+// Pas de chiffre ni de pandi : une carte à lire (Pandi la lit à voix haute pour les petits).
+export function GiftBox() {
+  return html`<svg class="gift" viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="gf-box" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8E7CFF" /><stop offset="100%" stop-color="#5B45D6" /></linearGradient>
+      <linearGradient id="gf-lid" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#A698FF" /><stop offset="100%" stop-color="#7563F0" /></linearGradient>
+      <linearGradient id="gf-rib" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#FFE27A" /><stop offset="100%" stop-color="#F2B100" /></linearGradient>
+    </defs>
+    <ellipse cx="100" cy="180" rx="74" ry="7" fill="#000" opacity="0.28" />
+    <rect x="32" y="86" width="136" height="90" rx="10" fill="url(#gf-box)" stroke="#3E2BA8" stroke-width="3" />
+    <rect x="88" y="86" width="24" height="90" fill="url(#gf-rib)" />
+    <g fill="#fff" opacity="0.25"><circle cx="56" cy="112" r="6" /><circle cx="142" cy="150" r="7" /><circle cx="62" cy="156" r="4" /><circle cx="140" cy="108" r="4" /></g>
+    <g class="gift-lid">
+      <rect x="22" y="62" width="156" height="30" rx="8" fill="url(#gf-lid)" stroke="#3E2BA8" stroke-width="3" />
+      <rect x="86" y="62" width="28" height="30" fill="url(#gf-rib)" />
+      <path d="M100 62 C80 30 52 34 60 52 C66 64 88 62 100 62 Z" fill="url(#gf-rib)" stroke="#C98A00" stroke-width="2.5" />
+      <path d="M100 62 C120 30 148 34 140 52 C134 64 112 62 100 62 Z" fill="url(#gf-rib)" stroke="#C98A00" stroke-width="2.5" />
+      <circle cx="100" cy="62" r="8" fill="#FFD23F" stroke="#C98A00" stroke-width="2.5" />
+    </g>
+  </svg>`;
+}
+
+function SurpriseReveal({ childId, card, team = false, soft = false, onClose }) {
+  const child = useChild(childId);
+  const [phase, setPhase] = useState('shake');
+  const wrap = useRef(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      sfx.sparkle();
+      await sleep(1300);
+      if (!alive) return;
+      setPhase('open');
+      if (soft) sfx.softChime();
+      else sfx.chest();
+      await sleep(450);
+      if (!alive) return;
+      if (!soft) confettiBurst(wrap.current, ['#FFD23F', '#FFF3B0', '#A698FF', '#5EC8FF']);
+      await sleep(900);
+      if (alive) say(card.text);
+    })();
+    const t = setTimeout(onClose, 60000);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+      stopSaying();
+    };
+  }, []);
+  if (!child || !card) return null;
+  return html`<div class=${`surprise-reveal ${phase} ${soft ? 'soft' : ''}`} style=${{ '--kid': child.color }} role="dialog" aria-label=${`Surprise de Pandi : ${card.text}`}>
+    <div class="sr-stage" ref=${wrap}>
+      <div class="glow" />
+      <div class="sr-pandi"><${Pandi} mood="happy" wave=${false} /></div>
+      <div class="sr-gift"><${GiftBox} /></div>
+      <div class="sr-card"><span class="sr-emoji">${card.emoji}</span><span class="sr-text">${card.text}</span></div>
+    </div>
+    <div class="sr-label">
+      <h2>${team ? `Une surprise de Pandi pour toute l’équipe !` : `Une surprise de Pandi pour ${child.name} !`}</h2>
+      <p>${phase === 'shake' ? 'Pandi a laissé un paquet…' : `Pandi avait envie de ${team ? 'vous' : 'te'} faire plaisir 💛`}</p>
+      <div class="sheet-actions">
+        ${canSay() && html`<button class="btn btn-ghost" onClick=${() => { sfx.tap(); say(card.text); }}>🔊 Écouter</button>`}
+        <button class="btn btn-gold btn-big" onClick=${() => { sfx.tap(); onClose(); }}>Merci Pandi !</button>
+      </div>
+    </div>
+  </div>`;
 }
 
 // Pandi content (pandi offerts) ou triste (pandi retirés), hors des routines

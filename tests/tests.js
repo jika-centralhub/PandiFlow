@@ -1,5 +1,5 @@
 import * as d from '../js/domain.js';
-import { eveningDate, addDays, weekday, currentRoutine, routineDate, atTime } from '../js/lib/dates.js';
+import { eveningDate, addDays, weekday, currentRoutine, routineDate, atTime, nextRoutineStart } from '../js/lib/dates.js';
 import * as cd from '../js/lib/countdown.js';
 import { sha256Bytes, hashPin } from '../js/lib/pin.js';
 import { normalizeLook, DEFAULT_LOOK, randomLook } from '../js/avatar/palette.js';
@@ -559,6 +559,85 @@ test('tsedaka : badges de mitsva accordés', () => {
   const b = d.tsedakaBadges({ id: 'c1', sex: 'fille' }, s);
   eq(b.filter((x) => x.got).length, 4);
   eq(b[3].label, 'Petite tsadéket');
+});
+
+// --- Surprise de Pandi ---------------------------------------------------------------------------------
+const SRP_KIDS = [{ id: 'c1', name: 'Léa', age: 7, sex: 'fille' }, { id: 'c2', name: 'Sacha', age: 5 }];
+function srpAdd(list, id, from, cards) {
+  return d.applySurpriseOp(list, { type: 'add', surprise: { id, created: from, from, team: false, cards } });
+}
+
+test('surprise : préparée le soir, elle arrive le lendemain matin ; le matin, pour la routine du soir', () => {
+  const at = (y, m, dd, h, mi = 0) => new Date(y, m - 1, dd, h, mi);
+  const iso = (dt) => `${dt.getFullYear()}-${dt.getMonth() + 1}-${dt.getDate()} ${dt.getHours()}h`;
+  eq(iso(nextRoutineStart(at(2026, 10, 27, 21, 30))), '2026-10-28 4h', 'le soir');
+  eq(iso(nextRoutineStart(at(2026, 10, 27, 1, 0))), '2026-10-27 4h', 'après minuit');
+  eq(iso(nextRoutineStart(at(2026, 10, 27, 7, 45))), '2026-10-27 13h', 'le matin');
+  eq(iso(nextRoutineStart(at(2026, 10, 27, 13, 0))), '2026-10-28 4h', 'à 13 h pile');
+});
+
+test('surprise : le paquet attend son heure, s’ouvre une fois, puis devient une promesse à tenir', () => {
+  const t0 = Date.parse('2026-10-28T04:00:00Z');
+  let list = srpAdd([], 's1', '2026-10-28T04:00:00Z', [{ childId: 'c1', cardId: 'pv-histoire', emoji: '📖', text: 'Tu choisis l’histoire du soir' }, { childId: 'c2', cardId: 'pv-dessert', emoji: '🍰', text: 'Tu choisis le dessert de Chabbat' }]);
+  const settings = () => ({ surprises: list });
+  eq(d.pendingSurprise(settings(), 'c1', t0 - 1000), null, 'pas avant l’heure');
+  eq(d.pendingSurprise(settings(), 'c1', t0).card.cardId, 'pv-histoire');
+  list = d.applySurpriseOp(list, { type: 'open', id: 's1', childId: 'c1', at: '2026-10-28T06:30:00Z' });
+  list = d.applySurpriseOp(list, { type: 'open', id: 's1', childId: 'c1', at: '2026-10-28T09:00:00Z' });
+  eq(list[0].opened.c1, '2026-10-28T06:30:00Z', 'ouvert une seule fois');
+  eq(d.pendingSurprise(settings(), 'c1', t0 + 3600e3), null);
+  ok(d.pendingSurprise(settings(), 'c2', t0 + 3600e3), 'le paquet de Sacha attend toujours');
+  eq(d.promiseFor(settings(), 'c1', t0 + 3600e3).card.text, 'Tu choisis l’histoire du soir');
+  eq(d.surpriseBoard(settings(), t0).toKeep[0].cards.map((c) => c.childId), ['c1']);
+  // Personne ne peut l'annuler une fois ouverte ; la promesse tenue disparaît de la télé
+  eq(d.applySurpriseOp(list, { type: 'cancel', id: 's1' }).length, 1);
+  list = d.applySurpriseOp(list, { type: 'keep', id: 's1', childId: 'c1', at: '2026-10-28T20:00:00Z' });
+  eq(d.promiseFor(settings(), 'c1', t0 + 3600e3), null);
+  eq(d.surpriseBoard(settings(), t0).kept.length, 1);
+  // Le rappel s'arrête après une semaine, même sans « Tenu »
+  const l2 = d.applySurpriseOp(srpAdd([], 's2', '2026-10-01T04:00:00Z', [{ childId: 'c1', emoji: '🎲', text: 'x' }]), { type: 'open', id: 's2', childId: 'c1', at: '2026-10-01T06:00:00Z' });
+  eq(d.promiseFor({ surprises: l2 }, 'c1', Date.parse('2026-10-09T06:00:00Z')), null);
+});
+
+test('surprise : jamais de pandi, une surprise pas encore ouverte s’annule, l’historique reste court', () => {
+  const base = fixture();
+  const s = { ...base, settings: d.mergeSettings({ surprises: srpAdd([], 's1', '2026-10-28T04:00:00Z', [{ childId: 'c1', emoji: '🎁', text: 'x' }]) }) };
+  eq(d.balance('c1', s), d.balance('c1', base), 'la cagnotte ne bouge pas');
+  eq(d.applySurpriseOp(s.settings.surprises, { type: 'cancel', id: 's1' }).length, 0);
+  let list = [];
+  for (let i = 0; i < d.SURPRISE_HISTORY + 5; i++) {
+    list = srpAdd(list, `s${i}`, '2026-10-01T04:00:00Z', [{ childId: 'c1', emoji: '🎁', text: 'x' }]);
+    list = d.applySurpriseOp(list, { type: 'keep', id: `s${i}`, at: '2026-10-02T04:00:00Z' });
+  }
+  list = srpAdd(list, 'last', '2026-10-01T04:00:00Z', [{ childId: 'c1', emoji: '🎁', text: 'x' }]);
+  eq(list.length, d.SURPRISE_HISTORY);
+  ok(list.some((x) => x.id === 'last'), 'la surprise en attente reste');
+  eq(d.mergeSettings({}).surprises, []);
+  eq(d.mergeSettings({ surprises: 'abîmé' }).surprises, []);
+});
+
+test('surprise : les cartes suivent l’âge, l’équipe a les siennes, et chacun reçoit une carte différente', () => {
+  const settings = d.mergeSettings({});
+  const petit = d.privilegesFor(SRP_KIDS[1], settings).map((p) => p.id);
+  const grand = d.privilegesFor(SRP_KIDS[0], settings).map((p) => p.id);
+  ok(petit.includes('pv-plantes') && !petit.includes('pv-minuteur'), 'cartes des petits');
+  ok(grand.includes('pv-minuteur') && !grand.includes('pv-plantes'), 'cartes des grands');
+  ok(d.privilegesFor(null, settings, true).every((p) => p.family === 'equipe'), 'cartes de l’équipe');
+  ok(!grand.some((id) => id.startsWith('pv-eq-')), 'pas de carte d’équipe pour un seul enfant');
+  const first = d.suggestPrivilege(SRP_KIDS[0], settings);
+  const second = d.suggestPrivilege(SRP_KIDS[1], settings, { avoid: [first.id] });
+  ok(first.id !== second.id, 'deux cartes différentes');
+  // La carte déjà reçue passe après les autres
+  const used = { ...settings, surprises: srpAdd([], 's1', '2026-10-01T04:00:00Z', [d.privilegeCard(first, SRP_KIDS[0])]) };
+  ok(d.suggestPrivilege(SRP_KIDS[0], used).id !== first.id, 'on ne repropose pas la même tout de suite');
+  eq(d.privilegeCard(d.DEFAULT_PRIVILEGES.find((p) => p.id === 'pv-chef'), SRP_KIDS[0]).text, 'Tu es la cheffe : tu aides à préparer le dîner');
+});
+
+test('surprise : une carte qui mettrait en jeu le câlin ou « le droit à l’histoire » est signalée', () => {
+  ok(d.privilegeWarning('Tu as droit à une histoire'));
+  ok(d.privilegeWarning('Un câlin en plus'));
+  eq(d.privilegeWarning('Tu choisis l’histoire du soir'), null);
+  ok(d.DEFAULT_PRIVILEGES.every((p) => !d.privilegeWarning(p.text)), 'aucune carte de départ ne met le temps de base en jeu');
 });
 
 // --- Affichage ------------------------------------------------------------------------------------

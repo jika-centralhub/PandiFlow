@@ -8,7 +8,7 @@ import { showOverlay } from './Overlays.js';
 import { sfx } from '../lib/sounds.js';
 
 const REASONS = {
-  add: ['🤝 Aide à la maison', '💖 Gentillesse', '🧹 Rangement spontané', '📚 Effort à l’école', '🍽️ Bien mangé', '🦁 Courage', '🎁 Surprise des parents'],
+  add: ['🤝 Aide à la maison', '💖 Gentillesse', '🧹 Rangement spontané', '📚 Effort à l’école', '🍽️ Bien mangé', '🦁 Courage'],
   remove: ['🙉 N’a pas écouté', '😤 Colère', '🥊 Dispute', '💥 Bêtise', '🗣️ Gros mot', '📺 Trop d’écran'],
 };
 const AMOUNTS = [1, 2, 3, 5, 10, 20];

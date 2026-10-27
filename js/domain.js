@@ -36,6 +36,9 @@ export const DEFAULT_SETTINGS = {
   treasure: { goal: 500, reward: 'Une sortie au cinéma 🎬', start: null, done: null },
   // Tsedaka : combien de pandi font 1 € à verser, et les associations proposées aux enfants
   tsedaka: { rate: 10, associations: [] },
+  // Surprises de Pandi préparées par les parents, et leurs cartes privilège (null = les cartes de départ)
+  surprises: [],
+  privileges: null,
 };
 
 // Deux routines : le soir et le matin avant l'école. Même barème, même cagnotte, mêmes défis.
@@ -59,6 +62,8 @@ export function mergeSettings(settings) {
     team: { ...DEFAULT_SETTINGS.team, ...(s.team || {}) },
     treasure: { ...DEFAULT_SETTINGS.treasure, ...(s.treasure || {}) },
     tsedaka: { ...DEFAULT_SETTINGS.tsedaka, ...(s.tsedaka || {}) },
+    surprises: Array.isArray(s.surprises) ? s.surprises : [],
+    privileges: Array.isArray(s.privileges) ? s.privileges : null,
   };
 }
 
@@ -541,3 +546,154 @@ export const tsedakaBadges = (child, state) => {
   const given = tsedakaGiven(child.id, state);
   return TSEDAKA_BADGES.map((b) => ({ ...b, label: accorder(b.label, child), got: given >= b.min }));
 };
+
+// --- La surprise de Pandi -----------------------------------------------------------------------------
+// Une récompense rare et inattendue, jamais en pandi et jamais tirée au sort : ce sont les parents qui la
+// préparent, quand ils le veulent. Elle arrive au début de la routine suivante : un paquet cadeau dans la
+// colonne de chaque enfant, qui l'ouvre et découvre une carte privilège (« Tu choisis l'histoire du
+// soir »). Le temps de base avec les parents n'est jamais en jeu : on choisit l'histoire, on n'y a pas
+// « droit ». Tout est rangé dans settings.surprises :
+//   [{ id, created, from, team, cards: [{ childId, cardId, emoji, text }], opened: { childId: iso }, kept: { childId: iso } }]
+export const PRIVILEGE_FAMILIES = {
+  choix: { label: 'Je choisis', icon: '🎨' },
+  mission: { label: 'Une mission d’honneur', icon: '🎖️' },
+  ensemble: { label: 'En plus, ensemble', icon: '🤗' },
+  equipe: { label: 'Pour toute l’équipe', icon: '🤝' },
+};
+
+// Ce qui ne se gagne jamais : on le reçoit, quoi qu'il arrive
+export const NEVER_AT_STAKE = [
+  { emoji: '📖', text: 'L’histoire du soir : une carte peut faire choisir laquelle, jamais décider s’il y en a une' },
+  { emoji: '🤗', text: 'Le câlin et le bisou du soir' },
+  { emoji: '💞', text: 'Le temps de base avec Papa et Maman' },
+];
+
+// age : 'tous', 'petit' (moins de 6 ans) ou 'grand'
+export const DEFAULT_PRIVILEGES = [
+  { id: 'pv-histoire', family: 'choix', emoji: '📖', text: 'Tu choisis l’histoire du soir', age: 'tous' },
+  { id: 'pv-dessert', family: 'choix', emoji: '🍰', text: 'Tu choisis le dessert de Chabbat', age: 'tous' },
+  { id: 'pv-petitdej', family: 'choix', emoji: '🥐', text: 'Tu choisis le petit-déjeuner du dimanche', age: 'tous' },
+  { id: 'pv-musique', family: 'choix', emoji: '🎵', text: 'Tu choisis la musique dans la voiture', age: 'tous' },
+  { id: 'pv-jeu', family: 'choix', emoji: '🎲', text: 'Tu choisis le jeu de société de la famille', age: 'tous' },
+  { id: 'pv-place', family: 'choix', emoji: '🪑', text: 'Tu choisis ta place à table ce soir', age: 'tous' },
+  { id: 'pv-depart', family: 'mission', emoji: '🚦', text: 'Tu donnes le signal du départ pour l’école', age: 'tous' },
+  { id: 'pv-table', family: 'mission', emoji: '🍽️', text: 'Tu aides à mettre la table de Chabbat', age: 'tous' },
+  { id: 'pv-tsedaka', family: 'mission', emoji: '🪙', text: 'Tu mets la pièce dans la boîte de tsedaka', age: 'tous' },
+  { id: 'pv-lumiere', family: 'mission', emoji: '💡', text: 'Tu éteins la lumière du salon ce soir', age: 'tous' },
+  { id: 'pv-plantes', family: 'mission', emoji: '🪴', text: 'Tu arroses les plantes avec l’arrosoir', age: 'petit' },
+  { id: 'pv-minuteur', family: 'mission', emoji: '⏱️', text: 'Tu lances toi-même ton minuteur', age: 'grand' },
+  { id: 'pv-chef', family: 'mission', emoji: '🧑‍🍳', text: 'Tu es {le chef|la cheffe} : tu aides à préparer le dîner', age: 'grand' },
+  { id: 'pv-crepes', family: 'ensemble', emoji: '🥞', text: 'Des crêpes ensemble dimanche', age: 'tous' },
+  { id: 'pv-jeuplus', family: 'ensemble', emoji: '🧩', text: 'Un jeu de société en plus avec Papa ou Maman', age: 'tous' },
+  { id: 'pv-velo', family: 'ensemble', emoji: '🚲', text: 'Une balade à vélo ensemble', age: 'tous' },
+  { id: 'pv-gateau', family: 'ensemble', emoji: '🎂', text: 'On fait le gâteau de Chabbat ensemble', age: 'tous' },
+  { id: 'pv-parc', family: 'ensemble', emoji: '🛝', text: 'Un détour par le parc en rentrant', age: 'tous' },
+  { id: 'pv-eq-dessert', family: 'equipe', emoji: '🍰', text: 'Vous choisissez ensemble le dessert de Chabbat', age: 'tous' },
+  { id: 'pv-eq-cabane', family: 'equipe', emoji: '⛺', text: 'On construit une cabane dans le salon, tous ensemble', age: 'tous' },
+  { id: 'pv-eq-piquenique', family: 'equipe', emoji: '🧺', text: 'Un pique-nique sur le tapis du salon', age: 'tous' },
+  { id: 'pv-eq-chasse', family: 'equipe', emoji: '🗺️', text: 'Une chasse au trésor dans la maison', age: 'tous' },
+  { id: 'pv-eq-boum', family: 'equipe', emoji: '💃', text: 'Une boum dans le salon avant le dîner', age: 'tous' },
+];
+
+export const privilegeDeck = (settings) => (Array.isArray(settings?.privileges) ? settings.privileges : DEFAULT_PRIVILEGES);
+
+// Les cartes qui conviennent : celles de l'équipe pour une surprise d'équipe, sinon celles de l'âge de l'enfant
+export function privilegesFor(child, settings, team = false) {
+  const scale = child ? scaleOf(child) : null;
+  return privilegeDeck(settings).filter(
+    (p) => (team ? p.family === 'equipe' : p.family !== 'equipe') && (!p.age || p.age === 'tous' || !scale || p.age === scale),
+  );
+}
+
+// La carte proposée aux parents (ils peuvent en choisir une autre) : celle que l'enfant a eue le moins
+// récemment, et pas déjà prise pour un autre enfant dans la même surprise (avoid)
+export function suggestPrivilege(child, settings, { team = false, avoid = [] } = {}) {
+  const deck = privilegesFor(child, settings, team).filter((p) => !avoid.includes(p.id));
+  if (!deck.length) return null;
+  const last = {};
+  (settings?.surprises || []).forEach((x, i) => x.cards?.forEach((c) => {
+    if (team || !child || c.childId === child.id) last[c.cardId] = i;
+  }));
+  return [...deck].sort((a, b) => (last[a.id] ?? -1) - (last[b.id] ?? -1))[0];
+}
+
+// Ce que garde la surprise : une copie de la carte, accordée pour l'enfant
+export const privilegeCard = (p, child) => ({ childId: child.id, cardId: p.id || null, emoji: p.emoji || '🎁', text: accorder(String(p.text || '').trim(), child).slice(0, 80) });
+
+// Une carte écrite par les parents qui mettrait en jeu le temps de base (« droit à l'histoire », un câlin…)
+export function privilegeWarning(text) {
+  const t = String(text || '').toLowerCase();
+  if (/droit|c[aâ]lin|bisou/.test(t)) return 'Le câlin, le bisou et l’histoire du soir ne se gagnent pas : une carte peut faire choisir, jamais donner « droit à ».';
+  return null;
+}
+
+const surprisesOf = (settings) => (Array.isArray(settings?.surprises) ? settings.surprises : []);
+const timeOf = (iso) => new Date(iso).getTime() || 0;
+export const SURPRISE_HISTORY = 40;
+// Rappel d'une promesse sur la télé, jusqu'à ce qu'elle soit tenue (au plus une semaine)
+export const PROMISE_DAYS = 7;
+
+// Change la liste des surprises : add, open (l'enfant ouvre son paquet), keep (la promesse est tenue ;
+// sans childId, pour toutes les cartes), cancel (seulement si personne ne l'a encore ouverte).
+// Fonction pure : elle sert aussi à rejouer le changement sur les réglages les plus récents du serveur.
+export function applySurpriseOp(list, desc) {
+  const out = Array.isArray(list) ? [...list] : [];
+  const id = desc.type === 'add' ? desc.surprise?.id : desc.id;
+  const i = out.findIndex((x) => x.id === id);
+  const x = out[i];
+  if (desc.type === 'add') {
+    if (i < 0 && desc.surprise?.cards?.length) out.push({ opened: {}, kept: {}, ...desc.surprise });
+  } else if (x && desc.type === 'open') {
+    if (!x.opened?.[desc.childId] && x.cards.some((c) => c.childId === desc.childId)) out[i] = { ...x, opened: { ...(x.opened || {}), [desc.childId]: desc.at } };
+  } else if (x && desc.type === 'keep') {
+    const kept = { ...(x.kept || {}) };
+    for (const c of x.cards) if (!desc.childId || c.childId === desc.childId) kept[c.childId] = desc.at;
+    out[i] = { ...x, kept };
+  } else if (x && desc.type === 'cancel') {
+    if (!Object.keys(x.opened || {}).length) out.splice(i, 1);
+  }
+  // Un historique court : les plus anciennes surprises tenues partent d'abord
+  while (out.length > SURPRISE_HISTORY) {
+    const j = out.findIndex((s) => s.cards.every((c) => s.kept?.[c.childId]));
+    out.splice(j >= 0 ? j : 0, 1);
+  }
+  return out;
+}
+
+// Le paquet qui attend l'enfant : arrivé (from passé) et pas encore ouvert
+export function pendingSurprise(settings, childId, now = Date.now()) {
+  for (const x of surprisesOf(settings)) {
+    const card = x.cards?.find((c) => c.childId === childId);
+    if (card && !x.opened?.[childId] && timeOf(x.from) <= now) return { surprise: x, card };
+  }
+  return null;
+}
+
+// La carte ouverte dont la promesse n'est pas encore tenue (la plus récente)
+export function promiseFor(settings, childId, now = Date.now()) {
+  const list = surprisesOf(settings);
+  for (let i = list.length - 1; i >= 0; i--) {
+    const x = list[i];
+    const opened = x.opened?.[childId];
+    if (!opened || x.kept?.[childId] || now - timeOf(opened) > PROMISE_DAYS * 864e5) continue;
+    const card = x.cards.find((c) => c.childId === childId);
+    if (card) return { surprise: x, card };
+  }
+  return null;
+}
+
+// Le tableau des parents : paquets pas encore ouverts, promesses à tenir, dernières promesses tenues,
+// et depuis quand date la dernière surprise (pour qu'elle reste rare)
+export function surpriseBoard(settings, now = Date.now()) {
+  const list = surprisesOf(settings);
+  const waiting = list.filter((x) => x.cards.some((c) => !x.opened?.[c.childId]));
+  const toKeep = list
+    .map((x) => ({ surprise: x, cards: x.cards.filter((c) => x.opened?.[c.childId] && !x.kept?.[c.childId]) }))
+    .filter((g) => g.cards.length);
+  const kept = list
+    .flatMap((x) => x.cards.filter((c) => x.kept?.[c.childId]).map((c) => ({ surprise: x, card: c, at: x.kept[c.childId] })))
+    .sort((a, b) => timeOf(b.at) - timeOf(a.at))
+    .slice(0, 6);
+  const last = list.reduce((m, x) => Math.max(m, timeOf(x.created)), 0);
+  return { waiting, toKeep, kept, last: last || null, daysSince: last ? Math.floor((now - last) / 864e5) : null };
+}

@@ -7,7 +7,7 @@ import * as domain from '../domain.js';
 import { STATE_KEYS, sameKey, matches } from './tables.js';
 import { buildFamilySeed, buildMorningSeed, makeChild, DEMO_CHILDREN } from './seed.js';
 import { uid, sleep, measure } from './util.js';
-import { toISODate } from './dates.js';
+import { toISODate, nextRoutineStart } from './dates.js';
 import { hashPin, checkPin } from './pin.js';
 import { getItem } from '../avatar/items.js';
 import { normalizeLook, randomLook } from '../avatar/palette.js';
@@ -144,7 +144,8 @@ async function flush() {
       try {
         if (op.op === 'put') await repo.put(op.table, op.rows);
         else if (op.op === 'del') await repo.del(op.table, op.match);
-        else if (op.op === 'family') await repo.updateFamily(op.familyId, op.patch);
+        else if (op.op === 'family') await writeSettings(op);
+        else if (op.op === 'surprise') await writeSurprise(op);
       } catch (e) {
         const status = e?.status || 0;
         if (status >= 400 && status < 500 && status !== 408 && status !== 429) {
@@ -170,6 +171,24 @@ async function flush() {
     flushing = false;
     setState({ syncing: false, pendingOps: outbox.length });
   }
+}
+
+// Les réglages sont un seul objet partagé par les téléphones des parents : on relit la version du
+// serveur et on n'y change que les clés modifiées ici, pour ne pas écraser ce que l'autre a fait.
+// (Les anciennes écritures sans liste de clés envoient tout, comme avant.)
+async function writeSettings(op) {
+  if (!op.keys || !repo.getSettings) return repo.updateFamily(op.familyId, op.patch);
+  const latest = await repo.getSettings(op.familyId);
+  const settings = { ...latest };
+  for (const k of op.keys) settings[k] = op.patch.settings[k];
+  await repo.updateFamily(op.familyId, { settings });
+}
+
+// Une surprise de Pandi (préparée, ouverte, tenue) est rejouée sur la liste la plus récente
+async function writeSurprise(op) {
+  const latest = await repo.getSettings(op.familyId);
+  const surprises = domain.applySurpriseOp(latest.surprises, op.desc);
+  await repo.updateFamily(op.familyId, { settings: { ...latest, surprises } });
 }
 
 function statePut(table, rows) {
@@ -432,8 +451,28 @@ export function updateSettings(patch) {
   const settings = domain.mergeSettings({ ...s.settings, ...patch });
   const family = { ...s.family, settings };
   setState({ settings, family });
-  commit([{ op: 'family', familyId: family.id, patch: { settings } }]);
+  commit([{ op: 'family', familyId: family.id, patch: { settings }, keys: Object.keys(patch) }]);
 }
+
+// --- Surprise de Pandi (préparée par les parents, ouverte par l'enfant sur la télé) ---------------------
+function surpriseOp(desc) {
+  const s = getState();
+  const settings = { ...s.settings, surprises: domain.applySurpriseOp(s.settings.surprises, desc) };
+  setState({ settings, family: { ...s.family, settings } });
+  commit([{ op: 'surprise', familyId: familyId(), desc }]);
+}
+
+// cards : [{ childId, cardId, emoji, text }] ; now : la surprise arrive tout de suite, sinon au début
+// de la routine suivante (préparée le soir, elle attend le lendemain matin)
+export function prepareSurprise({ cards, team = false, now = false }) {
+  const created = new Date();
+  const surprise = { id: uid(), created: created.toISOString(), from: (now ? created : nextRoutineStart(created)).toISOString(), team, cards };
+  surpriseOp({ type: 'add', surprise });
+  return surprise;
+}
+export const openSurprise = (id, childId) => surpriseOp({ type: 'open', id, childId, at: new Date().toISOString() });
+export const keepSurprise = (id, childId = null) => surpriseOp({ type: 'keep', id, childId, at: new Date().toISOString() });
+export const cancelSurprise = (id) => surpriseOp({ type: 'cancel', id });
 
 export async function setPin(pin) {
   updateSettings({ pinHash: await hashPin(pin, familyId()) });

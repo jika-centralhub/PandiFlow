@@ -35,6 +35,33 @@ export function unlockAudio() {
   window.addEventListener('pointerdown', once);
 }
 
+// Pandi lit une phrase à voix haute (la voix française du téléphone) : pour les petits qui ne lisent
+// pas encore. Rien si le son est coupé ou si le navigateur ne sait pas parler.
+export function say(text) {
+  try {
+    const synth = window.speechSynthesis;
+    if (!getState().prefs.sound || !synth || !text) return false;
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(String(text).replace(/\p{Extended_Pictographic}|️|‍/gu, '').trim());
+    u.lang = 'fr-FR';
+    u.rate = 0.92;
+    u.pitch = 1.15;
+    u.volume = soft ? 0.6 : 1;
+    const voice = synth.getVoices().find((v) => v.lang?.toLowerCase().startsWith('fr'));
+    if (voice) u.voice = voice;
+    synth.speak(u);
+    return true;
+  } catch {
+    return false;
+  }
+}
+export const canSay = () => typeof window !== 'undefined' && 'speechSynthesis' in window;
+export function stopSaying() {
+  try {
+    window.speechSynthesis?.cancel();
+  } catch {}
+}
+
 function tone(freq, { at = 0, dur = 0.15, type = 'sine', vol = 0.4, slide = 0, attack = 0.005, dest = null } = {}) {
   const a = audio();
   if (!a) return;

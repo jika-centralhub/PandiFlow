@@ -29,6 +29,20 @@ export function routineDate(routine, now = new Date()) {
   return routine === 'matin' ? toISODate(new Date(now)) : eveningDate(now);
 }
 
+// Début de la routine qui suit (4 h pour le matin, 13 h pour le soir) : une surprise de Pandi préparée
+// le soir arrive le lendemain matin, une surprise préparée le matin arrive pour la routine du soir.
+export function nextRoutineStart(now = new Date()) {
+  const d = new Date(now);
+  const h = d.getHours();
+  if (h >= EVENING_CUTOFF_HOUR && h < MORNING_END_HOUR) {
+    d.setHours(MORNING_END_HOUR, 0, 0, 0);
+  } else {
+    if (h >= MORNING_END_HOUR) d.setDate(d.getDate() + 1);
+    d.setHours(EVENING_CUTOFF_HOUR, 0, 0, 0);
+  }
+  return d;
+}
+
 // Instant précis d'un jour donné : atTime('2026-10-21', '08:15') -> horodatage en ms
 export function atTime(iso, hhmm) {
   const [h, m] = String(hhmm).split(':').map(Number);

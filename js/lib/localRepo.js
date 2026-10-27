@@ -74,6 +74,10 @@ export class LocalRepo {
     this.save();
   }
 
+  async getSettings() {
+    return { ...(this.db.family?.settings || {}) };
+  }
+
   async updateFamily(_familyId, patch) {
     this.db.family = { ...this.db.family, ...patch };
     this.save();

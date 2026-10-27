@@ -7,14 +7,14 @@ import { useStore, setPrefs, getState } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import * as timers from '../lib/timers.js';
 import { timerKey } from '../lib/countdown.js';
-import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, TEAM_CARD, findTeamCard, teamCardLevel } from '../domain.js';
+import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, TEAM_CARD, findTeamCard, teamCardLevel, pendingSurprise, promiseFor } from '../domain.js';
 import { routineDate, currentRoutine, addDays, formatLong } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { Modal } from '../components/ui.js';
 import { Coin, Pandi } from '../components/Coin.js';
 import { Pandi3D, has3D } from '../components/Pandi3D.js';
 import { pandiFor, storyIndex } from '../mascot/tasks.js';
-import { showOverlay } from '../components/Overlays.js';
+import { showOverlay, GiftBox } from '../components/Overlays.js';
 import { TimerRing, TimerPicker, TimerStage, TimerResult, timerView, useClock } from '../components/Timer.js';
 import { DepartureBar } from '../components/Departure.js';
 import { CalmCorner } from '../components/CalmCorner.js';
@@ -322,6 +322,7 @@ export function Evening() {
   const [asleep, setAsleep] = useState(() => asleepByDate[date] || []);
   const [nightScreen, setNightScreen] = useState(false);
   const [moods, setMoods] = useState({});
+  const [, setTick] = useState(0); // redessine chaque minute : un paquet de Pandi arrive à son heure
   const cards = useRef({});
   const heads = useRef({});
   const moodTimers = useRef({});
@@ -348,6 +349,7 @@ export function Evening() {
   // Passage automatique matin <-> soir à 13 h et à 4 h, et suivi de la date (minuit passé…)
   useEffect(() => {
     const t = setInterval(() => {
+      setTick((n) => n + 1);
       const auto = currentRoutine();
       if (auto !== lastAuto.current) {
         lastAuto.current = auto;
@@ -430,6 +432,13 @@ export function Evening() {
     const next = [...asleep, child.id];
     asleepByDate[date] = next;
     setAsleep(next);
+  }
+
+  // L'enfant ouvre le paquet de Pandi : c'est noté tout de suite (la carte devient une promesse à tenir)
+  async function openGift(child, gift) {
+    sfx.tap();
+    actions.openSurprise(gift.surprise.id, child.id);
+    await showOverlay('surprise', { childId: child.id, card: gift.card, team: Boolean(gift.surprise.team), soft: doux });
   }
 
   function wake() {
@@ -561,6 +570,9 @@ export function Evening() {
         const prog = progress[child.id];
         const list = tasksForChild(child.id, date, s, routine);
         const night = evening && list.length ? { ready: prog.complete, asleep: asleep.includes(child.id) } : null;
+        // Surprise de Pandi : le paquet qui attend l'enfant, puis le rappel de la carte jusqu'à ce qu'elle soit tenue
+        const gift = date === today && !night?.asleep ? pendingSurprise(s.settings, child.id, Date.now()) : null;
+        const promise = !gift && date === today ? promiseFor(s.settings, child.id, Date.now()) : null;
         return html`<section key=${child.id} class=${`kid-col ${prog.complete ? 'done' : ''} ${night?.asleep ? 'asleep' : ''}`} style=${{ '--kid': child.color }}>
           <div class="kid-head">
             <button class="kid-avatar" ref=${(n) => (heads.current[child.id] = n)} onClick=${() => navigate(`enfant/${child.id}`)} aria-label=${`Le coin de ${child.name}`}>
@@ -568,7 +580,11 @@ export function Evening() {
             </button>
             <div class="kid-info">
               <span class="kid-name">${child.name}</span>
+              ${promise && html`<span class="kid-promise" title=${promise.card.text}><i>${promise.card.emoji}</i><span>${promise.card.text}</span></span>`}
             </div>
+            ${gift && html`<button class="kid-gift" onClick=${() => openGift(child, gift)} aria-label=${`Une surprise de Pandi pour ${child.name} : touche pour l'ouvrir`}>
+              <span class="kg-box"><${GiftBox} /></span><span class="kg-txt">Une surprise !</span>
+            </button>`}
           </div>
           <${Carousel}
             child=${child}

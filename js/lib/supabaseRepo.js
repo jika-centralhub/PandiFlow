@@ -140,6 +140,13 @@ export class SupabaseRepo {
     if (error) throw fail(error);
   }
 
+  // Les réglages tels qu'ils sont sur le serveur (relus juste avant d'y écrire)
+  async getSettings(familyId) {
+    const { data, error, status } = await this.sb.from('families').select('settings').eq('id', familyId).single();
+    if (error) throw fail(error, status);
+    return data?.settings && typeof data.settings === 'object' ? data.settings : {};
+  }
+
   async updateFamily(familyId, patch) {
     const { error, status } = await this.sb.from('families').update(patch).eq('id', familyId);
     if (error) throw fail(error, status);
