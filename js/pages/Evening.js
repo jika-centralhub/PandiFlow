@@ -221,15 +221,15 @@ const PREVIEW = { green: 'joy', orange: 'encourage', red: 'encourage', pause: 'h
 
 function RatingSheet({ child, task, current, timerResult, onPick, onClose }) {
   const [expr, setExpr] = useState('happy');
-  return html`<${Modal} onClose=${onClose} class="rate-sheet" style=${{ '--kid': child.color }}>
-    <div class="rate-avatar">
-      <${Avatar} look=${child.look} equipped=${child.equipped} expr=${expr} mode="full" seed=${child.id} pose=${expr === 'joy' ? 'cheer' : 'idle'} />
-    </div>
+  // L'enfant est la première tuile de la rangée, à la même hauteur que les quatre notes
+  return html`<${Modal} onClose=${onClose} class="rate-sheet coop" style=${{ '--kid': child.color }}>
     <div>
       <div class="rate-title"><span class="big-emoji">${task.emoji}</span> ${task.title}</div>
-      <p class="rate-sub">Est-ce que ${child.name} a écouté ?</p>
       <${TimerResult} result=${timerResult} />
-      <div class="rate-choices four">
+      <div class="rate-choices five">
+        <div class="rate-avatar" aria-label=${child.name}>
+          <${Avatar} look=${child.look} equipped=${child.equipped} expr=${expr} mode="full" seed=${child.id} pose=${expr === 'joy' ? 'cheer' : 'idle'} />
+        </div>
         ${RATE_ORDER.map((c) => html`<button
           key=${c}
           class=${`rate-choice ${c} ${current === c ? 'current' : ''}`}

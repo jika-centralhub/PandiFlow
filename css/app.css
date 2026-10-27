@@ -215,6 +215,12 @@ h1, h2, h3, p { margin: 0; }
 .rate-choice .pts { font-size: calc(var(--u) * 3.2); opacity: .9; font-weight: 600; }
 .rate-choice .sub { font-size: calc(var(--u) * 3); opacity: .85; font-weight: 600; line-height: 1.15; }
 .rate-choices.four .face { font-size: calc(var(--u) * 11); }
+/* Notation de coopération : l'enfant puis les quatre notes, une seule rangée de tuiles de même hauteur */
+.rate-sheet.coop { display: block; }
+.rate-sheet.coop .rate-title { margin: 0 calc(var(--u) * 12) calc(var(--u) * 4) 0; }
+.rate-choices.five { grid-template-columns: 1.1fr repeat(4, 1fr); gap: calc(var(--u) * 2.4); align-items: stretch; }
+.rate-choices.five .face { font-size: calc(var(--u) * 11); }
+.rate-choices.five .rate-avatar { width: auto; height: auto; min-height: calc(var(--u) * 30); box-shadow: 0 calc(var(--u) * 1.4) 0 color-mix(in srgb, var(--kid), #000 25%); }
 .rate-clear { display: block; margin: calc(var(--u) * 3) auto 0; color: var(--ink-soft); text-decoration: underline; font-size: calc(var(--u) * 3.6); }
 
 /* ===== Célébrations ===== */
@@ -473,6 +479,8 @@ h1, h2, h3, p { margin: 0; }
   .side-tabs .tab { flex: none; }
   .rate-sheet { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .rate-sheet .rate-avatar { width: calc(var(--u) * 30); height: calc(var(--u) * 34); }
+  .rate-choices.five { grid-template-columns: repeat(3, 1fr); }
+  .rate-choices.five .rate-avatar { width: auto; height: auto; }
   .rate-title { justify-content: center; }
   .celebrate { flex-direction: column; }
   .welcome { flex-direction: column; }
