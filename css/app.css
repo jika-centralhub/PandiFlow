@@ -408,16 +408,41 @@ h1, h2, h3, p { margin: 0; }
 .toggle.on::after { transform: translateX(calc(var(--u) * 6.6)); }
 .invite-code { font-size: calc(var(--u) * 9); font-weight: 700; letter-spacing: .2em; color: #7b6cff; background: #f3effd; border-radius: calc(var(--u) * 4); padding: calc(var(--u) * 2) calc(var(--u) * 4); display: inline-block; user-select: all; -webkit-user-select: all; }
 
-/* Clavier du code PIN */
-.pin-pad { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 3); }
+/* Clavier du code PIN : tout doit tenir à l'écran sans faire défiler */
+.pin-pad { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 2.6); }
+.pin-head { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 2.4); text-align: center; min-width: 0; }
+.pin-head h2 { margin: 0; font-size: calc(var(--u) * 5.4); line-height: 1.1; }
+.pin-head .hint { margin: 0; max-width: 34ch; color: var(--ink-soft); font-size: calc(var(--u) * 3.4); line-height: 1.35; }
 .pin-dots { display: flex; gap: calc(var(--u) * 3); }
 .pin-dots i { width: calc(var(--u) * 5); height: calc(var(--u) * 5); border-radius: 50%; background: #e6e0fb; transition: all .2s cubic-bezier(.3, 1.6, .5, 1); }
 .pin-dots i.on { background: #7b6cff; transform: scale(1.2); }
 .pin-dots.error { animation: shake-x .4s; }
 @keyframes shake-x { 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
-.pin-keys { display: grid; grid-template-columns: repeat(3, calc(var(--u) * 15)); gap: calc(var(--u) * 2.4); }
-.pin-keys button { height: calc(var(--u) * 13); border-radius: calc(var(--u) * 4); background: #f3effd; color: var(--ink); font-size: calc(var(--u) * 6); font-weight: 600; box-shadow: 0 calc(var(--u) * .8) 0 #d9d3f0; transition: transform .1s; }
+.pin-keys { display: grid; grid-template-columns: repeat(3, calc(var(--u) * 15)); gap: calc(var(--u) * 2); }
+.pin-keys button { height: calc(var(--u) * 11.5); border-radius: calc(var(--u) * 4); background: #f3effd; color: var(--ink); font-size: calc(var(--u) * 6); font-weight: 600; box-shadow: 0 calc(var(--u) * .8) 0 #d9d3f0; transition: transform .1s; }
 .pin-keys button:active { transform: translateY(3px); box-shadow: none; }
+/* Écran plus large que haut (téléphone en paysage, télé, ordinateur) : la taille suit la hauteur,
+   donc le texte passe à gauche et le clavier à droite */
+@media (orientation: landscape) {
+  .pin-pad { flex-direction: row; gap: calc(var(--u) * 7); }
+  .pin-head { flex: 1 1 calc(var(--u) * 56); max-width: calc(var(--u) * 62); }
+  .pin-keys { flex: none; }
+  /* La croix de fermeture de la fenêtre ne doit pas chevaucher la touche 3 */
+  .sheet.pin-sheet { padding-right: calc(var(--u) * 13); }
+}
+@media (orientation: portrait) {
+  /* … ni le titre : elle passe au-dessus */
+  .sheet.pin-sheet { padding-top: calc(var(--u) * 13); }
+  /* En portrait la taille suit la largeur : les touches sont plafonnées selon la hauteur (tablette) */
+  .pin-keys { gap: min(calc(var(--u) * 2), 1.4vh); }
+  .pin-keys button { height: min(calc(var(--u) * 11.5), 7.4vh); }
+}
+/* Portrait presque carré (fenêtre d'ordinateur, tablette en écran partagé) : clavier plus compact */
+@media (orientation: portrait) and (min-aspect-ratio: 4/5) {
+  .pin-head .hint { display: none; }
+  .pin-keys { gap: min(calc(var(--u) * 1.6), 1.4vh); }
+  .pin-keys button { height: min(calc(var(--u) * 9.5), 7.4vh); }
+}
 
 /* ===== Connexion / premier lancement ===== */
 .welcome { flex: 1; display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 6); padding: calc(var(--u) * 5); overflow-y: auto; }

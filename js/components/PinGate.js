@@ -68,9 +68,11 @@ export function PinPad({ onSuccess }) {
   }
 
   return html`<div class="pin-pad">
-    <h2>${title}</h2>
-    <p class="hint" style="text-align:center;max-width:36ch;color:var(--ink-soft)">${hint}</p>
-    <div class=${`pin-dots ${error ? 'error' : ''}`}>${[0, 1, 2, 3].map((i) => html`<i key=${i} class=${digits.length > i ? 'on' : ''} />`)}</div>
+    <div class="pin-head">
+      <h2>${title}</h2>
+      <p class="hint">${hint}</p>
+      <div class=${`pin-dots ${error ? 'error' : ''}`}>${[0, 1, 2, 3].map((i) => html`<i key=${i} class=${digits.length > i ? 'on' : ''} />`)}</div>
+    </div>
     <div class="pin-keys">
       ${['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'].map((k, i) =>
         k ? html`<button key=${i} onClick=${() => press(k)}>${k}</button>` : html`<span key=${i} />`,
@@ -80,7 +82,7 @@ export function PinPad({ onSuccess }) {
 }
 
 export function PinGate({ onSuccess, onCancel }) {
-  return html`<${Modal} onClose=${onCancel} style="width:auto"><${PinPad} onSuccess=${onSuccess} /><//>`;
+  return html`<${Modal} onClose=${onCancel} class="pin-sheet" style="width:auto"><${PinPad} onSuccess=${onSuccess} /><//>`;
 }
 
 // Lance une action réservée aux parents : demande le code si l'espace parent est verrouillé.
