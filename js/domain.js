@@ -331,24 +331,30 @@ export const TEAM_CARD = {
   top: { label: 'La meilleure équipe !', face: '🏆' },
   demain: { label: 'On fera mieux demain', face: '🌙' },
 };
-export const teamCardId = (date) => `teamcard-${date}`;
-export const findTeamCard = (ledger, date) => ledger.find((l) => l.id === teamCardId(date)) || null;
+// L'id porte la famille : la table ledger est partagée par toutes les familles, et un id commun
+// (« teamcard-<date> ») empêchait une deuxième famille d'enregistrer sa carte le même soir.
+// On la retrouve par sa soirée, ce qui reconnaît aussi les cartes écrites avec l'ancien id.
+export const teamCardId = (familyId, date) => `teamcard-${familyId}-${date}`;
+export const findTeamCard = (ledger, date) => ledger.find((l) => l.kind === 'teamcard' && l.evening_date === date) || null;
 export const teamCardLevel = (row) => (!row ? null : row.note === TEAM_CARD.demain.label ? 'demain' : 'top');
 
 // level : 'top' | 'demain' | null (effacer). Une carte par soirée pour toute la fratrie.
 export function applyTeamCard(state, { familyId, date, level, now = new Date().toISOString() }) {
   const kids = activeChildren(state.children);
-  const id = teamCardId(date);
-  let ledger = state.ledger.filter((l) => l.id !== id);
+  const id = teamCardId(familyId, date);
+  const old = findTeamCard(state.ledger, date);
+  let ledger = state.ledger.filter((l) => !(l.kind === 'teamcard' && l.evening_date === date));
   const ops = [];
   let amount = 0;
+  // Une carte de cette soirée avec un autre id (ancien format) est remplacée
+  if (old && old.id !== id) ops.push({ op: 'del', table: 'ledger', match: { id: old.id } });
   if (level && TEAM_CARD[level] && kids.length) {
     amount = level === 'top' ? Math.max(0, Math.round(Number(mergeSettings(state.settings).teamCard.top) || 0)) : 0;
     // La table rattache chaque ligne à un enfant : le premier, sans effet sur sa cagnotte (voir balance)
     const row = { id, family_id: familyId, child_id: kids[0].id, kind: 'teamcard', amount, evening_date: date, note: TEAM_CARD[level].label, created_at: now };
     ledger = [...ledger, row];
     ops.push({ op: 'put', table: 'ledger', rows: [row] });
-  } else {
+  } else if (old && old.id === id) {
     ops.push({ op: 'del', table: 'ledger', match: { id } });
   }
   return { ledger, ops, amount };

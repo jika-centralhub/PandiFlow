@@ -1,6 +1,6 @@
 // Actions de l'app : elles mettent à jour l'état tout de suite (interface instantanée)
 // puis enregistrent les changements dans le stockage (localStorage ou Supabase).
-import { getState, setState, toast } from './store.js';
+import { getState, setState, setTimers, toast } from './store.js';
 import { LocalRepo } from './localRepo.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, APP_VERSION } from '../config.js';
 import * as domain from '../domain.js';
@@ -49,6 +49,15 @@ async function afterLogin(user) {
   setState({ user });
   const family = await repo.getFamily();
   if (!family) return setState({ status: 'setup' });
+  // La famille de ce compte (et pas celle d'un compte connecté avant sur cet appareil)
+  if (getState().family && getState().family.id !== family.id) forgetFamily({});
+  setState({ family });
+  // Des écritures restées d'un autre compte (sans déconnexion) ne partent pas avec celui-ci
+  const own = outbox.filter((op) => (op.familyId || op.rows?.[0]?.family_id || family.id) === family.id);
+  if (own.length !== outbox.length) {
+    outbox = own;
+    saveOutbox();
+  }
   await flush();
   await reload();
   repairPortraits();
@@ -608,11 +617,22 @@ export async function updatePassword(password) {
   await afterLogin(await repo.updatePassword(password));
 }
 
-export async function signOut() {
-  if (repo?.signOut) await repo.signOut();
+// Rien de la famille précédente ne reste en mémoire ni sur l'appareil (un autre parent, d'une autre
+// famille, peut se connecter ensuite sur le même téléphone)
+function forgetFamily(patch) {
+  clearTimeout(retryTimer);
   localStorage.removeItem(OUTBOX_KEY);
   outbox = [];
-  setState({ status: 'auth', user: null, family: null, parentUnlockedUntil: 0 });
+  setTimers([]);
+  setState({ family: null, settings: domain.DEFAULT_SETTINGS, children: [], tasks: [], childTasks: [], ratings: [], ledger: [], owned: [], challenges: [], pendingOps: 0, parentUnlockedUntil: 0, ...patch });
+}
+
+export async function signOut() {
+  // Les notes pas encore envoyées partent d'abord (sinon elles seraient perdues)
+  if (outbox.length) await flush().catch(() => {});
+  if (outbox.length && !confirm(`${outbox.length} modification(s) ne sont pas encore envoyées (pas de connexion). Te déconnecter quand même ? Elles seront perdues.`)) return;
+  if (repo?.signOut) await repo.signOut();
+  forgetFamily({ status: 'auth', user: null });
 }
 
 export async function createFamily({ name, children }) {
@@ -641,7 +661,7 @@ export const revokeInvite = (code) => repo.revokeInvite(code);
 export async function removeMember(userId) {
   await repo.removeMember(familyId(), userId);
   // Si c'est moi qui quitte la famille, on repart à l'écran de bienvenue
-  if (userId === getState().user?.id) setState({ status: 'setup', family: null, parentUnlockedUntil: 0 });
+  if (userId === getState().user?.id) forgetFamily({ status: 'setup' });
 }
 
 async function createDemoFamily() {

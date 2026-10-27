@@ -66,6 +66,9 @@ Chaque parent crée son compte avec **e-mail + mot de passe** (8 caractères min
 
 **Inviter un autre parent** : *Espace parent → Réglages → Parents de la famille → Inviter un parent*. Le code a 8 caractères, il est valable 48 h et ne sert qu'une fois ; 5 invitations en cours et 6 parents au maximum par famille ; 10 essais ratés par heure au maximum. Seul le créateur de la famille peut retirer un parent. Ces règles sont dans [`supabase/migrations/20261020120000_invitations.sql`](supabase/migrations/20261020120000_invitations.sql).
 
+**Vérifier que les familles restent séparées** : [`supabase/tests/isolation.sql`](supabase/tests/isolation.sql) crée 5 comptes fictifs (2 familles de 2 parents, un compte sans famille) et un visiteur non connecté, puis vérifie table par table que personne ne lit, ne modifie ni n'efface les données d'une autre famille, que les invitations ne servent qu'une fois et qu'un parent retiré perd l'accès. Tout est annulé à la fin : rien n'est écrit dans la base. Le rapport (une ligne OK ou ÉCHEC par vérification) s'affiche dans le message d'erreur final :
+`supabase db query --linked --project-ref kyhhkhmwdostzdaksxzw --file supabase/tests/isolation.sql`
+
 **Connexion avec Google (facultatif)** : le bouton « Continuer avec Google » apparaît tout seul dès que le fournisseur Google est activé dans Supabase.
 
 1. Dans la [console Google Cloud](https://console.cloud.google.com/projectcreate), créer un projet `PandiFlow` (avec un compte Google personnel).

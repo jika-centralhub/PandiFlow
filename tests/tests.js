@@ -372,6 +372,18 @@ test('carte d’équipe : +5 dans la cagnotte commune, une par soirée, rien sur
   r = d.applyTeamCard(s, { familyId: 'f', date: TUESDAY, level: null });
   eq(r.ledger.length, 0);
 });
+test('carte d’équipe : un id propre à chaque famille, et l’ancien id du même soir est remplacé', () => {
+  const s = fixture();
+  const a = d.applyTeamCard(s, { familyId: 'famille-a', date: TUESDAY, level: 'top' }).ledger[0];
+  const b = d.applyTeamCard(s, { familyId: 'famille-b', date: TUESDAY, level: 'top' }).ledger[0];
+  ok(a.id !== b.id, 'deux familles, le même soir, deux lignes différentes');
+  const old = { ...s, ledger: [{ id: `teamcard-${TUESDAY}`, family_id: 'f', child_id: 'c1', kind: 'teamcard', amount: 5, evening_date: TUESDAY, note: d.TEAM_CARD.top.label }] };
+  eq(d.teamCardLevel(d.findTeamCard(old.ledger, TUESDAY)), 'top', 'l’ancienne carte est reconnue');
+  const r = d.applyTeamCard(old, { familyId: 'f', date: TUESDAY, level: 'demain' });
+  eq(r.ledger.map((l) => l.id), [d.teamCardId('f', TUESDAY)]);
+  eq(r.ops.map((o) => o.op), ['del', 'put'], 'l’ancienne ligne est effacée, la nouvelle écrite');
+  eq(d.applyTeamCard(old, { familyId: 'f', date: TUESDAY, level: null }).ops, [{ op: 'del', table: 'ledger', match: { id: `teamcard-${TUESDAY}` } }]);
+});
 test('coffre de l’équipe : 🌟 et 👍 font une pierre, ✋ et ⏸️ non, depuis le début choisi', () => {
   const { state } = rateAll(fixture(), [['c1', 't1', MONDAY, 'green'], ['c2', 't2', TUESDAY, 'green'], ['c1', 't2', TUESDAY, 'red']]);
   eq(d.treasureProgress(state).count, 2);
