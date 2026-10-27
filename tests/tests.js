@@ -821,6 +821,47 @@ test('coffre : les pierres d’une semaine, d’après les tâches et leurs jour
   ok(Math.abs(d.weeklyStones(st) - 9.6) < 1e-9, 'faites 4 fois sur 5');
 });
 
+// --- Première soirée ---------------------------------------------------------------------------------
+function firstNight(settings = {}) {
+  return {
+    settings: d.mergeSettings({ firstDay: '2026-10-27', ...settings }),
+    children: [{ id: 'a', name: 'Léa' }, { id: 'b', name: 'Noé' }, { id: 'z', name: 'Ancien', archived: true }],
+    tasks: [
+      { id: 's1', active: true, days: [0, 1, 2, 3, 4, 5, 6] },
+      { id: 's2', active: true, days: [0, 1, 2, 3, 4, 5, 6] },
+      { id: 'm1', active: true, routine: 'matin', days: [1, 2, 3, 4, 5] },
+    ],
+    childTasks: [
+      { child_id: 'a', task_id: 's1' }, { child_id: 'a', task_id: 's2' }, { child_id: 'a', task_id: 'm1' },
+      { child_id: 'b', task_id: 's1' }, { child_id: 'z', task_id: 's1' },
+    ],
+    ratings: [],
+  };
+}
+const note = (child, task, color, date = '2026-10-27') => ({ child_id: child, task_id: task, evening_date: date, color });
+
+test('première soirée : finie quand toutes les tâches du soir de tous les enfants sont notées (le matin et les archivés ne comptent pas)', () => {
+  const st = firstNight();
+  st.ratings = [note('a', 's1', 'green'), note('a', 's2', 'red')];
+  ok(!d.eveningComplete(st, '2026-10-27'), 'il manque Noé');
+  st.ratings.push(note('b', 's1', 'pause'));
+  ok(d.eveningComplete(st, '2026-10-27'), 'pause compte comme notée');
+  eq(d.eveningStones(st, '2026-10-27'), 1, 'une seule tâche faite (🌟 ou 👍)');
+  st.ratings.push(note('a', 'm1', 'green'), note('z', 's1', 'green'), note('b', 's1', 'orange', '2026-10-26'));
+  eq(d.eveningStones(st, '2026-10-27'), 1, 'ni le matin, ni un enfant archivé, ni une autre soirée');
+  ok(!d.eveningComplete(firstNight(), '2026-10-27'), 'rien de noté');
+});
+
+test('première soirée : le mot une seule fois, pour une famille venue de l’assistant, à partir de son premier jour', () => {
+  const st = firstNight();
+  st.ratings = [note('a', 's1', 'green'), note('a', 's2', 'orange'), note('b', 's1', 'green')];
+  ok(d.firstEveningDue(st, '2026-10-27'));
+  ok(!d.firstEveningDue({ ...st, settings: d.mergeSettings({}) }, '2026-10-27'), 'une famille d’avant l’assistant : pas de mot');
+  ok(!d.firstEveningDue({ ...st, settings: d.mergeSettings({ firstDay: '2026-10-27', firstEvening: '2026-10-27' }) }, '2026-10-27'), 'déjà montré');
+  ok(!d.firstEveningDue({ ...st, settings: d.mergeSettings({ firstDay: '2026-10-28' }) }, '2026-10-27'), 'une soirée d’avant le premier jour');
+  eq([d.mergeSettings({}).firstDay, d.mergeSettings({}).greeted, d.mergeSettings({}).firstEvening], [null, null, null]);
+});
+
 // --- Affichage ------------------------------------------------------------------------------------
 const passed = results.filter((r) => r.ok).length;
 document.getElementById('summary').textContent = `${passed} / ${results.length} tests réussis`;

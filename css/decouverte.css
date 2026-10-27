@@ -1,0 +1,69 @@
+/* ===== La première soirée : visite en 5 bulles, bonjour de Pandi, mot de fin (js/components/Decouverte.js) ===== */
+
+/* La visite : un trou de lumière autour de l'élément montré, et la bulle de Pandi à côté */
+.visite { position: fixed; inset: 0; z-index: 58; }
+.vi-hole { position: fixed; border-radius: calc(var(--u) * 5); pointer-events: none;
+  box-shadow: 0 0 0 200vmax rgba(10, 8, 40, .72); outline: calc(var(--u) * .8) solid var(--gold); outline-offset: 2px;
+  transition: left .35s ease, top .35s ease, width .35s ease, height .35s ease; }
+.vi-bubble { position: fixed; width: min(92vw, calc(var(--u) * 96)); padding: calc(var(--u) * 4) calc(var(--u) * 4.4); border-radius: calc(var(--u) * 5);
+  background: linear-gradient(180deg, #ffffff, #f4f0ff); color: var(--ink); box-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 8) rgba(0, 0, 0, .45);
+  animation: vi-in .35s cubic-bezier(.3, 1.4, .5, 1); transition: left .35s ease, top .35s ease; }
+@keyframes vi-in { from { transform: scale(.9); opacity: 0; } }
+.vi-bubble::before { content: ''; position: absolute; left: var(--arrow, 50%); margin-left: calc(var(--u) * -2.6); border: calc(var(--u) * 2.6) solid transparent; }
+.vi-bubble.below::before { top: calc(var(--u) * -5.2); border-bottom-color: #fff; }
+.vi-bubble.above::before { bottom: calc(var(--u) * -5.2); border-top-color: #f4f0ff; }
+.vi-bubble.right::before { left: calc(var(--u) * -5.2); top: var(--arrow, 50%); margin: calc(var(--u) * -2.6) 0 0; border-right-color: #fff; }
+.vi-bubble.left::before { left: auto; right: calc(var(--u) * -5.2); top: var(--arrow, 50%); margin: calc(var(--u) * -2.6) 0 0; border-left-color: #f8f6ff; }
+.vi-bubble.over::before { display: none; }
+.vi-head { display: flex; justify-content: space-between; color: var(--ink-soft); font-size: calc(var(--u) * 3.2); font-weight: 700; }
+.vi-title { font-size: calc(var(--u) * 5.4); font-weight: 700; margin: calc(var(--u) * 1.2) 0; line-height: 1.15; }
+.vi-text { font-size: calc(var(--u) * 3.9); line-height: 1.4; }
+.vi-actions { display: flex; align-items: center; gap: calc(var(--u) * 2); margin-top: calc(var(--u) * 3.4); }
+.vi-gap { flex: 1; }
+.vi-skip { color: var(--ink-soft); font-weight: 600; font-size: calc(var(--u) * 3.4); text-decoration: underline; }
+
+/* Le bandeau pour lancer le bonjour de Pandi (le parent choisit le moment : les enfants devant la télé) */
+.greet-bar { flex: 1; display: flex; align-items: center; flex-wrap: wrap; gap: calc(var(--u) * 2.4); min-width: 0; padding: calc(var(--u) * 1.6) calc(var(--u) * 3);
+  border-radius: calc(var(--u) * 5); background: rgba(42, 35, 80, .94); box-shadow: inset 0 0 0 2px rgba(255, 210, 63, .6), 0 calc(var(--u) * 1.4) calc(var(--u) * 5) rgba(0, 0, 0, .3);
+  animation: fade-up .5s ease both; }
+.gb-ico { font-size: calc(var(--u) * 6); animation: gb-wave 1.6s ease-in-out infinite; transform-origin: 70% 80%; }
+@keyframes gb-wave { 0%, 60%, 100% { transform: rotate(0); } 15%, 45% { transform: rotate(16deg); } 30% { transform: rotate(-8deg); } }
+.gb-text { flex: 1; min-width: calc(var(--u) * 40); font-weight: 600; font-size: calc(var(--u) * 3.8); }
+
+/* Pandi se présente aux enfants */
+.bonjour { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * 3);
+  padding: calc(var(--u) * 4); overflow: auto; background: radial-gradient(circle at 50% 38%, rgba(255, 210, 63, .22), transparent 60%), rgba(10, 8, 40, .86);
+  backdrop-filter: blur(4px); animation: fade-in .3s ease; }
+.bj-stage { display: flex; align-items: flex-end; justify-content: center; gap: calc(var(--u) * 4); }
+.bj-pandi { width: calc(var(--u) * 36); height: calc(var(--u) * 40); flex: none; }
+.bj-pandi .pandi3d, .bj-pandi .mascot { width: 100%; height: 100%; }
+.bj-kids { display: flex; gap: calc(var(--u) * 2); }
+.bj-kid { width: calc(var(--u) * 22); height: calc(var(--u) * 32); display: flex; flex-direction: column; align-items: center;
+  animation: bj-hop .7s cubic-bezier(.3, 1.6, .5, 1) both; animation-delay: calc(.6s + var(--i) * .25s); }
+@keyframes bj-hop { from { transform: translateY(30%) scale(.7); opacity: 0; } }
+.bj-kid .avatar { width: 100%; flex: 1; min-height: 0; }
+.bj-kid span { font-weight: 700; font-size: calc(var(--u) * 4.4); color: var(--kid); text-shadow: 0 2px 6px rgba(0, 0, 0, .4); }
+.bj-bubble { max-width: calc(var(--u) * 150); padding: calc(var(--u) * 3.4) calc(var(--u) * 5); border-radius: calc(var(--u) * 6); background: #fff; color: var(--ink);
+  font-size: calc(var(--u) * 4.2); font-weight: 600; line-height: 1.38; text-align: center; box-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 8) rgba(0, 0, 0, .4);
+  animation: sheet-in .5s cubic-bezier(.3, 1.4, .5, 1) .3s both; }
+
+/* Le mot de la première soirée, pour les parents */
+.fe-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: calc(var(--u) * 3); background: rgba(10, 8, 40, .7);
+  backdrop-filter: blur(4px); animation: fade-in .3s ease; }
+/* sur l'écran de la nuit, une fois qu'il s'est assombri */
+.ns-mot { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; padding: calc(var(--u) * 3); background: rgba(10, 8, 40, .45); animation: fade-in .6s ease 2.4s both; }
+.fe-card { width: min(100%, calc(var(--u) * 116)); max-height: 100%; overflow: auto; padding: calc(var(--u) * 4.4) calc(var(--u) * 5); border-radius: calc(var(--u) * 7);
+  background: linear-gradient(180deg, #ffffff, #f4f0ff); color: var(--ink); box-shadow: 0 calc(var(--u) * 3) calc(var(--u) * 10) rgba(0, 0, 0, .45);
+  animation: sheet-in .45s cubic-bezier(.3, 1.4, .5, 1); }
+.fe-top { display: flex; align-items: center; gap: calc(var(--u) * 3); margin-bottom: calc(var(--u) * 2); }
+.fe-emoji { font-size: calc(var(--u) * 8.4); }
+.fe-card h2 { font-size: calc(var(--u) * 6); line-height: 1.1; }
+.fe-card p { font-size: calc(var(--u) * 3.7); line-height: 1.42; margin-top: calc(var(--u) * 2); }
+.fe-card .sheet-actions { margin-top: calc(var(--u) * 3); }
+.fe-tip { padding: calc(var(--u) * 3); border-radius: calc(var(--u) * 4); background: #f3effd; }
+
+@media (orientation: portrait) {
+  .bj-stage { flex-direction: column; align-items: center; }
+  .bj-pandi { width: calc(var(--u) * 34); height: calc(var(--u) * 38); }
+  .bj-kid { width: calc(var(--u) * 22); height: calc(var(--u) * 32); }
+}

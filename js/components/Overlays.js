@@ -11,6 +11,7 @@ import { sfx, say, canSay, stopSaying } from '../lib/sounds.js';
 import { fireworks, coinRain, confettiBurst, flyCoins, dropCoins } from '../anim/fx.js';
 import { sleep } from '../lib/util.js';
 import { ROUTINES } from '../domain.js';
+import { Bonjour, FirstEveningOverlay } from './Decouverte.js';
 
 let queue = [];
 
@@ -35,6 +36,8 @@ export function OverlayHost() {
   if (overlay.type === 'pandi') return html`<${PandiMoment} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
   if (overlay.type === 'team') return html`<${TeamMoment} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
   if (overlay.type === 'surprise') return html`<${SurpriseReveal} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
+  if (overlay.type === 'bonjour') return html`<${Bonjour} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
+  if (overlay.type === 'premiere') return html`<${FirstEveningOverlay} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
   return null;
 }
 

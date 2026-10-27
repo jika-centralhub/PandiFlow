@@ -41,6 +41,11 @@ export const DEFAULT_SETTINGS = {
   privileges: null,
   // Thèmes de la boutique lancés par les parents (une vitrine pendant une semaine, une semaine sur deux)
   themes: [],
+  // Premiers pas d'une famille venue de l'assistant de démarrage : la soirée où il s'est fini, le bonjour
+  // de Pandi aux enfants (date), la première soirée finie (son mot n'est montré qu'une fois)
+  firstDay: null,
+  greeted: null,
+  firstEvening: null,
 };
 
 // Deux routines : le soir et le matin avant l'école. Même barème, même cagnotte, mêmes défis.
@@ -146,6 +151,27 @@ export function routineProgress(childId, date, state, routine = 'soir') {
 }
 
 export const eveningProgress = (childId, date, state) => routineProgress(childId, date, state, 'soir');
+
+// --- Premiers pas d'une nouvelle famille ------------------------------------------------------------
+// Toutes les tâches du soir de tous les enfants (qui en ont ce soir-là) sont notées
+export function eveningComplete(state, date) {
+  const kids = activeChildren(state.children).filter((k) => tasksForChild(k.id, date, state, 'soir').length);
+  return kids.length > 0 && kids.every((k) => routineProgress(k.id, date, state, 'soir').complete);
+}
+
+// Les pierres que toute l'équipe a mises dans le coffre ce soir-là (tâches du soir faites)
+export function eveningStones(state, date) {
+  const kids = new Set(activeChildren(state.children).map((k) => k.id));
+  const soir = new Set(state.tasks.filter((t) => routineOf(t) === 'soir').map((t) => t.id));
+  return state.ratings.filter((r) => r.evening_date === date && kids.has(r.child_id) && soir.has(r.task_id) && isDone(r.color)).length;
+}
+
+// Le mot de la première soirée est-il à montrer pour cette soirée ? Une famille venue de l'assistant,
+// une soirée finie depuis son premier jour, et pas encore de mot
+export function firstEveningDue(state, date) {
+  const s = mergeSettings(state.settings);
+  return Boolean(s.firstDay && !s.firstEvening && date >= s.firstDay && eveningComplete(state, date));
+}
 
 // Les achats faits avec la cagnotte commune (potbuy) et la carte d'équipe (teamcard, versée dans la
 // cagnotte commune) ne touchent pas la cagnotte de l'enfant.

@@ -409,6 +409,7 @@ function StepPret({ s, kids }) {
   const finish = () => {
     sfx.fanfare();
     actions.accueilStep(null);
+    actions.startDecouverte();
     navigate('soiree', { replace: true });
   };
   return html`

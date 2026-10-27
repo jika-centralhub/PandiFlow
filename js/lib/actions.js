@@ -1,13 +1,13 @@
 // Actions de l'app : elles mettent à jour l'état tout de suite (interface instantanée)
 // puis enregistrent les changements dans le stockage (localStorage ou Supabase).
-import { getState, setState, setTimers, setAccueil, subscribe, toast } from './store.js';
+import { getState, setState, setTimers, setAccueil, setVisite, subscribe, toast } from './store.js';
 import { LocalRepo } from './localRepo.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, APP_VERSION } from '../config.js';
 import * as domain from '../domain.js';
 import { STATE_KEYS, sameKey, matches } from './tables.js';
 import { buildFamilySeed, buildMorningSeed, makeChild, DEMO_CHILDREN } from './seed.js';
 import { uid, sleep, measure } from './util.js';
-import { toISODate, nextRoutineStart, addDays } from './dates.js';
+import { toISODate, nextRoutineStart, addDays, eveningDate } from './dates.js';
 import { hashPin, checkPin } from './pin.js';
 import { getItem } from '../avatar/items.js';
 import { HEAD_SLOTS, headItems, isWorn, wear, unwear } from '../avatar/wear.js';
@@ -756,6 +756,19 @@ export async function createFamily({ name, children, routines = null }) {
   await reload();
 }
 
+// --- Premiers pas, après l'assistant : la visite de l'écran (sur cet appareil), le bonjour de Pandi
+// aux enfants et le mot de la première soirée (une fois pour la famille) ---------------------------
+export function startDecouverte() {
+  const s = getState();
+  if (!s.family) return;
+  setVisite(s.family.id);
+  if (!s.settings.firstDay) updateSettings({ firstDay: eveningDate() });
+}
+export const endVisit = () => setVisite(null);
+export const replayVisit = () => setVisite(getState().family?.id);
+export const markGreeted = () => updateSettings({ greeted: new Date().toISOString() });
+export const markFirstEvening = (date) => updateSettings({ firstEvening: date });
+
 // L'assistant de démarrage passe à l'étape suivante, ou se termine (step null)
 export function accueilStep(step) {
   const s = getState();
@@ -765,6 +778,8 @@ export function accueilStep(step) {
 export async function joinFamily(code) {
   await repo.joinFamily(code.replace(/[^a-z0-9]/gi, '').toUpperCase());
   await reload();
+  // Le parent qui rejoint la famille découvre l'écran de la routine avec la visite
+  setVisite(getState().family?.id);
 }
 
 // --- Parents de la famille et invitations à usage unique ----------------------------

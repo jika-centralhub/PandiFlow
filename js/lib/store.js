@@ -26,7 +26,17 @@ let state = {
   timers: loadTimers(),
   // Assistant de démarrage en cours sur cet appareil, après la création de la famille : { familyId, step }
   accueil: loadAccueil(),
+  // Visite de l'écran de la routine à montrer sur cet appareil : l'identifiant de la famille, ou null
+  visite: localStorage.getItem('pandiflow-visite') || null,
 };
+
+export function setVisite(familyId) {
+  if (familyId) localStorage.setItem('pandiflow-visite', familyId);
+  else localStorage.removeItem('pandiflow-visite');
+  setState({ visite: familyId || null });
+}
+
+export const visitPending = (s) => Boolean(s.visite && s.family && s.visite === s.family.id);
 
 function loadAccueil() {
   try {

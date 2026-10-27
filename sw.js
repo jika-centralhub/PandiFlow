@@ -20,6 +20,7 @@ const SHELL = [
   './css/surprise.css',
   './css/theme.css',
   './css/accueil.css',
+  './css/decouverte.css',
   './assets/fonts/fredoka.woff2',
   './assets/icons/icon.svg',
   './assets/icons/icon-192.png',

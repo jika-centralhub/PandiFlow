@@ -3,12 +3,12 @@
 // La télé ne compare pas les enfants : une tâche notée devient « faite » (dorée), sans couleur ni chiffre ;
 // la note de coopération (🌟 👍 ✋ ⏸️) se voit dans le coin de l'enfant et dans l'historique des parents.
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js';
-import { useStore, setPrefs, getState } from '../lib/store.js';
+import { useStore, setPrefs, getState, visitPending } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import * as timers from '../lib/timers.js';
 import { timerKey } from '../lib/countdown.js';
-import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, TEAM_CARD, findTeamCard, teamCardLevel, pendingSurprise, promiseFor } from '../domain.js';
-import { routineDate, currentRoutine, addDays, formatLong } from '../lib/dates.js';
+import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, TEAM_CARD, findTeamCard, teamCardLevel, pendingSurprise, promiseFor, firstEveningDue } from '../domain.js';
+import { routineDate, currentRoutine, addDays, formatLong, eveningDate } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { Modal, Logo } from '../components/ui.js';
 import { Pandi } from '../components/Coin.js';
@@ -19,6 +19,7 @@ import { TimerRing, TimerPicker, TimerStage, TimerResult, timerView, useClock } 
 import { DepartureBar } from '../components/Departure.js';
 import { CalmCorner } from '../components/CalmCorner.js';
 import { TeamPill, TeamSheet } from '../components/Team.js';
+import { Visite, GreetBar, FirstEveningCard } from '../components/Decouverte.js';
 import { flyCoins, burst, replay } from '../anim/fx.js';
 import { sfx, setSoftSound } from '../lib/sounds.js';
 import { navigate } from '../router.js';
@@ -277,7 +278,7 @@ function TeamCardSheet({ kids, current, onPick, onClose }) {
 }
 
 // Tout le monde a dit bonne nuit : la télé s'endort avec Pandi. On touche l'écran pour la réveiller.
-function NightScreen({ kids, onWake }) {
+function NightScreen({ kids, onWake, mot = null, onMotClose }) {
   useEffect(() => {
     releaseScreen();
     return () => keepScreenOn();
@@ -288,6 +289,7 @@ function NightScreen({ kids, onWake }) {
     <div class="ns-pandi">${has3D() ? html`<${Pandi3D} act="endormi" framing="auto" base="full" fps=${12} />` : html`<${Pandi} mood="happy" wave=${false} />`}</div>
     <div class="ns-text">Bonne nuit ${names} 🌙</div>
     <div class="ns-hint">Touche l'écran pour réveiller Pandi</div>
+    ${mot && html`<div class="ns-mot" onClick=${(e) => { e.stopPropagation(); onMotClose(); }}><${FirstEveningCard} date=${mot} onClose=${onMotClose} /></div>`}
   </div>`;
 }
 
@@ -298,6 +300,9 @@ const startRoutine = () => (manualRoutine && manualRoutine.auto === currentRouti
 
 // Les enfants qui ont dit bonne nuit, par soirée (gardé si on passe par l'espace parent)
 const asleepByDate = {};
+
+// « Plus tard » sur le bonjour de Pandi : on le repropose au prochain lancement de l'app
+let greetLater = false;
 
 // Prochaine tâche sans note après celle du centre (on boucle au début si besoin)
 function nextOpen(list, from, isRated) {
@@ -322,6 +327,8 @@ export function Evening() {
   const [asleep, setAsleep] = useState(() => asleepByDate[date] || []);
   const [nightScreen, setNightScreen] = useState(false);
   const [moods, setMoods] = useState({});
+  const [firstMot, setFirstMot] = useState(null); // la soirée dont le mot de première soirée est montré la nuit
+  const [later, setLater] = useState(greetLater);
   const [, setTick] = useState(0); // redessine chaque minute : un paquet de Pandi arrive à son heure
   const cards = useRef({});
   const heads = useRef({});
@@ -409,6 +416,27 @@ export function Evening() {
     const t = setTimeout(() => setNightScreen(true), 3500);
     return () => clearTimeout(t);
   }, [asleep.join(','), evening, withTasks.length]);
+
+  // Le mot de la première soirée : sur l'écran de la nuit, ou à l'ouverture suivante (soirée finie sans
+  // « bonne nuit », vue ce soir ou hier soir). Il n'est montré qu'une fois pour la famille.
+  useEffect(() => {
+    if (!nightScreen || !evening || !firstEveningDue(getState(), date)) return;
+    setFirstMot(date);
+    actions.markFirstEvening(date);
+  }, [nightScreen]);
+  useEffect(() => {
+    const tonight = eveningDate();
+    const due = [tonight, addDays(tonight, -1)].find((d) => firstEveningDue(getState(), d));
+    if (!due) return;
+    actions.markFirstEvening(due);
+    showOverlay('premiere', { date: due });
+  }, []);
+
+  function greet() {
+    sfx.tap();
+    actions.markGreeted();
+    showOverlay('bonjour', {});
+  }
 
   function focusIndex(child, list, withNight) {
     if (withNight && focus[child.id] === NIGHT_CARD) return list.length;
@@ -556,11 +584,14 @@ export function Evening() {
     .map((t) => ({ timer: t, child: kids.find((k) => k.id === t.childId), task: s.tasks.find((x) => x.id === t.taskId) }))
     .filter((o) => o.child && o.task);
   const teamCard = evening && kids.length > 1 ? teamCardLevel(findTeamCard(s.ledger, date)) : null;
+  const visiting = visitPending(s) && kids.length > 0 && !nightScreen;
+  const showGreet = Boolean(s.settings.firstDay && !s.settings.greeted) && !visitPending(s) && !later && kids.length > 0 && date === today;
 
   return html`<div class=${`evening routine-${routine} ${doux ? 'soir-doux' : ''} page-enter`}>
     <${TopBar} onCalm=${() => setCalm(true)} chest=${kids.length > 1 && html`<${TeamPill} onOpen=${() => setTeam(true)} />`} />
     ${date !== today && html`<div class="past-banner">Tu modifies ${routine === 'matin' ? 'le matin' : 'la soirée'} du ${formatLong(date)}</div>`}
     <div class="strip">
+      ${showGreet && html`<${GreetBar} onGreet=${greet} onLater=${() => { sfx.tap(); greetLater = true; setLater(true); }} />`}
       ${routine === 'matin' && date === today && html`<${DepartureBar} date=${date} />`}
       ${evening && kids.length > 1 && html`<${TeamCardBar} level=${teamCard} ready=${allDone} onOpen=${() => { sfx.tap(); setTeamCardOpen(true); }} />`}
     </div>
@@ -637,6 +668,7 @@ export function Evening() {
     ${calm && html`<${CalmCorner} kids=${kids} onClose=${() => setCalm(false)} />`}
     ${team && html`<${TeamSheet} onClose=${() => setTeam(false)} />`}
     ${teamCardOpen && html`<${TeamCardSheet} kids=${kids} current=${teamCard} onPick=${pickTeamCard} onClose=${() => setTeamCardOpen(false)} />`}
-    ${nightScreen && html`<${NightScreen} kids=${withTasks} onWake=${wake} />`}
+    ${nightScreen && html`<${NightScreen} kids=${withTasks} onWake=${wake} mot=${firstMot} onMotClose=${() => { sfx.tap(); setFirstMot(null); }} />`}
+    ${visiting && html`<${Visite} kids=${kids} onDone=${() => actions.endVisit()} />`}
   </div>`;
 }
