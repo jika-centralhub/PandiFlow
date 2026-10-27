@@ -18,6 +18,7 @@ const SHELL = [
   './css/tsedaka.css',
   './css/magic.css',
   './css/surprise.css',
+  './css/theme.css',
   './assets/fonts/fredoka.woff2',
   './assets/icons/icon.svg',
   './assets/icons/icon-192.png',

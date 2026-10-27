@@ -1,9 +1,11 @@
 // Le coin de l'enfant : son avatar, ses affaires, la boutique et ses défis.
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js';
-import { useStore } from '../lib/store.js';
+import { useStore, toast } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { balance, isOwned, challengesForChild, activeChildren, accord, sexOf, tasksForChild, findRating, COLOR_META, ROUTINES } from '../domain.js';
-import { routineDate } from '../lib/dates.js';
+import { balance, isOwned, challengesForChild, activeChildren, accord, sexOf, tasksForChild, findRating, COLOR_META, ROUTINES, activeThemeEntry, themeGiftOf, pastThemes } from '../domain.js';
+import { routineDate, toISODate } from '../lib/dates.js';
+import { getTheme, giftOptions, vitrineItems } from '../avatar/themes.js';
+import { ThemeBook } from '../components/Themes.js';
 import { Avatar, COVERED_BY_SKIN } from '../avatar/Avatar.js';
 import { ITEMS, SLOTS, shopItems, getItem, rayonOf, offeredTo, starredFor } from '../avatar/items.js';
 import { COSTUME_GROUPS } from '../avatar/costumes.js';
@@ -50,7 +52,7 @@ const RAYON_COLORS = {
   bg: '#4D9BFF', fx: '#F06BD8', vehicle: '#E2363F', flag: '#3DD6D0', gear: '#A8E05F', yard: '#2FCF74', magic: '#FFD23F', judaica: '#3D6FE0',
 };
 
-function RayonCard({ slot, list, index, look, bal = null, onOpen }) {
+function RayonCard({ slot, list, index, look, bal = null, badge = true, onOpen }) {
   const prices = list.map((it) => it.price).filter((p) => p > 0);
   const min = prices.length ? Math.min(...prices) : null;
   const affordable = bal == null ? 0 : list.filter((it) => it.price <= bal).length;
@@ -60,7 +62,7 @@ function RayonCard({ slot, list, index, look, bal = null, onOpen }) {
     <span class="rc-label">${SLOTS[slot].label}</span>
     <span class="rc-meta">${list.length} objet${list.length > 1 ? 's' : ''}${bal != null && min != null ? html` · dès ${min} <${Coin} />` : ''}</span>
     <span class="rc-thumbs">${preview.map((it) => html`<span key=${it.id} class="rc-thumb"><${ItemThumb} item=${it} look=${look} /></span>`)}</span>
-    ${affordable > 0 && html`<span class="rc-badge">${affordable} pour toi !</span>`}
+    ${badge && affordable > 0 && html`<span class="rc-badge">${affordable} pour toi !</span>`}
   </button>`;
 }
 
@@ -121,16 +123,74 @@ function Inventory({ child, owned, rayon, onRayon, onEquip }) {
   </div>`;
 }
 
-function Shop({ child, owned, bal, rayon, onRayon, onPick }) {
+// La vitrine du thème : la première carte de la boutique (ses objets restent aussi dans leur rayon)
+function VitrineCard({ theme, child, gift, index, onOpen }) {
+  const items = vitrineItems(theme, child);
+  return html`<button class="rayon-card vitrine-card" style=${{ '--c': theme.color, '--i': index }} onClick=${() => { sfx.tap(); onOpen(); }}>
+    <span class="rc-ico">${theme.emoji}</span>
+    <span class="rc-label">La vitrine de Pandi : ${theme.name}</span>
+    <span class="rc-meta">${items.length} objets du thème</span>
+    <span class="rc-thumbs">${items.slice(0, 4).map((it) => html`<span key=${it.id} class="rc-thumb"><${ItemThumb} item=${it} look=${child.look} /></span>`)}</span>
+    ${!gift && html`<span class="rc-badge gift">🎁 Un cadeau pour toi</span>`}
+  </button>`;
+}
+
+function BookCard({ index, onOpen }) {
+  return html`<button class="rayon-card book-card" style=${{ '--c': '#C98A5B', '--i': index }} onClick=${() => { sfx.tap(); onOpen(); }}>
+    <span class="rc-ico">📖</span>
+    <span class="rc-label">Le livre des thèmes</span>
+    <span class="rc-meta">Les photos de tes thèmes</span>
+  </button>`;
+}
+
+function PlainHead({ icon, label, color, onBack }) {
+  return html`<div class="rayon-head" style=${{ '--c': color }}>
+    <button class="rh-back" aria-label="Tous les rayons" onClick=${() => { sfx.tap(); onBack(); }}>←</button>
+    <h3><span class="rh-ico">${icon}</span>${label}</h3>
+  </div>`;
+}
+
+function Vitrine({ child, theme, owned, bal, gift, giftOpts, onBack, onPick, onGiftPick, onEquip }) {
+  const giftItem = gift && getItem(gift);
+  // Tant que le cadeau n'est pas choisi, ses objets ne sont proposés qu'en cadeau (pas à acheter)
+  const items = vitrineItems(theme, child).filter((it) => gift || !giftOpts.some((g) => g.id === it.id));
+  let i = 0;
+  return html`<div class="vitrine" style=${{ '--c': theme.color }}>
+    <${PlainHead} icon=${theme.emoji} label=${`La vitrine de Pandi : ${theme.name}`} color=${theme.color} onBack=${onBack} />
+    ${!gift && giftOpts.length > 0 && html`<div class="vt-gift">
+      <h3>🎁 Ton cadeau pour commencer : choisis-en un !</h3>
+      <p>${theme.intro}</p>
+      <div class="item-grid">${giftOpts.map((it) => html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state="gift" note="Cadeau" onClick=${() => onGiftPick(it)} />`)}</div>
+    </div>`}
+    ${giftItem && html`<p class="vt-got">🎁 Ton cadeau du thème : <b>${giftItem.name}</b></p>`}
+    <div class="item-grid">${items.map((it) => {
+      if (!owned.has(it.id)) return html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${bal < it.price ? 'locked' : ''} price=${it.price} onClick=${() => onPick(it)} />`;
+      const worn = child.equipped?.[it.slot] === it.id;
+      return html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${worn ? 'equipped' : 'mine'} note=${worn ? null : 'À toi'} onClick=${() => onEquip(it)} />`;
+    })}</div>
+    <p class="vt-note">À regarder, à rêver : ces objets restent dans la boutique.</p>
+  </div>`;
+}
+
+function Shop({ child, owned, bal, rayon, onRayon, onPick, theme = null, gift = null, giftOpts = [], hasBook = false, onGiftPick, onEquip }) {
   const [affordableOnly, setAffordableOnly] = useState(false);
   const sex = sexOf(child);
   const bySlot = (slot) => shopItems()
     .filter((it) => rayonOf(it) === slot && !owned.has(it.id) && offeredTo(it, sex))
     .sort((a, b) => Number(starredFor(b, sex)) - Number(starredFor(a, sex)) || a.price - b.price);
   const slots = SLOT_ORDER.filter((slot) => slot !== 'magic' && bySlot(slot).length);
-  if (!slots.length) return html`<p style="padding:20px;text-align:center">Tu as déjà tout acheté. Bravo, ${accord(child, 'champion', 'championne')} ! 🏆</p>`;
+  if (rayon === 'vitrine' && theme) {
+    return html`<${Vitrine} child=${child} theme=${theme} owned=${owned} bal=${bal} gift=${gift} giftOpts=${giftOpts} onBack=${() => onRayon(null)} onPick=${onPick} onGiftPick=${onGiftPick} onEquip=${onEquip} />`;
+  }
+  if (rayon === 'livre') return html`<div><${PlainHead} icon="📖" label="Le livre des thèmes" color="#C98A5B" onBack=${() => onRayon(null)} /><${ThemeBook} /></div>`;
+  if (!slots.length && !theme) return html`<p style="padding:20px;text-align:center">Tu as déjà tout acheté. Bravo, ${accord(child, 'champion', 'championne')} ! 🏆</p>`;
   if (!rayon || !slots.includes(rayon)) {
-    return html`<div class="rayons">${slots.map((slot, i) => html`<${RayonCard} key=${slot} slot=${slot} index=${i} look=${child.look} bal=${bal} list=${bySlot(slot)} onOpen=${onRayon} />`)}</div>`;
+    const first = theme ? 1 : 0;
+    return html`<div class="rayons">
+      ${theme && html`<${VitrineCard} theme=${theme} child=${child} gift=${gift || !giftOpts.length} index=${0} onOpen=${() => onRayon('vitrine')} />`}
+      ${slots.map((slot, i) => html`<${RayonCard} key=${slot} slot=${slot} index=${i + first} look=${child.look} bal=${bal} badge=${!theme} list=${bySlot(slot)} onOpen=${onRayon} />`)}
+      ${hasBook && html`<${BookCard} index=${slots.length + first} onOpen=${() => onRayon('livre')} />`}
+    </div>`;
   }
   const list = bySlot(rayon).filter((it) => !affordableOnly || it.price <= bal);
   let i = 0;
@@ -183,15 +243,36 @@ function Challenges({ child, state }) {
   })}</div>`;
 }
 
-function BuyModal({ child, item, bal, onBuy, onClose }) {
+function ItemPreview({ child, item, themeScene = null }) {
+  return item.garage || item.slot === 'bg'
+    ? html`<div class="buy-scene"><${KidScene} child=${child} tryOn=${{ slot: item.slot, itemId: item.id }} expr="joy" interactive=${false} themeScene=${themeScene} /></div>`
+    : html`<div style="width:calc(var(--u)*44);height:calc(var(--u)*52);border-radius:calc(var(--u)*6);overflow:hidden;background:radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--kid), #fff 40%), var(--kid))">
+        <${Avatar} look=${child.look} equipped=${child.equipped} tryOn=${{ slot: item.slot, itemId: item.id }} expr="joy" mode="full" seed=${child.id} />
+      </div>`;
+}
+
+// Le cadeau d'entrée du thème : l'enfant l'essaie, puis le choisit (aucun pandi)
+function GiftModal({ child, item, themeScene, onTake, onClose }) {
+  return html`<${Modal} onClose=${onClose} style=${{ '--kid': child.color, width: 'min(100%, calc(var(--u) * 130))' }}>
+    <div style="display:flex;gap:calc(var(--u)*5);align-items:center;flex-wrap:wrap;justify-content:center">
+      <${ItemPreview} child=${child} item=${item} themeScene=${themeScene} />
+      <div style="flex:1;min-width:calc(var(--u)*50)">
+        <h2>${item.name}</h2>
+        <p style="color:var(--ink-soft);margin-top:8px;font-size:calc(var(--u)*3.8)">Un cadeau de Pandi pour entrer dans le thème. C'est celui-ci que tu choisis ?</p>
+        <div class="sheet-actions" style="justify-content:flex-start">
+          <button class="btn btn-ghost" style="color:var(--ink)" onClick=${onClose}>Voir les autres</button>
+          <button class="btn btn-gold btn-big" onClick=${onTake}>🎁 C'est mon cadeau !</button>
+        </div>
+      </div>
+    </div>
+  <//>`;
+}
+
+function BuyModal({ child, item, bal, themeScene = null, onBuy, onClose }) {
   const missing = item.price - bal;
   return html`<${Modal} onClose=${onClose} style=${{ '--kid': child.color, width: 'min(100%, calc(var(--u) * 130))' }}>
     <div style="display:flex;gap:calc(var(--u)*5);align-items:center;flex-wrap:wrap;justify-content:center">
-      ${item.garage || item.slot === 'bg'
-        ? html`<div class="buy-scene"><${KidScene} child=${child} tryOn=${{ slot: item.slot, itemId: item.id }} expr="joy" interactive=${false} /></div>`
-        : html`<div style="width:calc(var(--u)*44);height:calc(var(--u)*52);border-radius:calc(var(--u)*6);overflow:hidden;background:radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--kid), #fff 40%), var(--kid))">
-            <${Avatar} look=${child.look} equipped=${child.equipped} tryOn=${{ slot: item.slot, itemId: item.id }} expr="joy" mode="full" seed=${child.id} />
-          </div>`}
+      <${ItemPreview} child=${child} item=${item} themeScene=${themeScene} />
       <div style="flex:1;min-width:calc(var(--u)*50)">
         <h2>${item.name}</h2>
         <p style="font-size:calc(var(--u)*4.4);display:flex;align-items:center;gap:8px;color:#8a5a00;font-weight:700"><${Coin} class="coin coin-inline" /> ${item.price} pandi</p>
@@ -209,6 +290,7 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
   const s = useStore();
   const child = s.children.find((c) => c.id === childId);
   const [buying, setBuying] = useState(null);
+  const [gifting, setGifting] = useState(null);
   const [gate, setGate] = useState(false);
   const [photo, setPhoto] = useState(false);
   const [bank, setBank] = useState(false);
@@ -229,6 +311,13 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
 
   const owned = new Set(s.owned.filter((o) => o.child_id === child.id).map((o) => o.item_id));
   const bal = balance(child.id, s);
+  // Thème de la boutique en cours : la vitrine, le cadeau d'entrée, le décor de la scène
+  const today = toISODate(new Date());
+  const themeEntry = activeThemeEntry(s.settings, today);
+  const theme = themeEntry ? getTheme(themeEntry.theme) : null;
+  const gift = theme ? themeGiftOf(s.owned, child.id, themeEntry) : null;
+  const giftOpts = theme && !gift ? giftOptions(theme, child, owned) : [];
+  const hasBook = pastThemes(s.settings, today).some((t) => t.photo);
   const tabs = activeChildren(s.children).length > 1 ? TABS : TABS.filter((t) => t.id !== 'equipe');
   const current = tabs.some((t) => t.id === tab) ? tab : 'boutique';
   const garage = hasGarage(child.equipped);
@@ -251,6 +340,21 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
       sfx.sparkle();
       celebrateStage();
     }
+  }
+
+  function takeGift(item) {
+    const res = actions.takeThemeGift(child.id, item.id);
+    setGifting(null);
+    if (res.error) {
+      sfx.error();
+      toast(res.error, 'error');
+      return;
+    }
+    sfx.chest();
+    setTimeout(() => {
+      celebrateStage();
+      confettiBurst(stage.current);
+    }, 300);
   }
 
   async function buy(item) {
@@ -279,7 +383,7 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
     </header>
     <div class="child-body">
       <div class="scene-card" ref=${stage}>
-        <${KidScene} child=${child} expr=${cheer ? 'joy' : 'happy'} pose=${cheer ? 'cheer' : 'idle'} focus=${focus} onEmpty=${toShop} />
+        <${KidScene} child=${child} expr=${cheer ? 'joy' : 'happy'} pose=${cheer ? 'cheer' : 'idle'} focus=${focus} onEmpty=${toShop} themeScene=${theme?.scene} />
         ${garage && html`<span class="gc-hint">Touche un objet !</span>`}
       </div>
       <div class="child-panel">
@@ -291,14 +395,16 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
         <div class="tab-content" key=${`${current}-${rayon || ''}`}>
           ${current === 'look' && html`<${LookEditor} look=${child.look} onChange=${(look) => actions.saveLook(child.id, look)} onPhoto=${() => (actions.isParentUnlocked() ? setPhoto(true) : setGate(true))} />`}
           ${current === 'affaires' && html`<${Inventory} child=${child} owned=${owned} rayon=${rayon} onRayon=${openRayon} onEquip=${equipToggle} />`}
-          ${current === 'boutique' && html`<${Shop} child=${child} owned=${owned} bal=${bal} rayon=${rayon} onRayon=${openRayon} onPick=${(it) => { sfx.tap(); setBuying(it); }} />`}
+          ${current === 'boutique' && html`<${Shop} child=${child} owned=${owned} bal=${bal} rayon=${rayon} onRayon=${openRayon} onPick=${(it) => { sfx.tap(); setBuying(it); }}
+            theme=${theme} gift=${gift} giftOpts=${giftOpts} hasBook=${hasBook} onGiftPick=${(it) => { sfx.tap(); setGifting(it); }} onEquip=${equipToggle} />`}
           ${current === 'defis' && html`<${Challenges} child=${child} state=${s} />`}
           ${current === 'equipe' && html`<${TeamPanel} me=${child} />`}
           ${current === 'tsedaka' && html`<${TsedakaPanel} child=${child} counter=${counter} onGive=${celebrateStage} />`}
         </div>
       </div>
     </div>
-    ${buying && html`<${BuyModal} child=${child} item=${buying} bal=${bal} onBuy=${() => buy(buying)} onClose=${() => setBuying(null)} />`}
+    ${buying && html`<${BuyModal} child=${child} item=${buying} bal=${bal} themeScene=${theme?.scene} onBuy=${() => buy(buying)} onClose=${() => setBuying(null)} />`}
+    ${gifting && html`<${GiftModal} child=${child} item=${gifting} themeScene=${theme?.scene} onTake=${() => takeGift(gifting)} onClose=${() => setGifting(null)} />`}
     ${gate && html`<${PinGate} onSuccess=${() => { setGate(false); setPhoto(true); }} onCancel=${() => setGate(false)} />`}
     ${photo && html`<${PhotoAvatar} child=${child} onClose=${() => setPhoto(false)} />`}
     ${bank && html`<${PandiBank} child=${child} onClose=${() => setBank(false)} />`}

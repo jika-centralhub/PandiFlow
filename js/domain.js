@@ -2,7 +2,7 @@
 // Elles prennent l'état (ou une partie) et renvoient des valeurs calculées,
 // ce qui les rend testables (tests/index.html) et identiques en démo et en cloud.
 
-import { weekday } from './lib/dates.js';
+import { weekday, addDays, toISODate } from './lib/dates.js';
 
 // La note d'une tâche dit si l'enfant a coopéré. Les valeurs green/orange/red restent celles de la base
 // (et de l'historique) ; « pause » = pas ce soir (une crise, un moment difficile), sans note.
@@ -39,6 +39,8 @@ export const DEFAULT_SETTINGS = {
   // Surprises de Pandi préparées par les parents, et leurs cartes privilège (null = les cartes de départ)
   surprises: [],
   privileges: null,
+  // Thèmes de la boutique lancés par les parents (une vitrine pendant une semaine, une semaine sur deux)
+  themes: [],
 };
 
 // Deux routines : le soir et le matin avant l'école. Même barème, même cagnotte, mêmes défis.
@@ -64,6 +66,7 @@ export function mergeSettings(settings) {
     tsedaka: { ...DEFAULT_SETTINGS.tsedaka, ...(s.tsedaka || {}) },
     surprises: Array.isArray(s.surprises) ? s.surprises : [],
     privileges: Array.isArray(s.privileges) ? s.privileges : null,
+    themes: Array.isArray(s.themes) ? s.themes : [],
   };
 }
 
@@ -703,3 +706,69 @@ export function surpriseBoard(settings, now = Date.now()) {
   const last = list.reduce((m, x) => Math.max(m, timeOf(x.created)), 0);
   return { waiting, toKeep, kept, last: last || null, daysSince: last ? Math.floor((now - last) / 864e5) : null };
 }
+
+// --- Thèmes de la boutique ------------------------------------------------------------------------
+// Un thème (catalogue dans js/avatar/themes.js) met quelques objets en vitrine pendant une semaine, une
+// semaine sur deux. Rien ne disparaît : ses objets restent dans leur rayon, avant comme après. Pas de
+// compte à rebours, pas de collection à compléter. À l'ouverture, chaque enfant choisit un cadeau parmi
+// trois (owned_items, source 'gift', daté pendant le thème). À la fin, une photo des avatars rejoint le
+// livre des thèmes. settings.themes : [{ id, theme, start, end, photo }] (start et end inclus, AAAA-MM-JJ)
+export const THEME_DAYS = 7; // durée par défaut d'un thème
+export const THEME_GAP = 7; // une semaine sans thème entre deux
+export const THEME_HISTORY = 30;
+const themesOf = (settings) => (Array.isArray(settings?.themes) ? settings.themes : []);
+const byStart = (a, b) => String(a.start).localeCompare(String(b.start));
+
+export const activeThemeEntry = (settings, today) => themesOf(settings).find((t) => t.start <= today && today <= t.end) || null;
+
+// Les thèmes à venir (déjà programmés) et ceux qui sont finis, du plus récent au plus ancien
+export const upcomingThemes = (settings, today) => themesOf(settings).filter((t) => t.start > today).sort(byStart);
+export const pastThemes = (settings, today) => themesOf(settings).filter((t) => t.end < today).sort(byStart).reverse();
+
+// Date proposée pour le prochain thème : aujourd'hui, ou une semaine après la fin du dernier
+export function nextThemeStart(settings, today) {
+  const last = [...themesOf(settings)].sort((a, b) => String(a.end).localeCompare(String(b.end))).pop();
+  if (!last) return today;
+  const after = addDays(last.end, THEME_GAP + 1);
+  return after > today ? after : today;
+}
+
+// Deux thèmes ne se chevauchent jamais
+export const themeOverlaps = (settings, start, end, ignoreId = null) => themesOf(settings).some((t) => t.id !== ignoreId && t.start <= end && start <= t.end);
+
+// Le cadeau d'entrée que l'enfant a choisi pendant ce thème (un objet reçu en cadeau, daté du thème)
+export function themeGiftOf(owned, childId, entry) {
+  if (!entry) return null;
+  const row = owned.find((o) => {
+    if (o.child_id !== childId || o.source !== 'gift' || !o.created_at) return false;
+    const day = toISODate(new Date(o.created_at));
+    return entry.start <= day && day <= entry.end;
+  });
+  return row ? row.item_id : null;
+}
+
+// add (un thème programmé ou lancé), stop (il s'arrête aujourd'hui : il finit hier, ou disparaît s'il
+// n'avait pas commencé), photo (la photo du livre, une seule fois). Fonction pure, rejouée sur les
+// réglages les plus récents du serveur comme pour les surprises.
+export function applyThemeOp(list, desc) {
+  let out = Array.isArray(list) ? [...list] : [];
+  const id = desc.type === 'add' ? desc.entry?.id : desc.id;
+  const i = out.findIndex((t) => t.id === id);
+  const x = out[i];
+  if (desc.type === 'add') {
+    const e = desc.entry;
+    if (i < 0 && e?.theme && e.start && e.end && e.start <= e.end && !themeOverlaps({ themes: out }, e.start, e.end)) out.push({ photo: null, ...e });
+  } else if (x && desc.type === 'stop') {
+    const end = addDays(desc.today, -1);
+    if (end < x.start) out.splice(i, 1);
+    else if (end < x.end) out[i] = { ...x, end };
+  } else if (x && desc.type === 'photo') {
+    if (!x.photo && desc.photo) out[i] = { ...x, photo: desc.photo };
+  }
+  out.sort(byStart);
+  while (out.length > THEME_HISTORY) out.shift();
+  return out;
+}
+
+// Les listes des réglages qu'on modifie par petites opérations rejouables (voir actions.js)
+export const LIST_OPS = { surprises: applySurpriseOp, themes: applyThemeOp };

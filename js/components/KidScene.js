@@ -108,7 +108,7 @@ function TableArt({ box, ground = null }) {
   </g>`;
 }
 
-export function KidScene({ child, equipped = child.equipped, tryOn = null, expr = 'happy', pose = 'idle', focus = 'all', interactive = true, onEmpty = null, class: cls = '' }) {
+export function KidScene({ child, equipped = child.equipped, tryOn = null, expr = 'happy', pose = 'idle', focus = 'all', interactive = true, onEmpty = null, themeScene = null, class: cls = '' }) {
   const id = useMemo(() => `ks${++n}`, []);
   const svg = useRef(null);
   const bgLayer = useRef(null);
@@ -141,8 +141,9 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
   const ride = vehicle ? vehicle.ride || RIDES[vehicle.id] : null;
   const book = items.judaica || null;
   const sky = vehicle?.zone === 'sky';
-  // Sans décor acheté, le véhicule (sinon l'objet du Judaïsme) apporte son décor 3D, quand il en a un
-  const themed = !bg && (THEMES[vehicle?.id] || THEMES[book?.id]);
+  // Sans décor acheté, le véhicule (sinon l'objet du Judaïsme, sinon le thème de la boutique en cours)
+  // apporte son décor 3D, quand il en a un
+  const themed = !bg && (THEMES[vehicle?.id] || THEMES[book?.id] || (themeScene && { img: themeScene }));
   const theme = themed && hasArt(themed.img) ? themed : null;
   const scenery = bg || (theme && {
     id: theme.img,

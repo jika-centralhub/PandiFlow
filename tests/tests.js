@@ -4,6 +4,8 @@ import * as cd from '../js/lib/countdown.js';
 import { sha256Bytes, hashPin } from '../js/lib/pin.js';
 import { normalizeLook, DEFAULT_LOOK, randomLook } from '../js/avatar/palette.js';
 import { getItem, offeredTo, starredFor, rayonOf } from '../js/avatar/items.js';
+import { THEME_CATALOG, getTheme, giftOptions, vitrineItems, themeLooks, GIFT_MAX } from '../js/avatar/themes.js';
+import { setThemeLooks, themeLookFor } from '../js/mascot/themeLook.js';
 
 const results = [];
 function test(name, fn) {
@@ -650,6 +652,79 @@ test('surprise : une carte qui mettrait en jeu le câlin ou « le droit à l’h
   ok(d.privilegeWarning('Un câlin en plus'));
   eq(d.privilegeWarning('Tu choisis l’histoire du soir'), null);
   ok(d.DEFAULT_PRIVILEGES.every((p) => !d.privilegeWarning(p.text)), 'aucune carte de départ ne met le temps de base en jeu');
+});
+
+// --- Thèmes de la boutique ----------------------------------------------------------------------------
+const themeAdd = (list, id, start, end, theme = 'espace') => d.applyThemeOp(list, { type: 'add', entry: { id, theme, start, end } });
+
+test('thème : actif du premier au dernier jour, une semaine sur deux, jamais deux à la fois', () => {
+  let list = themeAdd([], 't1', '2026-10-27', '2026-11-02');
+  const s = { themes: list };
+  eq(d.activeThemeEntry(s, '2026-10-26'), null, 'pas avant');
+  eq(d.activeThemeEntry(s, '2026-10-27').id, 't1');
+  eq(d.activeThemeEntry(s, '2026-11-02').id, 't1', 'le dernier jour compte');
+  eq(d.activeThemeEntry(s, '2026-11-03'), null);
+  eq(d.nextThemeStart(s, '2026-10-28'), '2026-11-10', 'une semaine sans thème après la fin');
+  eq(d.nextThemeStart(s, '2026-12-01'), '2026-12-01', 'déjà passé : aujourd’hui');
+  eq(d.nextThemeStart({ themes: [] }, '2026-10-28'), '2026-10-28');
+  ok(d.themeOverlaps(s, '2026-11-01', '2026-11-07'), 'chevauchement repéré');
+  list = themeAdd(list, 't2', '2026-11-01', '2026-11-07');
+  eq(list.length, 1, 'un thème qui chevauche est refusé');
+  list = themeAdd(list, 't3', '2026-11-10', '2026-11-16');
+  eq(d.upcomingThemes({ themes: list }, '2026-10-28').map((t) => t.id), ['t3']);
+});
+
+test('thème : arrêter le thème en cours le fait finir hier ; un thème à venir est annulé', () => {
+  let list = themeAdd(themeAdd([], 't1', '2026-10-27', '2026-11-02'), 't2', '2026-11-10', '2026-11-16');
+  list = d.applyThemeOp(list, { type: 'stop', id: 't1', today: '2026-10-30' });
+  eq(list.find((t) => t.id === 't1').end, '2026-10-29');
+  eq(d.activeThemeEntry({ themes: list }, '2026-10-30'), null, 'la vitrine disparaît tout de suite');
+  list = d.applyThemeOp(list, { type: 'stop', id: 't2', today: '2026-10-30' });
+  ok(!list.some((t) => t.id === 't2'), 'pas encore commencé : retiré');
+  // La photo du livre n'est prise qu'une fois
+  list = d.applyThemeOp(list, { type: 'photo', id: 't1', photo: { at: 'a', kids: [] } });
+  list = d.applyThemeOp(list, { type: 'photo', id: 't1', photo: { at: 'b', kids: [] } });
+  eq(list.find((t) => t.id === 't1').photo.at, 'a');
+  eq(d.pastThemes({ themes: list }, '2026-11-05').map((t) => t.id), ['t1']);
+  eq(d.mergeSettings({ themes: 'abîmé' }).themes, []);
+});
+
+test('thème : le cadeau d’entrée, trois au choix, 60 pandi au plus, jamais un objet déjà à l’enfant', () => {
+  const espace = getTheme('espace');
+  const leo = { id: 'c1', sex: 'garcon' };
+  const opts = giftOptions(espace, leo, new Set());
+  eq(opts.length, 3);
+  ok(opts.every((it) => it.price <= GIFT_MAX && !it.exclusive), 'à 60 pandi au plus');
+  eq(opts.map((it) => it.id), espace.gifts, 'ceux du thème d’abord');
+  const topped = giftOptions(espace, leo, new Set(['etoiles']));
+  eq(topped.length, 3, 'complété par d’autres objets à 60 pandi au plus');
+  ok(!topped.some((it) => it.id === 'etoiles'), 'jamais un objet déjà à lui');
+  ok(topped.every((it) => it.price <= GIFT_MAX), 'toujours 60 pandi au plus');
+  // Tous les objets du catalogue existent, et chaque enfant voit au moins 6 objets en vitrine
+  for (const t of THEME_CATALOG) {
+    ok(t.items.every((id) => getItem(id)), `objets du thème ${t.id}`);
+    ok(vitrineItems(t, { id: 'x', sex: 'fille' }).length >= 6 && vitrineItems(t, { id: 'x', sex: 'garcon' }).length >= 6, `vitrine ${t.id}`);
+  }
+});
+
+test('thème : le cadeau choisi se reconnaît (objet reçu en cadeau pendant le thème)', () => {
+  const entry = { id: 't1', theme: 'espace', start: '2026-10-27', end: '2026-11-02' };
+  const at = (day) => new Date(`${day}T12:00:00`).toISOString();
+  const owned = [
+    { child_id: 'c1', item_id: 'cape', source: 'shop', created_at: at('2026-10-28') },
+    { child_id: 'c1', item_id: 'pyjama_fusee', source: 'gift', created_at: at('2026-10-28') },
+    { child_id: 'c2', item_id: 'etoiles', source: 'gift', created_at: at('2026-10-20') },
+  ];
+  eq(d.themeGiftOf(owned, 'c1', entry), 'pyjama_fusee');
+  eq(d.themeGiftOf(owned, 'c2', entry), null, 'un cadeau d’un autre moment ne compte pas');
+  eq(d.themeGiftOf(owned, 'c1', null), null);
+});
+
+test('thème : Pandi porte la tenue du thème pendant ses dates, sinon son tirage du jour', () => {
+  setThemeLooks(themeLooks([{ id: 't1', theme: 'espace', start: '2026-10-27', end: '2026-11-02' }]));
+  eq(themeLookFor('2026-10-30'), getTheme('espace').pandi);
+  eq(themeLookFor('2026-11-03'), null);
+  setThemeLooks([]);
 });
 
 // --- Affichage ------------------------------------------------------------------------------------

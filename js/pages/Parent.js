@@ -15,6 +15,7 @@ import { PandiBank } from '../components/PandiBank.js';
 import { FamilyMembers } from '../components/FamilyMembers.js';
 import { TsedakaParent } from '../components/Tsedaka.js';
 import { SurpriseParent } from '../components/Surprise.js';
+import { ThemeParent } from '../components/Themes.js';
 import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
 import { APP_VERSION } from '../config.js';
@@ -25,6 +26,7 @@ const SECTIONS = [
   { id: 'defis', label: 'Défis', icon: '🏆' },
   { id: 'historique', label: 'Historique', icon: '📅' },
   { id: 'surprises', label: 'Surprises', icon: '🎁' },
+  { id: 'themes', label: 'Thèmes', icon: '🚀' },
   { id: 'tsedaka', label: 'Tsedaka', icon: '💙' },
   { id: 'reglages', label: 'Réglages', icon: '⚙️' },
 ];
@@ -418,6 +420,7 @@ export function ParentPage({ section = 'enfants' }) {
         ${current === 'defis' && html`<${ChallengesSection} />`}
         ${current === 'historique' && html`<${HistorySection} />`}
         ${current === 'surprises' && html`<${SurpriseParent} />`}
+        ${current === 'themes' && html`<${ThemeParent} />`}
         ${current === 'tsedaka' && html`<${TsedakaParent} />`}
         ${current === 'reglages' && html`<${SettingsSection} />`}
         ${current === 'pilotage' && html`<${PilotageTab} />`}

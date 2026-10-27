@@ -2,6 +2,7 @@
 // pendant les tâches (brosse à dents, mousse…). Tout est modélisé en code, éclairé comme Pandi.
 import { THREE, shade, onMuzzle, FUR_WHITE } from './pandi3d.js';
 import { hashString } from '../lib/util.js';
+import { themeLookFor } from './themeLook.js';
 
 const TAU = Math.PI * 2;
 
@@ -263,6 +264,76 @@ export const ACCESSORIES = [
       return out;
     },
   },
+  // --- Tenue du thème Espace (pas dans le tirage du jour : seulement pendant le thème) ---
+  {
+    id: 'antennes', slot: 'tete', name: 'Antennes de l’espace', bone: 'head', hideTuft: true, theme: true,
+    build(occ) {
+      const band = plastic(occ, '#5B6CFF');
+      const stem = plastic(occ, '#D9DEE8');
+      // un serre-tête qui passe par-dessus la tête, d'une oreille à l'autre
+      const arc = m(new THREE.TorusGeometry(1, 0.042, 12, 72, Math.PI), band, [0, 0, 0], [0, 0, 0], [0.69, 0.6, 0.65]);
+      const out = group(arc);
+      const stalks = [];
+      for (const sx of [1, -1]) {
+        const a = sx > 0 ? 1.13 : Math.PI - 1.13;
+        const s = group(
+          m(new THREE.CylinderGeometry(0.013, 0.016, 0.24, 10).translate(0, 0.12, 0), stem),
+          m(new THREE.SphereGeometry(0.03, 16, 12), band, [0, 0.245, 0]),
+          m(new THREE.ExtrudeGeometry(starShape(0.075), { depth: 0.022, bevelSize: 0.01, bevelThickness: 0.01, bevelSegments: 2 }).translate(0, 0, -0.011), gold(occ), [0, 0.31, 0]),
+        );
+        s.position.set(Math.cos(a) * 0.69, Math.sin(a) * 0.6, 0);
+        s.userData.lean = -sx * 0.38;
+        s.rotation.z = s.userData.lean;
+        out.add(s);
+        stalks.push(s);
+      }
+      let t = 0;
+      const placed = place(out, [0, 0.02, -0.03], [-0.22, 0, 0], 1);
+      placed.userData.update = (dt, energy) => {
+        t += dt;
+        stalks.forEach((s, i) => {
+          s.rotation.z = s.userData.lean + Math.sin(t * 3.2 + i * 1.7) * (0.06 + energy * 0.14);
+          s.children[2].rotation.y = Math.sin(t * 1.4 + i) * 0.5;
+        });
+      };
+      return placed;
+    },
+  },
+  {
+    id: 'jetpack', slot: 'dos', name: 'Réacteur de fusée', bone: 'torso', theme: true,
+    build(occ) {
+      const metal = mat(occ, '#E6EBF2', { metalness: 0.65, roughness: 0.3 });
+      const red = plastic(occ, '#E5383B');
+      const blue = plastic(occ, '#5B6CFF');
+      const nozzleMat = mat(occ, '#9AA3B5', { metalness: 0.8, roughness: 0.35, side: THREE.DoubleSide });
+      const fire = new THREE.MeshBasicMaterial({ color: '#FFB547', transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending });
+      const core = new THREE.MeshBasicMaterial({ color: '#FFF3C4', transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending });
+      const out = group(m(new THREE.BoxGeometry(0.3, 0.3, 0.06), blue, [0, 0, 0.04]));
+      const flames = [];
+      for (const sx of [-1, 1]) {
+        const x = sx * 0.1;
+        out.add(m(new THREE.CapsuleGeometry(0.075, 0.2, 8, 24), metal, [x, 0, -0.04]));
+        out.add(m(new THREE.TorusGeometry(0.077, 0.014, 8, 32), red, [x, 0.07, -0.04], [Math.PI / 2, 0, 0]));
+        out.add(m(new THREE.TorusGeometry(0.077, 0.014, 8, 32), red, [x, -0.07, -0.04], [Math.PI / 2, 0, 0]));
+        out.add(m(new THREE.ConeGeometry(0.052, 0.07, 24, 1, true), nozzleMat, [x, -0.2, -0.04]));
+        // la flamme pointe vers le bas et danse avec l'énergie de Pandi
+        const flame = group(
+          m(new THREE.ConeGeometry(0.042, 0.16, 20).rotateX(Math.PI).translate(0, -0.08, 0), fire),
+          m(new THREE.ConeGeometry(0.022, 0.09, 16).rotateX(Math.PI).translate(0, -0.045, 0), core),
+        );
+        flame.position.set(x, -0.235, -0.04);
+        out.add(flame);
+        flames.push(flame);
+      }
+      let t = 0;
+      const placed = place(out, [0, 0.36, -0.5], [0.25, 0, 0], 1.4);
+      placed.userData.update = (dt, energy) => {
+        t += dt;
+        flames.forEach((f, i) => f.scale.set(1, 0.65 + 0.25 * Math.sin(t * 18 + i * 2.1) + energy * 0.6, 1));
+      };
+      return placed;
+    },
+  },
 ];
 
 function starShape(r) {
@@ -298,7 +369,10 @@ const bySlot = (slot) => ACCESSORIES.filter((a) => a.slot === slot);
 
 // Le « Pandi du jour » : même tirage pour une même date, sur tous les écrans.
 // Il porte toujours quelque chose sur la tête, souvent au cou, parfois des lunettes ou une cape.
+// Pendant un thème de la boutique, Pandi porte la tenue du thème (js/mascot/themeLook.js).
 export function dailyLook(dateISO) {
+  const themed = themeLookFor(dateISO);
+  if (themed) return { tete: null, yeux: null, cou: null, dos: null, ...themed };
   let s = hashString(`pandi:${dateISO}`) || 1;
   const rnd = () => ((s = Math.imul(s ^ (s >>> 15), 2246822519) >>> 0), (s ^= s >>> 13), (s >>> 0) / 4294967296);
   const one = (slot) => {

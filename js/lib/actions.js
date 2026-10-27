@@ -1,15 +1,17 @@
 // Actions de l'app : elles mettent à jour l'état tout de suite (interface instantanée)
 // puis enregistrent les changements dans le stockage (localStorage ou Supabase).
-import { getState, setState, setTimers, toast } from './store.js';
+import { getState, setState, setTimers, subscribe, toast } from './store.js';
 import { LocalRepo } from './localRepo.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, APP_VERSION } from '../config.js';
 import * as domain from '../domain.js';
 import { STATE_KEYS, sameKey, matches } from './tables.js';
 import { buildFamilySeed, buildMorningSeed, makeChild, DEMO_CHILDREN } from './seed.js';
 import { uid, sleep, measure } from './util.js';
-import { toISODate, nextRoutineStart } from './dates.js';
+import { toISODate, nextRoutineStart, addDays } from './dates.js';
 import { hashPin, checkPin } from './pin.js';
 import { getItem } from '../avatar/items.js';
+import { getTheme, giftOptions, themeLooks } from '../avatar/themes.js';
+import { setThemeLooks } from '../mascot/themeLook.js';
 import { normalizeLook, randomLook } from '../avatar/palette.js';
 import { setPortraitSource, primePortrait, portraitPath, loadPortrait, forgetPortrait, hasBody } from './portraits.js';
 
@@ -70,6 +72,7 @@ export async function reload() {
   measure('pandiflow:reload', start, { ratings: data.ratings.length, ledger: data.ledger.length });
   ensureMorningTasks();
   markSeen();
+  ensureThemePhotos();
 }
 
 // --- Pilotage de l'adoption ---------------------------------------------------------------
@@ -177,7 +180,7 @@ async function flush() {
         if (op.op === 'put') await repo.put(op.table, op.rows);
         else if (op.op === 'del') await repo.del(op.table, op.match);
         else if (op.op === 'family') await writeSettings(op);
-        else if (op.op === 'surprise') await writeSurprise(op);
+        else if (op.op === 'surprise' || op.op === 'listop') await writeListOp(op);
       } catch (e) {
         const status = e?.status || 0;
         if (status >= 400 && status < 500 && status !== 408 && status !== 429) {
@@ -216,11 +219,20 @@ async function writeSettings(op) {
   await repo.updateFamily(op.familyId, { settings });
 }
 
-// Une surprise de Pandi (préparée, ouverte, tenue) est rejouée sur la liste la plus récente
-async function writeSurprise(op) {
+// Une liste des réglages (surprises de Pandi, thèmes) change par petites opérations : chacune est
+// rejouée sur la liste la plus récente du serveur (les anciennes écritures « surprise » aussi)
+async function writeListOp(op) {
+  const key = op.key || 'surprises';
   const latest = await repo.getSettings(op.familyId);
-  const surprises = domain.applySurpriseOp(latest.surprises, op.desc);
-  await repo.updateFamily(op.familyId, { settings: { ...latest, surprises } });
+  const next = domain.LIST_OPS[key](latest[key], op.desc);
+  await repo.updateFamily(op.familyId, { settings: { ...latest, [key]: next } });
+}
+
+function listOp(key, desc) {
+  const s = getState();
+  const settings = { ...s.settings, [key]: domain.LIST_OPS[key](s.settings[key], desc) };
+  setState({ settings, family: { ...s.family, settings } });
+  commit([{ op: 'listop', key, familyId: familyId(), desc }]);
 }
 
 function statePut(table, rows) {
@@ -487,12 +499,7 @@ export function updateSettings(patch) {
 }
 
 // --- Surprise de Pandi (préparée par les parents, ouverte par l'enfant sur la télé) ---------------------
-function surpriseOp(desc) {
-  const s = getState();
-  const settings = { ...s.settings, surprises: domain.applySurpriseOp(s.settings.surprises, desc) };
-  setState({ settings, family: { ...s.family, settings } });
-  commit([{ op: 'surprise', familyId: familyId(), desc }]);
-}
+const surpriseOp = (desc) => listOp('surprises', desc);
 
 // cards : [{ childId, cardId, emoji, text }] ; now : la surprise arrive tout de suite, sinon au début
 // de la routine suivante (préparée le soir, elle attend le lendemain matin)
@@ -505,6 +512,53 @@ export function prepareSurprise({ cards, team = false, now = false }) {
 export const openSurprise = (id, childId) => surpriseOp({ type: 'open', id, childId, at: new Date().toISOString() });
 export const keepSurprise = (id, childId = null) => surpriseOp({ type: 'keep', id, childId, at: new Date().toISOString() });
 export const cancelSurprise = (id) => surpriseOp({ type: 'cancel', id });
+
+// --- Thèmes de la boutique (une vitrine pendant une semaine, une semaine sur deux) ---------------------
+export function launchTheme(themeId, start, days = domain.THEME_DAYS) {
+  const end = addDays(start, Math.max(1, days) - 1);
+  if (domain.themeOverlaps(getState().settings, start, end)) return { error: 'Un autre thème est déjà prévu à ces dates.' };
+  const entry = { id: uid(), theme: themeId, start, end };
+  listOp('themes', { type: 'add', entry });
+  return { entry };
+}
+
+export const stopTheme = (id) => listOp('themes', { type: 'stop', id, today: toISODate(new Date()) });
+
+// Le cadeau d'entrée : l'enfant choisit un objet parmi ceux proposés, le reçoit et le porte tout de suite
+export function takeThemeGift(childId, itemId) {
+  const s = getState();
+  const entry = domain.activeThemeEntry(s.settings, toISODate(new Date()));
+  const theme = entry && getTheme(entry.theme);
+  const child = s.children.find((c) => c.id === childId);
+  if (!theme || !child || domain.themeGiftOf(s.owned, childId, entry)) return { error: 'Pas de cadeau à choisir en ce moment.' };
+  const owned = new Set(s.owned.filter((o) => o.child_id === childId).map((o) => o.item_id));
+  const item = giftOptions(theme, child, owned).find((it) => it.id === itemId);
+  if (!item) return { error: 'Ce cadeau n’est pas proposé.' };
+  put('owned_items', [{ family_id: familyId(), child_id: childId, item_id: item.id, source: 'gift', created_at: new Date().toISOString() }]);
+  equip(childId, item.slot, item.id);
+  return { item };
+}
+
+// La photo du livre des thèmes : prise une seule fois, à la première ouverture après la fin du thème
+export function ensureThemePhotos() {
+  const s = getState();
+  if (s.status !== 'ready' || !s.family) return;
+  const kids = domain.activeChildren(s.children);
+  if (!kids.length) return;
+  for (const t of domain.pastThemes(s.settings, toISODate(new Date()))) {
+    if (t.photo) continue;
+    const photo = { at: new Date().toISOString(), kids: kids.map((k) => ({ childId: k.id, name: k.name, color: k.color, look: k.look, equipped: k.equipped || {} })) };
+    listOp('themes', { type: 'photo', id: t.id, photo });
+  }
+}
+
+// Pandi porte la tenue du thème sur tous les écrans, d'après les thèmes des réglages
+let lastThemes = null;
+subscribe((st) => {
+  if (st.settings?.themes === lastThemes) return;
+  lastThemes = st.settings?.themes;
+  setThemeLooks(themeLooks(lastThemes));
+});
 
 export async function setPin(pin) {
   updateSettings({ pinHash: await hashPin(pin, familyId()) });

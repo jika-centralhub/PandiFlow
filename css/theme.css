@@ -1,0 +1,51 @@
+/* ===== Thèmes de la boutique : la vitrine de Pandi, le cadeau d'entrée, le livre des thèmes ===== */
+
+/* La carte de la vitrine, en tête des rayons : plus large que les autres, aux couleurs du thème */
+.vitrine-card { grid-column: span 2; background: linear-gradient(150deg, #ffffff 0%, color-mix(in srgb, var(--c), #fff 55%) 100%); }
+.vitrine-card .rc-label { font-size: calc(var(--u) * 4.6); }
+.vitrine-card .rc-thumb { width: calc(var(--u) * 12); height: calc(var(--u) * 12); }
+.rc-badge.gift { background: linear-gradient(180deg, #fff2b0, var(--gold)); color: #6b4300; box-shadow: 0 calc(var(--u) * .6) 0 var(--gold-d); }
+.book-card .rc-ico { background: #fff3e2; }
+
+/* La vitrine ouverte (son titre passe à la ligne plutôt que d'être coupé) */
+.vitrine .rayon-head h3 { white-space: normal; line-height: 1.1; font-size: calc(var(--u) * 4.1); }
+.vitrine .item-grid { margin-top: calc(var(--u) * 1.6); }
+.vt-gift { padding: calc(var(--u) * 3); border-radius: calc(var(--u) * 5); margin-bottom: calc(var(--u) * 2);
+  background: linear-gradient(160deg, #fffaf0, color-mix(in srgb, var(--c), #fff 80%)); box-shadow: inset 0 0 0 calc(var(--u) * .6) #ffd23f; color: var(--ink); }
+.vt-gift h3 { font-size: calc(var(--u) * 4.6); }
+.vt-gift p { margin-top: calc(var(--u) * 1); font-size: calc(var(--u) * 3.6); color: var(--ink-soft); }
+.item-card.gift { background: linear-gradient(180deg, #ffffff, #fff4cf); box-shadow: 0 0 0 calc(var(--u) * .6) #ffd23f, 0 calc(var(--u) * 1) 0 var(--gold-d); }
+.item-card.gift .tag.muted { background: var(--gold-d); }
+.item-card.mine { opacity: .9; }
+.item-card.mine .tag.muted { background: var(--green); }
+.vt-got { margin: 0 0 calc(var(--u) * 1); font-size: calc(var(--u) * 3.8); }
+.vt-note { margin-top: calc(var(--u) * 3); text-align: center; font-size: calc(var(--u) * 3.4); opacity: .85; }
+
+/* Le livre des thèmes : une page par thème, les avatars dans le décor */
+.theme-book { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 70), 1fr)); gap: calc(var(--u) * 3); }
+.tb-page { position: relative; margin: 0; aspect-ratio: 4 / 3; border-radius: calc(var(--u) * 4); overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
+  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c), #fff 30%), color-mix(in srgb, var(--c), #000 45%)); background-size: cover; background-position: center;
+  box-shadow: 0 0 0 calc(var(--u) * 1) #fff, 0 calc(var(--u) * 2) calc(var(--u) * 6) rgba(10, 6, 40, .35); transform: rotate(-1deg); }
+.tb-page:nth-child(even) { transform: rotate(1.2deg); }
+.tb-kids { flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: calc(var(--u) * 2); padding: calc(var(--u) * 2) calc(var(--u) * 2) 0; min-height: 0; }
+.tb-kid { flex: 1; max-width: 45%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+.tb-kid .avatar { width: 100%; height: 82%; }
+.tb-kid span { font-weight: 700; font-size: calc(var(--u) * 3.4); color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .35); }
+.tb-page figcaption { padding: calc(var(--u) * 1.4) calc(var(--u) * 2.4); background: rgba(255, 255, 255, .92); color: var(--ink); font-weight: 700; font-size: calc(var(--u) * 3.3); text-align: center; }
+
+/* Espace parent : les thèmes */
+.theme-catalog { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); }
+.theme-card { display: flex; flex-direction: column; align-items: flex-start; gap: calc(var(--u) * .8); padding: calc(var(--u) * 2.4); border-radius: calc(var(--u) * 4); min-width: calc(var(--u) * 60); text-align: left;
+  background: linear-gradient(160deg, #fff, color-mix(in srgb, var(--c), #fff 78%)); color: var(--ink); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c), #fff 50%); }
+.theme-card.on { box-shadow: inset 0 0 0 calc(var(--u) * .8) var(--c); }
+.tc-emoji { font-size: calc(var(--u) * 8); line-height: 1; }
+.tc-name { font-weight: 700; font-size: calc(var(--u) * 4.4); }
+.tc-thumbs { display: flex; gap: calc(var(--u) * 1); }
+.tc-thumb { width: calc(var(--u) * 9); height: calc(var(--u) * 9); border-radius: calc(var(--u) * 2); background: #fff; display: grid; place-items: center; overflow: hidden; }
+.tc-thumb svg { width: 92%; height: 92%; }
+.tc-meta { font-size: calc(var(--u) * 3.1); color: var(--ink-soft); }
+.theme-now { background: linear-gradient(160deg, #fff, color-mix(in srgb, var(--c), #fff 82%)); box-shadow: inset 4px 0 0 var(--c); }
+
+@media (orientation: portrait) {
+  .vitrine-card { grid-column: auto; }
+}
