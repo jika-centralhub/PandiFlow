@@ -140,6 +140,26 @@ export class SupabaseRepo {
     if (error) throw fail(error);
   }
 
+  // --- Pilotage de l'adoption (supabase/migrations/20261027120000_pilotage.sql) ----------
+  // Dernière ouverture de l'app par ce parent, et sa version
+  async markSeen(familyId) {
+    const { error } = await this.sb.rpc('mark_seen', { p_family: familyId, p_version: APP_VERSION });
+    if (error) throw fail(error);
+  }
+
+  async isAppAdmin() {
+    const { data, error } = await this.sb.rpc('is_app_admin');
+    if (error) throw fail(error);
+    return data === true;
+  }
+
+  // Les chiffres de toutes les familles (refusé à qui n'est pas dans app_admins)
+  async adminStats(skipOwn = false) {
+    const { data, error } = await this.sb.rpc('admin_stats', { p_skip_own: skipOwn });
+    if (error) throw fail(error);
+    return data;
+  }
+
   // Les réglages tels qu'ils sont sur le serveur (relus juste avant d'y écrire)
   async getSettings(familyId) {
     const { data, error, status } = await this.sb.from('families').select('settings').eq('id', familyId).single();

@@ -1,5 +1,5 @@
 // Espace parent (protégé par le code PIN) : enfants, tâches, défis, historique, réglages.
-import { html, useState } from '../vendor/preact-htm.js';
+import { html, useState, useEffect } from '../vendor/preact-htm.js';
 import { useStore, setPrefs } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import { SEXES, activeChildren, tasksForChild, findRating, balance, challengesForChild, COLOR_META, ROUTINES, routineOf, TEAM_CARD, findTeamCard, teamCardLevel, surpriseBoard } from '../domain.js';
@@ -28,6 +28,8 @@ const SECTIONS = [
   { id: 'tsedaka', label: 'Tsedaka', icon: '💙' },
   { id: 'reglages', label: 'Réglages', icon: '⚙️' },
 ];
+// Seulement pour l'auteur de l'app (actions.checkAdmin)
+const PILOTAGE = { id: 'pilotage', label: 'Pilotage', icon: '📊' };
 
 const EMOJIS = ['⏰', '☀️', '🥣', '🥐', '🧃', '🍽️', '🥦', '🥛', '🍎', '🛁', '🚿', '🧼', '🪥', '🦷', '👕', '🧦', '👖', '🎒', '📚', '📖', '✏️', '🧸', '🧩', '🛏️', '😴', '🌙', '🚽', '🧴', '💧', '🪮', '👟', '🧥', '🧹', '🗑️', '🐶', '🐱', '🌱', '🎹', '⚽', '🧘', '💊', '⏰', '📵', '🤗', '💬', '🌟', '❤️', '🙏', '🎨', '🧺', '🍳'];
 
@@ -362,6 +364,17 @@ function SettingsSection() {
   </div>`;
 }
 
+// Le tableau de bord n'est chargé que s'il est ouvert
+function PilotageTab() {
+  const [mod, setMod] = useState(null);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    import('../components/Pilotage.js').then(setMod, (e) => setError(e.message || String(e)));
+  }, []);
+  if (error) return html`<p class="hint">Le pilotage n'a pas pu se charger : ${error}</p>`;
+  return mod ? html`<${mod.Pilotage} />` : html`<p class="hint">Chargement…</p>`;
+}
+
 function PinChange({ onDone }) {
   const [step, setStep] = useState('old');
   if (step === 'old') return html`<${PinPad} onSuccess=${() => { actions.updateSettings({ pinHash: null }); setStep('new'); }} />`;
@@ -372,7 +385,14 @@ export function ParentPage({ section = 'enfants' }) {
   const s = useStore();
   const [, refresh] = useState(0);
   const unlocked = actions.isParentUnlocked();
-  const current = SECTIONS.some((x) => x.id === section) ? section : 'enfants';
+  const [admin, setAdmin] = useState(false);
+  useEffect(() => {
+    let live = true;
+    actions.checkAdmin().then((v) => live && setAdmin(v));
+    return () => { live = false; };
+  }, [s.user?.id]);
+  const sections = admin ? [...SECTIONS, PILOTAGE] : SECTIONS;
+  const current = sections.some((x) => x.id === section) ? section : 'enfants';
   const promises = surpriseBoard(s.settings).toKeep.reduce((n, g) => n + (g.surprise.team ? 1 : g.cards.length), 0);
 
   if (!unlocked) {
@@ -391,7 +411,7 @@ export function ParentPage({ section = 'enfants' }) {
       <button class="icon-btn" aria-label="Verrouiller" onClick=${() => { actions.lockParent(); navigate('soiree'); }}>🔒</button>
     </header>
     <div class="parent-body">
-      <nav class="side-tabs">${SECTIONS.map((x) => html`<button key=${x.id} class=${`tab ${current === x.id ? 'on' : ''}`} onClick=${() => { sfx.tap(); navigate(`parent/${x.id}`, { replace: true }); }}><span class="tab-ico">${x.icon}</span>${x.label}${x.id === 'surprises' && promises > 0 && html`<span class="tab-badge" aria-label=${`${promises} promesse(s) à tenir`}>${promises}</span>`}</button>`)}</nav>
+      <nav class="side-tabs">${sections.map((x) => html`<button key=${x.id} class=${`tab ${current === x.id ? 'on' : ''}`} onClick=${() => { sfx.tap(); navigate(`parent/${x.id}`, { replace: true }); }}><span class="tab-ico">${x.icon}</span>${x.label}${x.id === 'surprises' && promises > 0 && html`<span class="tab-badge" aria-label=${`${promises} promesse(s) à tenir`}>${promises}</span>`}</button>`)}</nav>
       <div class="parent-content" key=${current}>
         ${current === 'enfants' && html`<${ChildrenSection} />`}
         ${current === 'taches' && html`<${TasksSection} />`}
@@ -400,6 +420,7 @@ export function ParentPage({ section = 'enfants' }) {
         ${current === 'surprises' && html`<${SurpriseParent} />`}
         ${current === 'tsedaka' && html`<${TsedakaParent} />`}
         ${current === 'reglages' && html`<${SettingsSection} />`}
+        ${current === 'pilotage' && html`<${PilotageTab} />`}
       </div>
     </div>
   </div>`;

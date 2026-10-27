@@ -69,7 +69,30 @@ export async function reload() {
   setState({ ...data, settings: domain.mergeSettings(data.family?.settings), status: 'ready' });
   measure('pandiflow:reload', start, { ratings: data.ratings.length, ledger: data.ledger.length });
   ensureMorningTasks();
+  markSeen();
 }
+
+// --- Pilotage de l'adoption ---------------------------------------------------------------
+// L'app note qu'elle vient d'être ouverte (au plus une fois par quart d'heure), sans gêner si ça échoue
+let seenAt = 0;
+function markSeen() {
+  const s = getState();
+  if (s.mode !== 'cloud' || !s.family || !repo.markSeen || Date.now() - seenAt < 15 * 60 * 1000) return;
+  seenAt = Date.now();
+  repo.markSeen(s.family.id).catch((e) => console.warn('PandiFlow : dernière ouverture non enregistrée', e?.message));
+}
+
+// L'onglet 📊 Pilotage n'apparaît que pour l'auteur de l'app (table app_admins), une question par compte
+let adminCheck = null;
+export function checkAdmin() {
+  const userId = getState().user?.id;
+  if (getState().mode !== 'cloud' || !userId || !repo?.isAppAdmin) return Promise.resolve(false);
+  // (hors connexion, on redemandera la prochaine fois)
+  if (adminCheck?.userId !== userId) adminCheck = { userId, promise: repo.isAppAdmin().catch(() => { adminCheck = null; return false; }) };
+  return adminCheck.promise;
+}
+
+export const adminStats = (skipOwn = false) => repo.adminStats(skipOwn);
 
 // Le mode matin est arrivé après coup : une famille existante reçoit une seule fois
 // les tâches du matin par défaut (elle peut ensuite les modifier ou les supprimer).
