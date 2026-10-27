@@ -383,6 +383,18 @@ export function treasureProgress(state) {
   return { ...t, goal, step, bonus, count: capped, reached: count >= goal, paliers, totalPaliers: Math.floor(goal / step), nextAt: Math.min(goal, (paliers + 1) * step) };
 }
 
+// À peu près combien de pierres l'équipe met dans le coffre en une semaine (pour choisir la taille d'un
+// coffre) : chaque tâche de chaque enfant, matin et soir, à ses jours actifs, faite 4 fois sur 5
+export function weeklyStones(state, success = 0.8) {
+  let n = 0;
+  for (const c of activeChildren(state.children)) {
+    for (const routine of ['soir', 'matin']) {
+      for (const t of tasksForChild(c.id, null, state, routine)) n += Array.isArray(t.days) ? t.days.length : 7;
+    }
+  }
+  return n * success;
+}
+
 export const palierId = (start, n, childId) => `palier-${start || 'debut'}-${n}-${childId}`;
 
 // Les pandi des paliers atteints et pas encore donnés (un palier n'est donné qu'une fois, et reste

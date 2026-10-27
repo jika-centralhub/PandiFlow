@@ -8,10 +8,25 @@ import { sfx } from '../lib/sounds.js';
 const SITE = /(^|\.)pandiflow\.com$/.test(location.hostname) ? location.origin.replace('//pandiflow.com', '//www.pandiflow.com') : 'https://www.pandiflow.com';
 
 const MAX_PARENTS = 6;
-const fmtCode = (c) => `${c.slice(0, 4)}-${c.slice(4)}`;
-const fmtDate = (iso) =>
+export const fmtCode = (c) => `${c.slice(0, 4)}-${c.slice(4)}`;
+export const fmtDate = (iso) =>
   iso ? new Date(iso).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
 const fmtDay = (iso) => (iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
+
+// Envoie l'invitation par le partage du téléphone (SMS, WhatsApp…), sinon la copie
+export async function shareInvite(inv) {
+  const text = `Rejoins notre famille sur Pandi 🐼 : va sur ${SITE}, crée ton compte parent, puis choisis « Rejoindre une famille » avec le code ${fmtCode(inv.code)} (valable 48 h, une seule fois).`;
+  try {
+    if (navigator.share) await navigator.share({ title: 'Invitation Pandi', text });
+    else {
+      await navigator.clipboard.writeText(text);
+      toast('Invitation copiée : colle-la dans un message.', 'success');
+    }
+    return true;
+  } catch {
+    return false; // partage annulé
+  }
+}
 
 export function FamilyMembers() {
   const s = useStore();
@@ -48,19 +63,6 @@ export function FamilyMembers() {
       setError(e.message || "Impossible de créer l'invitation.");
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function share(inv) {
-    const text = `Rejoins notre famille sur Pandi 🐼 : va sur ${SITE}, crée ton compte parent, puis choisis « Rejoindre une famille » avec le code ${fmtCode(inv.code)} (valable 48 h, une seule fois).`;
-    try {
-      if (navigator.share) await navigator.share({ title: 'Invitation Pandi', text });
-      else {
-        await navigator.clipboard.writeText(text);
-        toast('Invitation copiée : colle-la dans un message.', 'success');
-      }
-    } catch {
-      /* partage annulé */
     }
   }
 
@@ -103,7 +105,7 @@ export function FamilyMembers() {
       <span class="invite-code">${fmtCode(fresh.code)}</span>
       <p class="meta">Valable jusqu'au ${fmtDate(fresh.expires_at)} · une seule utilisation</p>
       <div class="sheet-actions" style="justify-content:flex-start">
-        <button class="btn btn-blue" onClick=${() => share(fresh)}>📤 Envoyer l'invitation</button>
+        <button class="btn btn-blue" onClick=${() => shareInvite(fresh)}>📤 Envoyer l'invitation</button>
         <button class="p-btn danger" onClick=${() => revoke(fresh.code)}>Annuler</button>
       </div>
     </div>`}
@@ -112,7 +114,7 @@ export function FamilyMembers() {
       ${others.map((i) => html`<div key=${i.code} class="row muted-row">
         <span class="emoji">✉️</span>
         <div class="grow"><div class="title">Invitation ${fmtCode(i.code)}</div><div class="meta">En attente · valable jusqu'au ${fmtDate(i.expires_at)}</div></div>
-        <button class="p-btn" onClick=${() => share(i)}>Envoyer</button>
+        <button class="p-btn" onClick=${() => shareInvite(i)}>Envoyer</button>
         <button class="p-btn danger" onClick=${() => revoke(i.code)}>Annuler</button>
       </div>`)}
     </div>`}

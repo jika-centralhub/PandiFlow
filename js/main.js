@@ -1,5 +1,5 @@
 import { html, render, useEffect } from './vendor/preact-htm.js';
-import { useStore } from './lib/store.js';
+import { useStore, inAccueil } from './lib/store.js';
 import * as actions from './lib/actions.js';
 import { useRoute, navigate } from './router.js';
 import { initSky } from './anim/sky.js';
@@ -12,6 +12,7 @@ import { ChildPage } from './pages/Child.js';
 import { ParentPage } from './pages/Parent.js';
 import { Login, NewPassword } from './pages/Login.js';
 import { Setup } from './pages/Setup.js';
+import { Accueil } from './pages/Accueil.js';
 
 function Router() {
   const s = useStore();
@@ -26,6 +27,8 @@ function Router() {
   if (s.status === 'auth') return html`<${Login} />`;
   if (s.status === 'recovery') return html`<${NewPassword} />`;
   if (s.status === 'setup') return html`<${Setup} />`;
+  // L'assistant de démarrage continue après la création de la famille (sur cet appareil)
+  if (inAccueil(s)) return html`<${Accueil} />`;
 
   if (page === 'enfant' && id) return html`<${ChildPage} key=${id} childId=${id} tab=${route.query.onglet} rayon=${route.query.rayon} />`;
   if (page === 'parent') return html`<${ParentPage} section=${id} />`;

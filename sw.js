@@ -19,6 +19,7 @@ const SHELL = [
   './css/magic.css',
   './css/surprise.css',
   './css/theme.css',
+  './css/accueil.css',
   './assets/fonts/fredoka.woff2',
   './assets/icons/icon.svg',
   './assets/icons/icon-192.png',

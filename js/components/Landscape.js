@@ -5,7 +5,7 @@
 //     puis de tourner le téléphone.
 // « Plus tard » la cache jusqu'au prochain lancement de l'app.
 import { html, useEffect, useState } from '../vendor/preact-htm.js';
-import { useStore } from '../lib/store.js';
+import { useStore, inAccueil } from '../lib/store.js';
 import { sfx } from '../lib/sounds.js';
 import { isPhone, isPortrait, isFullscreen, canFullscreen, isInstalled, enterLandscape } from '../lib/device.js';
 
@@ -31,7 +31,8 @@ export function LandscapeOffer() {
     };
   }, []);
 
-  if (later || s.status === 'loading' || !isPhone()) return null;
+  // Pas pendant la création de la famille : on remplit des formulaires, le téléphone en hauteur
+  if (later || s.status === 'loading' || s.status === 'setup' || inAccueil(s) || !isPhone()) return null;
   const full = isFullscreen() || isInstalled();
   const portrait = isPortrait();
   if (full && !portrait) return null;

@@ -1,6 +1,6 @@
 // Actions de l'app : elles mettent à jour l'état tout de suite (interface instantanée)
 // puis enregistrent les changements dans le stockage (localStorage ou Supabase).
-import { getState, setState, setTimers, subscribe, toast } from './store.js';
+import { getState, setState, setTimers, setAccueil, subscribe, toast } from './store.js';
 import { LocalRepo } from './localRepo.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, APP_VERSION } from '../config.js';
 import * as domain from '../domain.js';
@@ -40,6 +40,16 @@ export async function boot() {
     }
     repo = new LocalRepo();
     setState({ mode: 'demo', user: await repo.getUser() });
+    // ?demo&accueil : une démo vide, pour essayer l'assistant de démarrage d'une nouvelle famille
+    // (l'adresse est nettoyée tout de suite : recharger la page reprend l'assistant là où il en était)
+    const params = new URLSearchParams(location.search);
+    if (params.has('accueil')) {
+      params.delete('accueil');
+      history.replaceState(null, '', `${location.pathname}?${params}${location.hash}`);
+      repo.reset();
+      setAccueil(null);
+      return setState({ status: 'setup' });
+    }
     if (!(await repo.getFamily())) await createDemoFamily();
     await reload();
   } catch (e) {
@@ -727,16 +737,29 @@ export async function signOut() {
   forgetFamily({ status: 'auth', user: null });
 }
 
-export async function createFamily({ name, children }) {
+// routines : les choix de l'assistant de démarrage ({ evening, morning, schoolDays, departure }).
+// L'assistant continue ensuite sur cet appareil (code parent, notes, coffre, autre parent, télé).
+export async function createFamily({ name, children, routines = null }) {
   const family = await repo.createFamily(name);
-  setState({ family });
   const kids = children.map((c, i) => makeChild(family.id, c, i));
-  const seed = buildFamilySeed(family.id, kids);
+  const seed = buildFamilySeed(family.id, kids, routines);
+  // Les réglages de départ sont écrits avant le premier chargement (sinon le matin se rajouterait tout seul)
+  const settings = { ...(family.settings || {}), morningSeeded: true };
+  if (routines) Object.assign(settings, { departure: routines.morning ? routines.departure : null, departureDays: routines.schoolDays });
+  await repo.updateFamily(family.id, { settings });
+  setState({ family: { ...family, settings } });
   await repo.put('children', kids);
   await repo.put('tasks', seed.tasks);
-  await repo.put('child_tasks', seed.childTasks);
-  await repo.put('challenges', seed.challenges);
+  if (seed.childTasks.length) await repo.put('child_tasks', seed.childTasks);
+  if (seed.challenges.length) await repo.put('challenges', seed.challenges);
+  if (routines) setAccueil({ familyId: family.id, step: 'code' });
   await reload();
+}
+
+// L'assistant de démarrage passe à l'étape suivante, ou se termine (step null)
+export function accueilStep(step) {
+  const s = getState();
+  setAccueil(step && s.family ? { familyId: s.family.id, step } : null);
 }
 
 export async function joinFamily(code) {

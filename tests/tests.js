@@ -7,6 +7,7 @@ import { getItem, offeredTo, starredFor, rayonOf } from '../js/avatar/items.js';
 import { THEME_CATALOG, getTheme, giftOptions, vitrineItems, themeLooks, GIFT_MAX } from '../js/avatar/themes.js';
 import { setThemeLooks, themeLookFor } from '../js/mascot/themeLook.js';
 import * as w from '../js/avatar/wear.js';
+import { buildFamilySeed, fitsAge, eveBefore } from '../js/lib/seed.js';
 
 const results = [];
 function test(name, fn) {
@@ -768,6 +769,56 @@ test('tête : rangé pour les anciennes versions, et une ancienne version ne fai
   eq(headOf({ ...e, hat: 'casquette' }), ['casquette', 'moustache', 'soleil']);
   eq(headOf({ hat: 'couronne', face: 'masque' }), ['couronne', 'masque'], 'les anciens réglages se lisent tels quels');
   eq(headOf(w.withTryOn(e, { slot: 'face', itemId: 'masque' })), ['chat', 'kippa_velours', 'masque', 'moustache'], 'essai en boutique');
+});
+
+// --- Assistant de démarrage -----------------------------------------------------------------------
+test('démarrage : les tâches cochées, données selon l’âge, et les défis des seules tâches gardées', () => {
+  const kids = [{ id: 'a', age: 4 }, { id: 'b', age: 8 }];
+  const seed = buildFamilySeed('f', kids, { evening: ['dents', 'devoirs', 'pipi', 'cartable'], morning: null, schoolDays: [1, 2, 4, 5] });
+  eq(seed.tasks.map((t) => t.title), ['Brossage des dents', 'Cartable prêt', 'Devoirs', 'Pipi avant le lit']);
+  eq(seed.tasks.map((t) => t.sort), [0, 1, 2, 3]);
+  const kidsOf = (title) => seed.childTasks.filter((ct) => ct.task_id === seed.tasks.find((t) => t.title === title).id).map((ct) => ct.child_id);
+  eq(kidsOf('Brossage des dents'), ['a', 'b']);
+  eq(kidsOf('Devoirs'), ['b'], 'les devoirs pour les 6 ans et plus');
+  eq(kidsOf('Pipi avant le lit'), ['a'], 'le pipi pour les moins de 6 ans');
+  eq(seed.tasks.find((t) => t.title === 'Cartable prêt').days, [0, 1, 3, 4], 'les veilles des jours d’école');
+  ok(seed.tasks.every((t) => t.routine === 'soir' && !('_key' in t)), 'pas de matin, pas de clé interne');
+  eq(seed.challenges.map((c) => c.title), ['Brossou le super-héros'], 'un défi seulement pour une tâche gardée');
+});
+
+test('démarrage : le matin suit les jours d’école ; sans choix, la famille reçoit tout comme avant', () => {
+  const seed = buildFamilySeed('f', [{ id: 'a', age: 4 }], { evening: ['lit'], morning: ['lever', 'dents'], schoolDays: [1, 2, 3, 4] });
+  const m = seed.tasks.filter((t) => t.routine === 'matin');
+  eq(m.map((t) => t.title), ['Se lever', 'Brossage des dents']);
+  eq(m[0].days, [1, 2, 3, 4]);
+  eq(m.map((t) => t.sort), [1, 2]);
+  const all = buildFamilySeed('f', [{ id: 'a', age: 4 }, { id: 'b' }]);
+  eq(all.tasks.filter((t) => t.routine === 'soir').length, 8);
+  eq(all.tasks.filter((t) => t.routine === 'matin').length, 8);
+  eq(all.challenges.length, 4);
+  eq(all.childTasks.length, 32);
+});
+
+test('démarrage : l’âge des idées de tâches, et les veilles d’école', () => {
+  ok(fitsAge({ minAge: 6 }, { age: null }), 'sans âge : toutes les idées');
+  ok(!fitsAge({ minAge: 6 }, { age: 5 }) && fitsAge({ minAge: 6 }, { age: 6 }));
+  ok(fitsAge({ maxAge: 5 }, { age: 5 }) && !fitsAge({ maxAge: 5 }, { age: 6 }));
+  eq(eveBefore([1, 2, 3, 4, 5]), [0, 1, 2, 3, 4]);
+  eq(eveBefore([6, 0]), [5, 6]);
+});
+
+test('coffre : les pierres d’une semaine, d’après les tâches et leurs jours (enfant archivé et tâche coupée exclus)', () => {
+  const st = {
+    children: [{ id: 'a' }, { id: 'b', archived: true }],
+    tasks: [
+      { id: 't1', active: true, days: [0, 1, 2, 3, 4, 5, 6] },
+      { id: 't2', active: true, routine: 'matin', days: [1, 2, 3, 4, 5] },
+      { id: 't3', active: false, days: [1] },
+    ],
+    childTasks: [{ child_id: 'a', task_id: 't1' }, { child_id: 'a', task_id: 't2' }, { child_id: 'a', task_id: 't3' }, { child_id: 'b', task_id: 't1' }],
+  };
+  eq(d.weeklyStones(st, 1), 12);
+  ok(Math.abs(d.weeklyStones(st) - 9.6) < 1e-9, 'faites 4 fois sur 5');
 });
 
 // --- Affichage ------------------------------------------------------------------------------------

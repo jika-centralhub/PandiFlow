@@ -24,7 +24,28 @@ let state = {
   prefs: loadPrefs(),
   // Minuteurs des tâches en cours sur cet appareil (celui dont l'écran est dupliqué sur la télé)
   timers: loadTimers(),
+  // Assistant de démarrage en cours sur cet appareil, après la création de la famille : { familyId, step }
+  accueil: loadAccueil(),
 };
+
+function loadAccueil() {
+  try {
+    const a = JSON.parse(localStorage.getItem('pandiflow-accueil'));
+    return a?.familyId ? a : null;
+  } catch {
+    return null;
+  }
+}
+
+// null : l'assistant est fini (ou abandonné)
+export function setAccueil(accueil) {
+  if (accueil) localStorage.setItem('pandiflow-accueil', JSON.stringify(accueil));
+  else localStorage.removeItem('pandiflow-accueil');
+  setState({ accueil });
+}
+
+// L'assistant de démarrage de la famille ouverte est-il en cours ?
+export const inAccueil = (s) => Boolean(s.accueil && s.family && s.accueil.familyId === s.family.id);
 
 function loadPrefs() {
   const defaults = { sound: true, reducedMotion: false, timerMusic: true, timerLast: {} };
