@@ -8,13 +8,14 @@
 --   & "$env:LOCALAPPDATA\supabase-cli\supabase.exe" db query --linked --project-ref kyhhkhmwdostzdaksxzw --file supabase/tests/isolation.sql
 -- Le rapport s'affiche dans le message d'erreur : chaque ligne commence par OK ou ÉCHEC.
 
+
 do $test$
 declare
   orig text := current_user;
   r text := 'RAPPORT D''ISOLATION (tout est annulé à la fin)';
   n int;
   res jsonb;
-  a1, a2, b1, b2, c uuid;
+  a1 uuid; a2 uuid; b1 uuid; b2 uuid; c uuid;
   fa uuid; fb uuid; fc uuid;
   ca uuid := gen_random_uuid(); cb uuid := gen_random_uuid();
   ta uuid := gen_random_uuid(); tb uuid := gen_random_uuid();
