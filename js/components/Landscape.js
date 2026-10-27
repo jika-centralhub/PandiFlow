@@ -1,4 +1,4 @@
-// Sur le téléphone, PandiFlow propose le plein écran en paysage : l'écran dupliqué sur la télé est alors
+// Sur le téléphone, Pandi propose le plein écran en paysage : l'écran dupliqué sur la télé est alors
 // rempli, sans les barres du navigateur.
 //   - Android : un bouton passe en plein écran et verrouille le paysage ;
 //   - iPhone (une page n'y passe pas en plein écran) : on explique comment l'ouvrir depuis l'écran d'accueil,
@@ -54,12 +54,12 @@ export function LandscapeOffer() {
     // iPhone dans Safari : seule l'app ouverte depuis l'écran d'accueil s'affiche sans les barres
     icon = '📲';
     title = 'Plein écran sur iPhone';
-    text = html`Touche <b>Partager</b> ⬆️ puis <b>« Sur l'écran d'accueil »</b>, ouvre PandiFlow depuis son icône${portrait ? ' et tourne le téléphone' : ''}.`;
+    text = html`Touche <b>Partager</b> ⬆️ puis <b>« Sur l'écran d'accueil »</b>, ouvre Pandi depuis son icône${portrait ? ' et tourne le téléphone' : ''}.`;
     action = null;
   } else if (portrait && (stuck || (full && !(canFullscreen() && screen.orientation?.lock)))) {
     icon = '🔄';
     title = 'Tourne ton téléphone';
-    text = 'PandiFlow est fait pour l’écran en largeur (coupe le verrou de rotation s’il ne tourne pas).';
+    text = 'Pandi est fait pour l’écran en largeur (coupe le verrou de rotation s’il ne tourne pas).';
     action = null;
   } else if (full) {
     title = 'Passer en paysage';

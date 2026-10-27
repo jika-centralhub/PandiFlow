@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
   const { childId, expr, image, mediaType, version } = body;
   // Une app d'avant la v1.4 encore ouverte enregistrerait le personnage sans ses repères des bras
   if (typeof body.app !== "string") {
-    return reply({ error: "Une nouvelle version de PandiFlow est arrivée : ferme complètement l'app (balaie-la des apps récentes), puis rouvre-la." }, 426);
+    return reply({ error: "Une nouvelle version de Pandi est arrivée : ferme complètement l'app (balaie-la des apps récentes), puis rouvre-la." }, 426);
   }
   const marksOnly = body.marksOnly === true;
   const fromFace = !marksOnly && expr === "happy" && body.fromFace === true;

@@ -527,7 +527,7 @@ const BY_ID = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
 // Chaque identifiant ne doit servir qu'une fois : sinon getItem trouve l'autre objet, et l'achat
 // débite et équipe le mauvais (la corne de licorne achetait la monture)
 if (Object.keys(BY_ID).length !== ITEMS.length) {
-  console.warn('PandiFlow : identifiants d’objets en double', ITEMS.map((i) => i.id).filter((id, k, all) => all.indexOf(id) !== k));
+  console.warn('Pandi : identifiants d’objets en double', ITEMS.map((i) => i.id).filter((id, k, all) => all.indexOf(id) !== k));
 }
 export const getItem = (id) => BY_ID[id] || null;
 export const shopItems = () => ITEMS.filter((i) => !i.exclusive);

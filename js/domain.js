@@ -1,4 +1,4 @@
-// Règles du jeu PandiFlow : fonctions pures, sans accès au stockage ni au DOM.
+// Règles du jeu Pandi : fonctions pures, sans accès au stockage ni au DOM.
 // Elles prennent l'état (ou une partie) et renvoient des valeurs calculées,
 // ce qui les rend testables (tests/index.html) et identiques en démo et en cloud.
 

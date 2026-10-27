@@ -1,4 +1,4 @@
-# PandiFlow 🐼✨
+# Pandi 🐼✨
 
 **Les routines du matin et du soir des enfants deviennent un jeu.** Le parent note la **coopération** de l'enfant à chaque tâche (🌟 du premier coup, 👍 après un rappel, ✋ il a fallu répéter, ⏸️ pas ce soir) depuis son téléphone, dont l'écran est dupliqué sur la télé. L'enfant gagne des **pandi** et les dépense en accessoires pour son avatar. Des **défis** (par exemple 10 brossages de dents du premier coup) débloquent des trésors animés comme **Brossou, la brosse à dents super-héros** qui vole et se met du dentifrice toute seule.
 
@@ -22,7 +22,7 @@ Pensé pour les 5 à 10 ans : grosses tuiles avec émojis, couleurs vives, sons,
 | 💰 **Cagnotte** | En touchant le compteur de pandi (code parent), on offre ou retire des pandi hors des routines, avec une raison. Pandi la mascotte saute de joie ou pleure sous son petit nuage. Un retrait ne fait jamais passer la cagnotte sous zéro. |
 | 🏆 **Défis** | Défis cumulatifs de 🌟 « du premier coup » (les soirs ratés ne remettent pas à zéro) avec 4 trésors exclusifs animés. Dans l'onglet Défis, l'enfant voit aussi ses notes du jour. |
 | 🎬 **Ma scène** | Dans le coin de l'enfant, une seule grande carte : l'enfant vit dans son décor animé (paysage de jour ou de nuit, ou le décor acheté) avec ses objets à côté de lui, à l'échelle. Il monte dans son véhicule quand c'est possible (kart, voitures, moto, tracteur, voilier, avion, hélicoptère, hublot de la fusée, bulle de la soucoupe, poney, licorne, dragon, bus) et part avec lui pendant son numéro ; le vélo et la trottinette sont garés à côté de lui ; livres, bougies et Torah sont posés sur une petite table. Il fait la fête quand il reçoit ou met un objet, et la caméra s'approche de lui pendant qu'il choisit son look. |
-| 🚗 **Garage** | Dans la scène : 18 véhicules et montures (vélo, kart, voiture de course, de police, camion de pompiers, moto, tracteur, voilier, avion, hélicoptère, fusée, soucoupe, poney, licorne, dragon…), 18 drapeaux sur un mât (France, Israël, Espagne, Italie, Portugal, Belgique, Allemagne, Royaume-Uni, États-Unis, Brésil, Japon, Maroc, Algérie, Tunisie, pirate, arc-en-ciel, damier, PandiFlow) et 10 accessoires (ballons, skate, trophée, guitare, cerf-volant, robot, télescope, batterie…). |
+| 🚗 **Garage** | Dans la scène : 18 véhicules et montures (vélo, kart, voiture de course, de police, camion de pompiers, moto, tracteur, voilier, avion, hélicoptère, fusée, soucoupe, poney, licorne, dragon…), 18 drapeaux sur un mât (France, Israël, Espagne, Italie, Portugal, Belgique, Allemagne, Royaume-Uni, États-Unis, Brésil, Japon, Maroc, Algérie, Tunisie, pirate, arc-en-ciel, damier, Pandi) et 10 accessoires (ballons, skate, trophée, guitare, cerf-volant, robot, télescope, batterie…). |
 | ✡️ **Judaïsme** | Un rayon de la boutique : 5 kippas (velours noir, srouga au crochet, blanche de Chabbat, Maguen David, ballon de foot) et le talit katan aux tsitsit qui se balancent (proposés aux garçons), sidour, tehilim et houmash qui s'ouvrent en laissant s'envoler des lettres, bougies de Chabbat aux flammes vivantes, Sefer Torah (500 pandi) aux clochettes qui tintent. |
 | 💙 **Tsedaka** | L'enfant met des pandi dans sa boîte de tsedaka (pièces qui volent) et choisit l'association parmi celles des parents, ou les laisse choisir. Les parents voient « À verser : X € » par association (taux réglable, 10 pandi = 1 € par défaut), notent quand c'est versé et peuvent annuler un don en attente. Badges de mitsva de 1 à 500 pandi donnés. |
 | 👦👧 **Garçon ou fille** | Facultatif, dans la fiche de l'enfant : les textes s'accordent (« Bravo championne ! », « Prête ? »), OpenAI sait s'il dessine un garçon ou une fille, et la boutique s'adapte (kippas et talit katan pour les garçons, bougies de Chabbat et tenue de princesse mises en avant pour les filles). |
@@ -71,10 +71,10 @@ Chaque parent crée son compte avec **e-mail + mot de passe** (8 caractères min
 
 **Connexion avec Google (facultatif)** : le bouton « Continuer avec Google » apparaît tout seul dès que le fournisseur Google est activé dans Supabase.
 
-1. Dans la [console Google Cloud](https://console.cloud.google.com/projectcreate), créer un projet `PandiFlow` (avec un compte Google personnel).
-2. **Google Auth Platform → Get started** : nom de l'app `PandiFlow`, ton e-mail d'assistance, audience **External**, ton e-mail de contact.
+1. Dans la [console Google Cloud](https://console.cloud.google.com/projectcreate), créer un projet `Pandi` (avec un compte Google personnel).
+2. **Google Auth Platform → Get started** : nom de l'app `Pandi`, ton e-mail d'assistance, audience **External**, ton e-mail de contact.
 3. **Branding → Authorized domains** : ajouter `pandiflow.com` et `supabase.co`.
-4. **Clients → Create client** : type *Web application*, nom `PandiFlow`.
+4. **Clients → Create client** : type *Web application*, nom `Pandi`.
    - *Authorized JavaScript origins* : `https://www.pandiflow.com`, `https://pandiflow.com` et `http://localhost:8080`
    - *Authorized redirect URIs* : `https://kyhhkhmwdostzdaksxzw.supabase.co/auth/v1/callback`
 5. Copier le **Client ID** et le **Client secret**.

@@ -1,4 +1,4 @@
-# Enregistre la clé API OpenAI dans les secrets Supabase de PandiFlow (Edge Function make-portrait).
+# Enregistre la clé API OpenAI dans les secrets Supabase de Pandi (Edge Function make-portrait).
 # La clé est saisie de façon masquée, passe par un fichier temporaire effacé aussitôt,
 # et n'est jamais affichée, ni écrite dans l'historique du terminal ou dans le dépôt.
 $ErrorActionPreference = 'Stop'

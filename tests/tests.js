@@ -455,7 +455,7 @@ test('relais : refusé s’il est trop vieux ou abîmé', () => {
   eq(R.decode(R.encode({ 'pandiflow-prefs': '{}' }, now - 5 * 60000), now), null);
   eq(R.decode('nimporte-quoi', now), null);
 });
-test('relais : seules les clés de PandiFlow et de Supabase passent', () => {
+test('relais : seules les clés de Pandi et de Supabase passent', () => {
   const now = Date.now();
   eq(R.decode(R.encode({ 'pandiflow-timers': '[]', autre: 'x', 'sb-x-auth-token': 'y' }, now), now), { 'pandiflow-timers': '[]', 'sb-x-auth-token': 'y' });
 });

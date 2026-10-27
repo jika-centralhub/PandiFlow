@@ -1,4 +1,4 @@
--- Test d'isolation entre familles et entre parents (PandiFlow).
+-- Test d'isolation entre familles et entre parents (Pandi).
 -- Il crée 5 comptes fictifs, 2 familles de 2 parents, un compte sans famille et un visiteur non connecté,
 -- puis vérifie que personne ne voit, ne modifie ni n'efface les données d'une autre famille.
 -- TOUT EST ANNULÉ À LA FIN : le bloc se termine toujours par une erreur qui contient le rapport.

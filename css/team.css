@@ -1,4 +1,4 @@
-/* ===== PandiFlow — carte d'équipe, bonne nuit, espace équipe et moments d'équipe ===== */
+/* ===== Pandi — carte d'équipe, bonne nuit, espace équipe et moments d'équipe ===== */
 
 /* Carte d'équipe de fin de soirée (la même pour toute la fratrie), sous la barre du haut */
 .teamcard-bar { flex: 1; display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 2.4); min-width: 0; padding: calc(var(--u) * 1.6) calc(var(--u) * 4);

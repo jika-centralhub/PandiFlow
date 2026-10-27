@@ -6,7 +6,7 @@
 // l'appareil (minuteurs, notes pas encore envoyées…) :
 //
 // 1. http -> https, même nom. Tant que l'app est ouverte en http, ce script vérifie si le https
-//    sert bien PandiFlow ; dès que c'est le cas, il emporte les données dans l'adresse de la page https (après
+//    sert bien Pandi ; dès que c'est le cas, il emporte les données dans l'adresse de la page https (après
 //    le « # », jamais envoyé au serveur), qui les range avant le démarrage de l'app. Ensuite
 //    l'appareil ne relance plus jamais l'app en http : Supabase n'accepte chaque jeton de
 //    connexion qu'une fois, une connexion utilisée des deux côtés finirait refusée partout.
@@ -128,11 +128,11 @@
     var ctrl = new AbortController();
     var timer = setTimeout(function () { ctrl.abort(); }, 5000);
     // On lit le manifeste pour de vrai (GitHub Pages l'autorise) : un filtre d'entreprise ou un
-    // portail wifi répond lui aussi en https, mais avec sa propre page, pas avec PandiFlow
+    // portail wifi répond lui aussi en https, mais avec sa propre page, pas avec Pandi
     fetch(target + '/manifest.webmanifest?sonde=' + Date.now(), { cache: 'no-store', signal: ctrl.signal })
       .then(function (res) { return res.ok ? res.json() : null; })
       .then(function (manifest) {
-        if (!manifest || manifest.short_name !== 'PandiFlow') return;
+        if (!manifest || manifest.short_name !== 'Pandi') return;
         var items = collect(localStorage);
         var code = encode(items, Date.now());
         if (code.length > MAX_CHARS) {

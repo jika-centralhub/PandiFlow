@@ -1,4 +1,4 @@
-// Outils communs aux Edge Functions PandiFlow : CORS, réponses JSON, session du parent, client Claude.
+// Outils communs aux Edge Functions Pandi : CORS, réponses JSON, session du parent, client Claude.
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 

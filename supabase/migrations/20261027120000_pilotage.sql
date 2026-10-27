@@ -1,5 +1,5 @@
 -- =====================================================================
---  PandiFlow — pilotage de l'adoption (Espace parent → 📊 Pilotage, visible seulement par l'auteur de l'app)
+--  Pandi — pilotage de l'adoption (Espace parent → 📊 Pilotage, visible seulement par l'auteur de l'app)
 --  app_admins : les comptes qui voient les chiffres de toutes les familles (illisible depuis l'app).
 --  family_members.last_seen_at / app_version : dernière ouverture de l'app par chaque parent
 --    (écrites par mark_seen, appelée par l'app à chaque chargement des données).

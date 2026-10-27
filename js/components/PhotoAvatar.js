@@ -118,7 +118,7 @@ export function PhotoAvatar({ child, onClose, onEdit }) {
         <h2>Avatar magique 📸</h2>
         <div class="consent">
           <p>La photo de ${child.name} est envoyée une seule fois à deux IA : Claude (Anthropic) repère sa coiffure, ses couleurs et ses lunettes, et OpenAI crée son personnage façon film d'animation 3D (visage et haut du corps), en 4 poses.</p>
-          <p style="margin-top:8px"><strong>La photo n'est jamais enregistrée</strong> : PandiFlow ne garde que le personnage créé (les 4 images, visibles seulement par votre famille), que tu peux remplacer ou retirer quand tu veux.</p>
+          <p style="margin-top:8px"><strong>La photo n'est jamais enregistrée</strong> : Pandi ne garde que le personnage créé (les 4 images, visibles seulement par votre famille), que tu peux remplacer ou retirer quand tu veux.</p>
           <label><input type="checkbox" checked=${agree} onChange=${(e) => setAgree(e.target.checked)} /> Je suis parent de ${child.name} et j'accepte l'envoi de la photo à Claude et à OpenAI.</label>
         </div>
         <div class="sheet-actions">

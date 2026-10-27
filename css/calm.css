@@ -1,4 +1,4 @@
-/* ===== PandiFlow — coin calme (gestion des émotions) ===== */
+/* ===== Pandi — coin calme (gestion des émotions) ===== */
 .calm-corner { --c: #9b7bff; position: fixed; inset: 0; z-index: 47; display: flex; flex-direction: column; overflow: hidden;
   background: radial-gradient(circle at 30% 60%, color-mix(in srgb, var(--c), #1a1450 62%), #0d0a2c 82%); animation: fade-in .5s ease; transition: background 1.2s; }
 .cc-sky { position: absolute; inset: 0; pointer-events: none; }

@@ -1,5 +1,5 @@
 -- =====================================================================
---  PandiFlow — la note de coopération et la carte d'équipe du soir
+--  Pandi — la note de coopération et la carte d'équipe du soir
 --  ratings.color : nouvelle valeur « pause » (⏸️ pas ce soir : une crise, un moment difficile,
 --    0 pandi, la tâche ne compte ni pour ni contre l'équipe). green / orange / red restent les
 --    valeurs de 🌟 du premier coup / 👍 après un rappel / ✋ il a fallu répéter.

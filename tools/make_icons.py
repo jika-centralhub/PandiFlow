@@ -1,4 +1,4 @@
-"""Génère l'icône de PandiFlow (le P dont le rond est la tête du panda) et les écrans de lancement iPhone.
+"""Génère l'icône de Pandi (le P dont le rond est la tête du panda) et les écrans de lancement iPhone.
 
 Le dessin est écrit ici en SVG, puis photographié par Chrome (sans fenêtre) :
 - assets/icons/icon.svg : l'icône des onglets ;

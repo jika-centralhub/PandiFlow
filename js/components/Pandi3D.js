@@ -44,7 +44,7 @@ export function Pandi3D({ act = 'idle', ctx = {}, framing = 'full', base = 'bust
         });
         setReady(true);
       })
-      .catch((e) => console.warn('PandiFlow : Pandi 3D indisponible', e?.message));
+      .catch((e) => console.warn('Pandi : Pandi 3D indisponible', e?.message));
     return () => {
       alive = false;
       ctl.current?.destroy();

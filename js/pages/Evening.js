@@ -287,7 +287,7 @@ function NightScreen({ kids, onWake }) {
     <div class="ns-stars" aria-hidden="true">${Array.from({ length: 28 }, (_, i) => html`<i key=${i} style=${{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 70}%`, animationDelay: `${(i % 7) * 0.6}s` }} />`)}</div>
     <div class="ns-pandi">${has3D() ? html`<${Pandi3D} act="endormi" framing="auto" base="full" fps=${12} />` : html`<${Pandi} mood="happy" wave=${false} />`}</div>
     <div class="ns-text">Bonne nuit ${names} 🌙</div>
-    <div class="ns-hint">Touche l'écran pour réveiller PandiFlow</div>
+    <div class="ns-hint">Touche l'écran pour réveiller Pandi</div>
   </div>`;
 }
 

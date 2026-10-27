@@ -27,7 +27,7 @@ export function CalmStage({ hero, ctx = {}, label = 'Pandi et son ami font l’e
         if (!alive || !ref.current) return;
         ctl.current = m.mountCalm(ref.current, { hero, ctx, date: eveningDate(), still: prefersReducedMotion() });        setReady(true);
       })
-      .catch((e) => console.warn('PandiFlow : coin calme 3D indisponible', e?.message));
+      .catch((e) => console.warn('Pandi : coin calme 3D indisponible', e?.message));
     return () => {
       alive = false;
       ctl.current?.destroy();

@@ -1,9 +1,9 @@
 ---
 name: objet-pixar
-description: "Ajoute à PandiFlow un ou plusieurs objets en 3D façon Pixar, dans le style validé avec le prototype v1.6.1 (kart, poney, vélo, ballon, sidour, couronne, table) : véhicule, monture, accessoire porté, compagnon, objet du Judaïsme, jeu du jardin, décor… Écrit la description de l'image dans tools/item-art.json, crée l'objet dans la boutique s'il n'existe pas, fait créer l'image par OpenAI (clé Supabase, fonction temporaire), la détoure, la pose dans la scène de l'enfant, vérifie en capture puis pousse. Sert aussi à refaire l'image d'un objet existant. À utiliser dès que l'utilisateur veut un nouvel objet 3D ou une nouvelle image d'objet."
+description: "Ajoute à Pandi un ou plusieurs objets en 3D façon Pixar, dans le style validé avec le prototype v1.6.1 (kart, poney, vélo, ballon, sidour, couronne, table) : véhicule, monture, accessoire porté, compagnon, objet du Judaïsme, jeu du jardin, décor… Écrit la description de l'image dans tools/item-art.json, crée l'objet dans la boutique s'il n'existe pas, fait créer l'image par OpenAI (clé Supabase, fonction temporaire), la détoure, la pose dans la scène de l'enfant, vérifie en capture puis pousse. Sert aussi à refaire l'image d'un objet existant. À utiliser dès que l'utilisateur veut un nouvel objet 3D ou une nouvelle image d'objet."
 ---
 
-Tu ajoutes des objets 3D façon film d'animation (Pixar) à PandiFlow, l'app familiale de routine du soir de
+Tu ajoutes des objets 3D façon film d'animation (Pixar) à Pandi, l'app familiale de routine du soir de
 l'utilisateur (dossier du projet : `C:\Users\jacob.kashani\OneDrive - Accenture\Documents\PandiFlow`).
 Parle-lui en français, simplement : c'est un parent, pas un développeur. Tutoie-le, comme dans l'app.
 
@@ -91,7 +91,7 @@ classificateur de permissions t'interdit de la déployer : c'est l'utilisateur q
    ```powershell
    & "$env:LOCALAPPDATA\supabase-cli\supabase.exe" functions deploy make-item-art --project-ref kyhhkhmwdostzdaksxzw --no-verify-jwt --use-api --workdir "C:\Users\jacob.kashani\OneDrive - Accenture\Documents\PandiFlow"
    ```
-   puis la page à ouvrir dans son Chrome, où il est connecté à PandiFlow :
+   puis la page à ouvrir dans son Chrome, où il est connecté à Pandi :
    `http://localhost:8080/tests/local/item-art.html?only=<id1>,<id2>` et le bouton « Créer les images »
    (30 à 60 s par image ; une image déjà créée n'est pas repayée). N'ouvre jamais pandiflow.com depuis ce
    PC (bloqué par le réseau d'Accenture) : seulement localhost.

@@ -40,7 +40,7 @@ const LOOK_SCHEMA = {
   },
 };
 
-const SYSTEM = `Tu aides PandiFlow, une application familiale, à dessiner l'avatar cartoon d'un enfant à partir d'une photo envoyée par son parent, qui a donné son accord.
+const SYSTEM = `Tu aides Pandi, une application familiale, à dessiner l'avatar cartoon d'un enfant à partir d'une photo envoyée par son parent, qui a donné son accord.
 
 Pour chaque caractéristique, choisis l'option la plus proche de ce que tu vois, uniquement parmi les valeurs autorisées :
 - face : forme générale du visage.

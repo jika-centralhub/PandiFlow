@@ -1,5 +1,5 @@
 -- =====================================================================
---  PandiFlow — schéma Supabase
+--  Pandi — schéma Supabase
 --  À exécuter une fois dans Supabase : SQL Editor > New query > coller > Run.
 --  Chaque famille ne voit que ses propres données (Row Level Security).
 -- =====================================================================

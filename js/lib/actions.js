@@ -79,7 +79,7 @@ function markSeen() {
   const s = getState();
   if (s.mode !== 'cloud' || !s.family || !repo.markSeen || Date.now() - seenAt < 15 * 60 * 1000) return;
   seenAt = Date.now();
-  repo.markSeen(s.family.id).catch((e) => console.warn('PandiFlow : dernière ouverture non enregistrée', e?.message));
+  repo.markSeen(s.family.id).catch((e) => console.warn('Pandi : dernière ouverture non enregistrée', e?.message));
 }
 
 // L'onglet 📊 Pilotage n'apparaît que pour l'auteur de l'app (table app_admins), une question par compte
@@ -577,7 +577,7 @@ function repairPortraits() {
     const p = normalizeLook(child.look).portrait;
     if (!p || p.off || repaired.has(p.base)) continue;
     repaired.add(p.base);
-    (p.body ? completePoses(child.id, p) : repairPortrait(child.id, p)).catch((e) => console.warn('PandiFlow : personnage 3D pas complété', e?.message));
+    (p.body ? completePoses(child.id, p) : repairPortrait(child.id, p)).catch((e) => console.warn('Pandi : personnage 3D pas complété', e?.message));
   }
 }
 
@@ -712,7 +712,7 @@ export async function resetDemo() {
 export function exportBackup() {
   const s = getState();
   const data = {
-    app: 'PandiFlow',
+    app: 'Pandi',
     exported_at: new Date().toISOString(),
     family: s.family,
     children: s.children,
@@ -726,7 +726,7 @@ export function exportBackup() {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `pandiflow-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `pandi-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }

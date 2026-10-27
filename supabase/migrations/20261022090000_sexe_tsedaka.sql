@@ -1,5 +1,5 @@
 -- =====================================================================
---  PandiFlow — sexe de l'enfant et tsedaka
+--  Pandi — sexe de l'enfant et tsedaka
 --  children.sex : 'garcon' | 'fille' | null (non précisé). Il accorde les textes, aide OpenAI pour
 --    le personnage 3D et adapte la boutique (kippas et talit katan pour les garçons).
 --  Nouveaux types d'écritures dans la cagnotte (ledger) :

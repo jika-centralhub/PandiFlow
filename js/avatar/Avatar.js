@@ -1,4 +1,4 @@
-// Personnage PandiFlow en SVG : tête "chibi" dessinée ou visage 3D (photo magique), posé sur
+// Personnage d'un enfant en SVG : tête "chibi" dessinée ou visage 3D (photo magique), posé sur
 // le haut du corps de body.js ; ou personnage 3D entier (tête et haut du corps, body3d.js).
 // Repère : tête centrée en (100, 100), encolure à y = 182.
 import { html, useEffect, useMemo } from '../vendor/preact-htm.js';

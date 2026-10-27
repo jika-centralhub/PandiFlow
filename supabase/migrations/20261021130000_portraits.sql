@@ -1,5 +1,5 @@
 -- =====================================================================
---  PandiFlow — visages 3D des enfants (Edge Function make-portrait)
+--  Pandi — visages 3D des enfants (Edge Function make-portrait)
 --  Les images générées sont rangées dans le bucket privé « portraits »,
 --  sous <famille>/<enfant>/<version>/<expression>.webp. Seule l'Edge Function écrit ;
 --  les parents de la famille peuvent lire. La photo d'origine n'est jamais gardée.

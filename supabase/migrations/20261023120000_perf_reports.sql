@@ -1,5 +1,5 @@
 -- =====================================================================
---  PandiFlow — mesures du compteur de performance caché (js/lib/perf.js, allumé avec ?perf)
+--  Pandi — mesures du compteur de performance caché (js/lib/perf.js, allumé avec ?perf)
 --  Une ligne par lancement de l'app sur un appareil, mise à jour pendant la session :
 --  démarrage, images par seconde, temps des taps, coût de la 3D, appareil. Jamais de donnée d'enfant.
 --  Envoi : supabase db query --linked --project-ref kyhhkhmwdostzdaksxzw --file supabase/migrations/20261023120000_perf_reports.sql

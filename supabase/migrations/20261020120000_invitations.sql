@@ -1,5 +1,5 @@
 -- =====================================================================
---  PandiFlow — invitations à usage unique et gestion des parents
+--  Pandi — invitations à usage unique et gestion des parents
 --  Appliqué au projet existant avec :
 --    supabase db query --linked --project-ref <ref> --file supabase/migrations/20261020120000_invitations.sql
 --  (déjà inclus dans supabase/schema.sql pour une installation neuve)

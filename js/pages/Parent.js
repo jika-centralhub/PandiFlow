@@ -359,7 +359,7 @@ function SettingsSection() {
       <div class="row"><span class="emoji">💾</span><div class="grow"><div class="title">Sauvegarde</div><div class="meta">Télécharger toutes les données (fichier JSON)</div></div><button class="p-btn" onClick=${actions.exportBackup}>Télécharger</button></div>
       ${s.settings.photoConsent && html`<div class="row"><span class="emoji">📸</span><div class="grow"><div class="title">Consentement photo donné</div><div class="meta">Les photos passent par Claude et OpenAI puis sont oubliées ; seuls les visages 3D créés sont gardés.</div></div><button class="p-btn" onClick=${() => actions.updateSettings({ photoConsent: false })}>Retirer</button></div>`}
     </div>
-    <p class="hint" style="margin-top:16px;text-align:center">PandiFlow v${APP_VERSION}</p>
+    <p class="hint" style="margin-top:16px;text-align:center">Pandi v${APP_VERSION}</p>
     ${changingPin && html`<${Modal} onClose=${() => setChangingPin(false)} style="width:auto"><${PinChange} onDone=${() => setChangingPin(false)} /><//>`}
   </div>`;
 }

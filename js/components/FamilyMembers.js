@@ -52,9 +52,9 @@ export function FamilyMembers() {
   }
 
   async function share(inv) {
-    const text = `Rejoins notre famille sur PandiFlow 🐼 : va sur ${SITE}, crée ton compte parent, puis choisis « Rejoindre une famille » avec le code ${fmtCode(inv.code)} (valable 48 h, une seule fois).`;
+    const text = `Rejoins notre famille sur Pandi 🐼 : va sur ${SITE}, crée ton compte parent, puis choisis « Rejoindre une famille » avec le code ${fmtCode(inv.code)} (valable 48 h, une seule fois).`;
     try {
-      if (navigator.share) await navigator.share({ title: 'Invitation PandiFlow', text });
+      if (navigator.share) await navigator.share({ title: 'Invitation Pandi', text });
       else {
         await navigator.clipboard.writeText(text);
         toast('Invitation copiée : colle-la dans un message.', 'success');
@@ -122,7 +122,7 @@ export function FamilyMembers() {
       <button class="btn btn-blue" disabled=${busy || members.length >= MAX_PARENTS} onClick=${invite}>+ Inviter un parent</button>
     </div>
     <p class="hint" style="margin-top:8px">
-      L'autre parent crée son compte sur PandiFlow, puis choisit « Rejoindre une famille » avec le code.
+      L'autre parent crée son compte sur Pandi, puis choisit « Rejoindre une famille » avec le code.
       Un code ne sert qu'une fois et expire au bout de 48 h ; ${MAX_PARENTS} parents au maximum par famille.
       Seul le créateur de la famille peut retirer un parent.
     </p>

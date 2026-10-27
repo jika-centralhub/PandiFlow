@@ -1,4 +1,4 @@
-/* ===== PandiFlow — boutique et affaires rangées en rayons (une carte par type d'objet) ===== */
+/* ===== Pandi — boutique et affaires rangées en rayons (une carte par type d'objet) ===== */
 .rayons { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 34), 1fr)); gap: calc(var(--u) * 2.4); }
 .rayon-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: calc(var(--u) * .8); padding: calc(var(--u) * 2.6) calc(var(--u) * 2.6) calc(var(--u) * 2);
   border-radius: calc(var(--u) * 5); text-align: left; color: var(--ink); overflow: hidden;

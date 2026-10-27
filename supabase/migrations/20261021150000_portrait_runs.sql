@@ -1,5 +1,5 @@
 -- =====================================================================
---  PandiFlow — journal des créations de visages 3D (Edge Function make-portrait)
+--  Pandi — journal des créations de visages 3D (Edge Function make-portrait)
 --  Une ligne par visage demandé : réussite, durée, modèle, chemin (photo ou description)
 --  et message d'erreur d'OpenAI. Jamais d'image. Invisible depuis l'app (service uniquement).
 --  Envoi : supabase db query --linked --file supabase/migrations/20261021150000_portrait_runs.sql

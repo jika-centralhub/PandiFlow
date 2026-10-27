@@ -349,7 +349,7 @@ const FLAGS = [
     const r = Math.floor(i / 8);
     return html`<rect key=${i} x=${FX + c * 5} y=${FY + r * (FH / 6)} width="5" height=${FH / 6 + 0.2} fill=${(c + r) % 2 ? '#FFFFFF' : '#1B1B22'} />`;
   })}</g>`),
-  flag('pandiflow', 'Drapeau PandiFlow', () => html`<g><rect x=${FX} y=${FY} width=${FW} height=${FH} fill="#7B6CFF" />
+  flag('pandiflow', 'Drapeau Pandi', () => html`<g><rect x=${FX} y=${FY} width=${FW} height=${FH} fill="#7B6CFF" />
     <circle cx=${CX - 6} cy=${CY - 7} r="3.4" fill="#2B2B33" /><circle cx=${CX + 6} cy=${CY - 7} r="3.4" fill="#2B2B33" />
     <circle cx=${CX} cy=${CY} r="8.6" fill="#FFFFFF" />
     <ellipse cx=${CX - 3.2} cy=${CY - 0.6} rx="2.2" ry="2.8" fill="#2B2B33" /><ellipse cx=${CX + 3.2} cy=${CY - 0.6} rx="2.2" ry="2.8" fill="#2B2B33" />

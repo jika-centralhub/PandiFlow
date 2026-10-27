@@ -1,4 +1,4 @@
-// Service worker PandiFlow : garde l'application en cache pour un démarrage instantané.
+// Service worker Pandi : garde l'application en cache pour un démarrage instantané.
 // Les données (Supabase) passent toujours par le réseau.
 // Stratégie « réseau d'abord » : une nouvelle version en ligne est prise dès le prochain lancement.
 // Changer VERSION seulement pour vider entièrement l'ancien cache.

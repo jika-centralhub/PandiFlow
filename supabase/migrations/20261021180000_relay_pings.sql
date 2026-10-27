@@ -1,5 +1,5 @@
 -- =====================================================================
---  PandiFlow — passage de pandiflow.com à www.pandiflow.com
+--  Pandi — passage de pandiflow.com à www.pandiflow.com
 --  Chaque connexion (un appareil d'un parent) laisse un signe ici dès que js/relais.js a écrit
 --  le cookie qui fera suivre sa connexion vers www. On change l'adresse principale seulement
 --  quand toutes les connexions actives ont signé : personne n'aura à se reconnecter.

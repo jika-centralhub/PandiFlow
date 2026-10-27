@@ -1,4 +1,4 @@
-/* ===== PandiFlow — le garage : une carte à côté de l'avatar, avec un paysage vivant ===== */
+/* ===== Pandi — le garage : une carte à côté de l'avatar, avec un paysage vivant ===== */
 
 /* Coin de l'enfant : sa scène (lui, son décor et ses objets) | boutique */
 .child-body { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.3fr); }

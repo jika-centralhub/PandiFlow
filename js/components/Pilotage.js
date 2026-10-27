@@ -313,7 +313,7 @@ function Families({ st, names }) {
   const download = () => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csvOf(st.families, names, today)], { type: 'text/csv;charset=utf-8' }));
-    a.download = `pandiflow-familles-${today}.csv`;
+    a.download = `pandi-familles-${today}.csv`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
@@ -370,7 +370,7 @@ export function Pilotage() {
 
   return html`<div class="pilotage">
     <h2>Pilotage de l'adoption</h2>
-    <p class="hint">Toutes les familles de PandiFlow, sans prénom d'enfant ni photo. Visible seulement par toi.</p>
+    <p class="hint">Toutes les familles de Pandi, sans prénom d'enfant ni photo. Visible seulement par toi.</p>
     <div class="pl-controls">
       <label class="pl-switch"><${Toggle} on=${!prefs.skipOwn} onChange=${(v) => setPref({ skipOwn: !v })} label="Compter ma famille" /><span>Compter ma famille</span></label>
       <label class="pl-switch"><${Toggle} on=${prefs.names} onChange=${(v) => setPref({ names: v })} label="Noms et e-mails" /><span>Noms et e-mails</span></label>

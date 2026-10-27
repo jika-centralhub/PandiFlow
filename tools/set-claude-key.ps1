@@ -1,4 +1,4 @@
-﻿# Enregistre la clé API Claude dans les secrets Supabase de PandiFlow (Edge Function analyze-photo).
+﻿# Enregistre la clé API Claude dans les secrets Supabase de Pandi (Edge Function analyze-photo).
 # La clé est saisie de façon masquée, passe par un fichier temporaire effacé aussitôt,
 # et n'est jamais affichée, ni écrite dans l'historique du terminal ou dans le dépôt.
 $ErrorActionPreference = 'Stop'

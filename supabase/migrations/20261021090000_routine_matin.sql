@@ -1,5 +1,5 @@
 -- =====================================================================
---  PandiFlow — routine du matin (réveil et départ à l'école)
+--  Pandi — routine du matin (réveil et départ à l'école)
 --  Chaque tâche appartient à une routine : 'soir' (toutes les tâches existantes) ou 'matin'.
 --  L'heure de départ à l'école est rangée dans families.settings (aucune colonne à ajouter).
 --  Envoi : supabase db query --linked --file supabase/migrations/20261021090000_routine_matin.sql

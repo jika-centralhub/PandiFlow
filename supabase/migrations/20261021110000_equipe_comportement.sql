@@ -1,5 +1,5 @@
 -- =====================================================================
---  PandiFlow — comportement de fin de soirée et espace équipe
+--  Pandi — comportement de fin de soirée et espace équipe
 --  Nouveaux types d'écritures dans la cagnotte (ledger) :
 --    behavior (comportement), team (défi d'équipe), help (coup de main),
 --    gift (cadeau entre enfants), pot (dépôt dans la cagnotte commune),
