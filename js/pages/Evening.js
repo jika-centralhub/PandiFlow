@@ -10,8 +10,8 @@ import { timerKey } from '../lib/countdown.js';
 import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, TEAM_CARD, findTeamCard, teamCardLevel, pendingSurprise, promiseFor } from '../domain.js';
 import { routineDate, currentRoutine, addDays, formatLong } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
-import { Modal } from '../components/ui.js';
-import { Coin, Pandi } from '../components/Coin.js';
+import { Modal, Logo } from '../components/ui.js';
+import { Pandi } from '../components/Coin.js';
 import { Pandi3D, has3D } from '../components/Pandi3D.js';
 import { pandiFor, storyIndex } from '../mascot/tasks.js';
 import { showOverlay, GiftBox } from '../components/Overlays.js';
@@ -29,7 +29,7 @@ export function TopBar({ onCalm, chest = null }) {
   const s = useStore();
   const [fs, setFs] = useState(isFullscreen());
   return html`<header class="topbar">
-    <div class="brand"><${Coin} /> <span>Pandi</span></div>
+    <div class="brand"><${Logo} /> <span>Pandi</span></div>
     ${s.mode === 'demo' && html`<span class="mode-badge">Démo</span>`}
     ${s.mode === 'cloud' && html`<span class=${`sync-dot ${s.pendingOps ? 'busy' : ''}`} title=${s.pendingOps ? 'Synchronisation…' : 'Synchronisé'} />`}
     <div class="spacer" />

@@ -90,6 +90,11 @@ export function SexPicker({ value, onChange }) {
   </span>`;
 }
 
+// Le logo de l'app : le P dont le rond est la tête du panda (assets/icons/icon.svg, fait par tools/make_icons.py)
+export function Logo({ class: cls = 'logo' }) {
+  return html`<img class=${cls} src="assets/icons/icon.svg" alt="" draggable="false" />`;
+}
+
 export function Loading() {
-  return html`<div class="loading"><${Coin} /></div>`;
+  return html`<div class="loading"><${Logo} /></div>`;
 }
