@@ -13,6 +13,8 @@ import { ParentPage } from './pages/Parent.js';
 import { Login, NewPassword } from './pages/Login.js';
 import { Setup } from './pages/Setup.js';
 import { Accueil } from './pages/Accueil.js';
+// La proposition d'installation du navigateur n'arrive qu'une fois au chargement : on l'écoute tout de suite
+import './lib/install.js';
 
 function Router() {
   const s = useStore();

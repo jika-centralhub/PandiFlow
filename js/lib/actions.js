@@ -1,6 +1,6 @@
 // Actions de l'app : elles mettent à jour l'état tout de suite (interface instantanée)
 // puis enregistrent les changements dans le stockage (localStorage ou Supabase).
-import { getState, setState, setTimers, setAccueil, setVisite, subscribe, toast } from './store.js';
+import { getState, setState, setTimers, setAccueil, setVisite, setVisiteVue, subscribe, toast } from './store.js';
 import { LocalRepo } from './localRepo.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, APP_VERSION } from '../config.js';
 import * as domain from '../domain.js';
@@ -745,7 +745,7 @@ export async function createFamily({ name, children, routines = null }) {
   const seed = buildFamilySeed(family.id, kids, routines);
   // Les réglages de départ sont écrits avant le premier chargement (sinon le matin se rajouterait tout seul)
   const settings = { ...(family.settings || {}), morningSeeded: true };
-  if (routines) Object.assign(settings, { departure: routines.morning ? routines.departure : null, departureDays: routines.schoolDays });
+  if (routines) Object.assign(settings, { departure: routines.morning ? routines.departure : null, departureDays: routines.schoolDays, firstDay: eveningDate() });
   await repo.updateFamily(family.id, { settings });
   setState({ family: { ...family, settings } });
   await repo.put('children', kids);
@@ -764,7 +764,10 @@ export function startDecouverte() {
   setVisite(s.family.id);
   if (!s.settings.firstDay) updateSettings({ firstDay: eveningDate() });
 }
-export const endVisit = () => setVisite(null);
+export function endVisit() {
+  setVisiteVue(getState().family?.id);
+  setVisite(null);
+}
 export const replayVisit = () => setVisite(getState().family?.id);
 export const markGreeted = () => updateSettings({ greeted: new Date().toISOString() });
 export const markFirstEvening = (date) => updateSettings({ firstEvening: date });

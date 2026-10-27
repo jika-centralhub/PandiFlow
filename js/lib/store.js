@@ -28,7 +28,14 @@ let state = {
   accueil: loadAccueil(),
   // Visite de l'écran de la routine à montrer sur cet appareil : l'identifiant de la famille, ou null
   visite: localStorage.getItem('pandiflow-visite') || null,
+  // La famille dont la visite a déjà été vue (ou passée) sur cet appareil
+  visiteVue: localStorage.getItem('pandiflow-visite-vue') || null,
 };
+
+export function setVisiteVue(familyId) {
+  if (familyId) localStorage.setItem('pandiflow-visite-vue', familyId);
+  setState({ visiteVue: familyId || null });
+}
 
 export function setVisite(familyId) {
   if (familyId) localStorage.setItem('pandiflow-visite', familyId);
@@ -36,7 +43,11 @@ export function setVisite(familyId) {
   setState({ visite: familyId || null });
 }
 
-export const visitPending = (s) => Boolean(s.visite && s.family && s.visite === s.family.id);
+// Demandée sur cet appareil (fin de l'assistant, parent qui rejoint, « Revoir »), ou une famille toute neuve
+// (avant sa première soirée) qui ne l'a pas encore vue ici : l'app installée sur iPhone a sa propre mémoire
+export const visitPending = (s) =>
+  Boolean(s.family) &&
+  ((s.visite === s.family.id) || Boolean(s.settings?.firstDay && !s.settings.firstEvening && s.visiteVue !== s.family.id && !inAccueil(s)));
 
 function loadAccueil() {
   try {
