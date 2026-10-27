@@ -92,7 +92,7 @@ export function Login() {
   return html`<div class="welcome page-enter">
     <${Pandi} />
     <div class="card sheet">
-      <h1 style="color:var(--ink)">Pandi<b>Flow</b></h1>
+      <h1 style="color:var(--ink)">Pandi</h1>
       <p class="lead" style="color:var(--ink-soft);margin-bottom:12px">La routine du soir qui donne envie. Chaque parent a son propre compte.</p>
       ${mode !== 'forgot' && html`<div class="bank-modes" style="margin:0 0 14px">
         <button class=${`bank-mode add ${mode === 'signin' ? 'on' : ''}`} onClick=${() => switchMode('signin')}>Se connecter</button>

@@ -29,7 +29,7 @@ export function TopBar({ onCalm, chest = null }) {
   const s = useStore();
   const [fs, setFs] = useState(isFullscreen());
   return html`<header class="topbar">
-    <div class="brand"><${Coin} /> <span>Pandi<b>Flow</b></span></div>
+    <div class="brand"><${Coin} /> <span>Pandi</span></div>
     ${s.mode === 'demo' && html`<span class="mode-badge">Démo</span>`}
     ${s.mode === 'cloud' && html`<span class=${`sync-dot ${s.pendingOps ? 'busy' : ''}`} title=${s.pendingOps ? 'Synchronisation…' : 'Synchronisé'} />`}
     <div class="spacer" />
