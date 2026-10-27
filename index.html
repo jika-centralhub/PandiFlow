@@ -13,6 +13,33 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <!-- Images de lancement iPhone : photos de l'écran de lancement ci-dessous (python tools/make_icons.py) -->
+  <!-- images-de-lancement -->
+  <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/splash/splash-1320x2868.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="assets/splash/splash-2868x1320.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/splash/splash-1260x2736.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="assets/splash/splash-2736x1260.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/splash/splash-1206x2622.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="assets/splash/splash-2622x1206.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/splash/splash-1290x2796.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="assets/splash/splash-2796x1290.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/splash/splash-1179x2556.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="assets/splash/splash-2556x1179.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/splash/splash-1284x2778.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="assets/splash/splash-2778x1284.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/splash/splash-1170x2532.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="assets/splash/splash-2532x1170.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/splash/splash-1125x2436.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="assets/splash/splash-2436x1125.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/splash/splash-1242x2688.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="assets/splash/splash-2688x1242.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="assets/splash/splash-828x1792.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="assets/splash/splash-1792x828.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/splash/splash-1242x2208.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)" href="assets/splash/splash-2208x1242.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="assets/splash/splash-750x1334.jpg">
+  <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="assets/splash/splash-1334x750.jpg">
+  <!-- /images-de-lancement -->
   <link rel="preload" href="assets/fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
   <!-- Passage de http à https sans se reconnecter : doit passer avant l'app -->
   <script src="js/relais.js"></script>
@@ -40,8 +67,49 @@
   <link rel="stylesheet" href="css/tsedaka.css">
   <link rel="stylesheet" href="css/magic.css">
   <link rel="stylesheet" href="css/surprise.css">
+  <!-- Écran de lancement : visible dès l'ouverture, effacé par main.js quand l'app est prête.
+       Mêmes couleurs que l'icône (tools/make_icons.py) : changer les deux ensemble. -->
+  <style id="splash-css">
+    #splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: radial-gradient(circle at 12% 8%, rgba(255, 244, 196, .9), rgba(255, 244, 196, 0) 55%),
+        linear-gradient(to bottom right, #FFDE6E, #FFB24F 30%, #FF8D72 55%, #9A5AA8 78%, #2E2C78);
+      transition: opacity .45s ease; }
+    #splash.out { opacity: 0; pointer-events: none; }
+    #splash .sp-mark { width: 40vmin; height: 40vmin; max-width: 280px; max-height: 280px; animation: sp-bob 3s ease-in-out infinite; }
+    #splash .sp-name { margin-top: 2vmin; font: 500 min(10vmin, 64px)/1.1 'Fredoka', system-ui, sans-serif; color: #1F1B2E; }
+    #splash .sp-hi { min-height: 1.3em; margin-top: 1vmin; font: 500 min(4.6vmin, 28px)/1.3 'Fredoka', system-ui, sans-serif; color: #1F1B2E;
+      opacity: 0; animation: sp-in .6s .2s ease forwards; }
+    #splash .sp-star { position: absolute; width: 1vmin; height: 1vmin; border-radius: 50%; background: #fff; opacity: .75; }
+    #splash .sp-eye { transform-box: fill-box; transform-origin: center; animation: sp-blink 3.8s 1s infinite; }
+    #splash.still *, #splash.still { animation: none !important; transition: none; }
+    @keyframes sp-bob { 50% { transform: translateY(-1.5vmin); } }
+    @keyframes sp-blink { 0%, 90%, 100% { transform: scaleY(1); } 94% { transform: scaleY(.1); } }
+    @keyframes sp-in { to { opacity: .8; } }
+    @media (prefers-reduced-motion: reduce) { #splash .sp-mark, #splash .sp-eye { animation: none; } }
+  </style>
 </head>
 <body>
+  <div id="splash" aria-hidden="true">
+    <i class="sp-star" style="left: 86%; top: 80%"></i><i class="sp-star" style="left: 74%; top: 91%; transform: scale(.7)"></i>
+    <i class="sp-star" style="left: 93%; top: 66%; transform: scale(.6)"></i><i class="sp-star" style="left: 60%; top: 95%; transform: scale(.55)"></i>
+    <svg class="sp-mark" viewBox="0 0 100 100">
+      <!-- marque -->
+      <g transform="translate(50 50) scale(1.06) translate(-50 -50)"><g transform="translate(0 2.2)" opacity=".18"><circle cx="29.93" cy="17.71" r="6" fill="#7A3A00"/><circle cx="70.07" cy="17.71" r="6" fill="#7A3A00"/><circle cx="50" cy="40" r="22" fill="none" stroke="#7A3A00" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/><path d="M28 42V82" fill="none" stroke="#7A3A00" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></g><circle cx="29.93" cy="17.71" r="6" fill="#1F1B2E"/><circle cx="70.07" cy="17.71" r="6" fill="#1F1B2E"/><circle cx="50" cy="40" r="22" fill="none" stroke="#1F1B2E" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/><path d="M28 42V82" fill="none" stroke="#1F1B2E" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="40" r="16" fill="#fff"/><circle cx="50" cy="41.2" r="14.3" fill="none" stroke="#1F1B2E" stroke-width="1.4" opacity=".06"/><circle cx="44" cy="41.5" r="3.75" fill="#1F1B2E"/><circle cx="56" cy="41.5" r="3.75" fill="#1F1B2E"/><circle class="sp-eye" cx="44.45" cy="40.9" r="1.2" fill="#fff"/><circle class="sp-eye" cx="55.55" cy="40.9" r="1.2" fill="#fff"/><path d="M47.85 45.32Q50 44.35 52.15 45.32Q51.95 46.88 50 47.66Q48.05 46.88 47.85 45.32Z" fill="#1F1B2E"/></g>
+      <!-- /marque -->
+    </svg>
+    <div class="sp-name">PandiFlow</div>
+    <div class="sp-hi" id="splash-hi"></div>
+  </div>
+  <!-- /splash -->
+  <script>
+    (function () {
+      // Comme currentRoutine (js/lib/dates.js) : le matin de 4 h à 13 h, le soir ensuite
+      var h = new Date().getHours();
+      document.getElementById('splash-hi').textContent = h >= 4 && h < 13 ? 'Bonjour !' : 'Bonsoir !';
+      // Filet de sécurité : si l'app ne démarre pas, l'écran de lancement s'efface quand même
+      setTimeout(function () { var s = document.getElementById('splash'); if (s) s.classList.add('out'); }, 15000);
+    })();
+  </script>
   <div id="sky" aria-hidden="true"></div>
   <div id="app"></div>
   <div id="fx-layer" aria-hidden="true"></div>

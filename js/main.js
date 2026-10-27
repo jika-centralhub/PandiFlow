@@ -32,11 +32,26 @@ function Router() {
   return html`<${Evening} />`;
 }
 
+// Écran de lancement (#splash dans index.html) : s'efface dès que l'app sait quoi afficher,
+// mais reste au moins 0,9 s pour qu'on voie le panda
+function hideSplash() {
+  const el = document.getElementById('splash');
+  if (!el || el.dataset.leaving) return;
+  el.dataset.leaving = '1';
+  setTimeout(() => {
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 500);
+  }, Math.max(0, 900 - performance.now()));
+}
+
 function App() {
   const s = useStore();
   useEffect(() => {
     document.documentElement.classList.toggle('reduce-motion', Boolean(s.prefs.reducedMotion));
   }, [s.prefs.reducedMotion]);
+  useEffect(() => {
+    if (s.status !== 'loading') hideSplash();
+  }, [s.status]);
   return html`<${Router} /><${OverlayHost} /><${LandscapeOffer} /><${Toast} />`;
 }
 
