@@ -307,6 +307,22 @@ function ScaleRows({ scale, label, meta }) {
   </div>`;
 }
 
+// Compteur de performance (js/lib/perf.js), chargé seulement quand il est allumé. Sur iPhone, l'app
+// de l'écran d'accueil ne voit pas le ?perf ouvert dans Safari : il s'allume donc aussi d'ici.
+function PerfRow() {
+  const [on, setOn] = useState(() => Boolean(localStorage.getItem('pandiflow-perf')));
+  const change = async (v) => {
+    setOn(v);
+    const perf = await import('../lib/perf.js');
+    if (!v) return perf.stopPerf();
+    if (perf.perfState() === 'stopped') {
+      localStorage.setItem('pandiflow-perf', '1');
+      location.reload(); // arrêté plus tôt dans cette page : il repart sur une page neuve
+    } else perf.startPerf();
+  };
+  return html`<div class="row"><span class="emoji">📈</span><div class="grow"><div class="title">Compteur de performance</div><div class="meta">Mesure la fluidité de l'app sur cet appareil (pastille en bas à gauche) ; les mesures partent dans la base de Pandi, sans aucune donnée des enfants</div></div><${Toggle} on=${on} onChange=${change} label="Compteur de performance" /></div>`;
+}
+
 function SettingsSection() {
   const s = useStore();
   const [changingPin, setChangingPin] = useState(false);
@@ -352,6 +368,7 @@ function SettingsSection() {
       <${InstallRow} />
       <div class="row"><span class="emoji">🧭</span><div class="grow"><div class="title">La visite de l'écran</div><div class="meta">Les 5 bulles qui présentent l'écran de la routine</div></div><button class="p-btn" onClick=${() => { sfx.tap(); actions.replayVisit(); navigate('soiree'); }}>Revoir</button></div>
       <div class="row"><span class="emoji">👋</span><div class="grow"><div class="title">Pandi dit bonjour aux enfants</div><div class="meta">Pandi se présente, à voix haute</div></div><button class="p-btn" onClick=${() => { sfx.tap(); navigate('soiree'); showOverlay('bonjour', {}); }}>Rejouer</button></div>
+      <${PerfRow} />
     </div>
 
     <h3 class="section-title" style="color:var(--ink);margin-top:20px">Parents de la famille</h3>

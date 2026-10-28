@@ -107,6 +107,7 @@ function observe(type, fn, opts = {}) {
 export function startPerf({ appCode = null } = {}) {
   if (running) return;
   running = true;
+  localStorage.setItem(FLAG, '1');
   start.appCode = appCode;
   try {
     performance.setResourceTimingBufferSize?.(1500);
@@ -120,6 +121,8 @@ export function startPerf({ appCode = null } = {}) {
   observe('longtask', onLongTask);
   observe('event', onEvent, { durationThreshold: 16 });
   observe('first-input', onEvent);
+  // Safari (iPhone) n'a pas Event Timing : du tap jusqu'à l'image suivante, estimé à la main
+  if (!tapTiming) document.addEventListener('click', onClickEstimate, { capture: true, passive: true });
   // Repères posés par l'app elle-même (vus même si le compteur arrive après eux)
   observe('mark', (e) => e.name === 'pandiflow:boot' && start.boot == null && (start.boot = e.startTime));
   observe('measure', (e) => {
@@ -215,6 +218,8 @@ function everySecond() {
   }
 }
 
+const tapTiming = Boolean(globalThis.PerformanceObserver?.supportedEntryTypes?.includes('event'));
+
 const newMinute = (now) => ({ start: now, deltas: [], loops: {}, routes: {}, pandi: 0, taps: 0 });
 
 function summarize(m) {
@@ -234,6 +239,7 @@ function summarize(m) {
     // temps de chaque boucle en ms par seconde visible (10 ms/s = 1 % du temps)
     loops: Object.fromEntries(Object.entries(m.loops).map(([k, v]) => [k, r1(v / Math.max(1, secs))])),
     pandi: m.pandi,
+    anims: document.getAnimations ? document.getAnimations().filter((a) => a.playState === 'running').length : null,
     taps: m.taps,
     heapMb: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null,
     bat: battery ? Math.round(battery.level * 100) : null,
@@ -269,6 +275,23 @@ function onEvent(e) {
 function onTap() {
   taps++;
   if (cur) cur.taps++;
+}
+
+// Sans Event Timing : du clic (son horodatage) jusqu'à la tâche qui suit l'image d'après, donc après
+// l'affichage ; les gestionnaires de l'app et le rendu de Preact passent avant cette image
+let estimates = 0;
+function onClickEstimate(e) {
+  if (stopped || e.target?.closest?.('.pf-dot, .pf-panel')) return;
+  const now = performance.now();
+  const t0 = e.timeStamp > 0 && e.timeStamp <= now ? e.timeStamp : now;
+  const target = describe(e.target);
+  const r = route();
+  raf0(() =>
+    setTimeout(() => {
+      interactions.set(`estimation-${++estimates}`, { t: sec(t0), type: 'click', ms: ms(performance.now() - t0), target, route: r });
+      if (interactions.size > 3000) interactions.delete(interactions.keys().next().value);
+    }, 0),
+  );
 }
 
 function onLoaf(e) {
@@ -447,7 +470,8 @@ function tapSummary() {
   const d = all.map((x) => x.ms).sort((a, b) => a - b);
   return {
     taps,
-    measured: all.length, // seulement ceux de plus de 16 ms
+    measured: all.length, // Event Timing : seulement ceux de plus de 16 ms ; estimation : tous les clics
+    method: tapTiming ? 'event-timing' : 'estimation',
     p50: quantile(d, 0.5),
     p75: quantile(d, 0.75),
     p95: quantile(d, 0.95),
@@ -530,10 +554,15 @@ async function send(reason) {
   }
 }
 
-async function stop() {
+// 'on' (il mesure), 'stopped' (arrêté dans cette page : il faut la recharger pour repartir) ou 'off'
+export const perfState = () => (stopped ? 'stopped' : running ? 'on' : 'off');
+
+export async function stopPerf() {
+  localStorage.removeItem(FLAG);
+  if (!running || stopped) return;
   await send('stop');
   stopped = true;
-  localStorage.removeItem(FLAG);
+  document.removeEventListener('click', onClickEstimate, { capture: true });
   if (rafBefore) window.requestAnimationFrame = rafBefore;
   for (const t of timers) clearInterval(t);
   document.removeEventListener('pointerdown', onTap, { capture: true });
@@ -603,7 +632,7 @@ function openPanel() {
     btns.appendChild(b);
   };
   button('Envoyer maintenant', () => send('manual'));
-  button('Arrêter le compteur', () => stop(), true);
+  button('Arrêter le compteur', () => stopPerf(), true);
   button('Fermer', closePanel, true);
   panel.append(h, btns, document.createElement('dl'));
   document.body.appendChild(panel);
