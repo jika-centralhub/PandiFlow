@@ -40,7 +40,8 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      // les visages 3D des enfants (pandiflow-portraits, pandiflow-portraits-prets) restent : js/lib/portraits.js
+      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION && !k.startsWith('pandiflow-portraits')).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });

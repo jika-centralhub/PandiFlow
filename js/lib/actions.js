@@ -14,7 +14,7 @@ import { HEAD_SLOTS, headItems, isWorn, wear, unwear } from '../avatar/wear.js';
 import { getTheme, giftOptions, themeLooks } from '../avatar/themes.js';
 import { setThemeLooks } from '../mascot/themeLook.js';
 import { normalizeLook, randomLook } from '../avatar/palette.js';
-import { setPortraitSource, primePortrait, portraitPath, loadPortrait, forgetPortrait, hasBody } from './portraits.js';
+import { setPortraitSource, primePortrait, portraitPath, loadPortrait, forgetPortrait, hasBody, keepPrepared } from './portraits.js';
 
 let repo = null;
 export const getRepo = () => repo;
@@ -652,6 +652,13 @@ export async function makePortrait(childId, source, onFace) {
 //    sourire de la même version ; à la limite du jour, on s'arrête et on réessaiera au lancement suivant.
 const repaired = new Set();
 function repairPortraits() {
+  // les préparations gardées d'anciens visages (ou d'anciens repères) sont effacées de l'appareil
+  const current = [];
+  for (const child of getState().children) {
+    const p = normalizeLook(child.look).portrait;
+    for (const [expr, marks] of Object.entries(p?.exprs || {})) current.push([portraitPath(p.base, expr), marks]);
+  }
+  keepPrepared(current);
   for (const child of getState().children) {
     const p = normalizeLook(child.look).portrait;
     if (!p || p.off || repaired.has(p.base)) continue;

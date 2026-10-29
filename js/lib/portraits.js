@@ -3,10 +3,17 @@
 // Chaque chemin contient une version : un fichier ne change jamais, on peut le garder indéfiniment.
 // Au chargement, le fond est retiré ici, sans IA : fond vert uni (incrustation), sinon fond uni ;
 // si le fond ne peut pas être retiré, l'avatar découpe le visage avec un masque doux.
+// Le résultat de cette préparation (image détourée, masques du corps, mesures) est lui aussi gardé sur
+// l'appareil et relu tel quel aux lancements suivants : sur iPhone, les 8 images (2 enfants × 4 poses)
+// demandaient de 0,3 à 1,4 s de calcul chacune à chaque lancement (mesuré le 29/10/2026).
 import { useEffect, useState } from '../vendor/preact-htm.js';
 import { measure } from './util.js';
 
 const CACHE = 'pandiflow-portraits';
+const PREP_CACHE = 'pandiflow-portraits-prets';
+// À changer dès que le calcul de prepareImage ou de bodyMaps change : tout est alors préparé de nouveau
+const PREP_VERSION = 1;
+const BODY_PARTS = ['cloth', 'skinMask', 'shade', 'hood', 'hair', 'headShade'];
 const ready = new Map(); // chemin -> { url, skin, keyed }
 const pending = new Map(); // chemin -> Promise<entrée | null>
 const failedAt = new Map(); // chemin -> date du dernier échec (nouvel essai après 30 s)
@@ -21,7 +28,7 @@ export const portraitPath = (base, expr) => `${base}/${expr}.webp`;
 // Image reçue juste après sa création : affichée tout de suite, sans téléchargement
 export async function primePortrait(path, blob, marks) {
   if (ready.has(path)) return ready.get(path);
-  const entry = await prepare(blob, marks);
+  const entry = await prepare(path, blob, marks);
   ready.set(path, entry);
   remember(path, blob);
   return entry;
@@ -36,18 +43,30 @@ export function forgetPortrait(path) {
   for (const url of [entry.url, b.cloth, b.skinMask, b.shade, b.hood, b.hair, b.headShade]) if (url) URL.revokeObjectURL(url);
 }
 
-export function loadPortrait(path, marks) {
+// urgent : la pose est affichée maintenant (elle passe devant celles chargées en avance)
+export function loadPortrait(path, marks, urgent = false) {
   if (ready.has(path)) return Promise.resolve(ready.get(path));
-  if (pending.has(path)) return pending.get(path);
+  if (pending.has(path)) {
+    if (urgent) promote(path);
+    return pending.get(path);
+  }
   if (!source || Date.now() - (failedAt.get(path) || 0) < 30000) return Promise.resolve(null);
   const job = (async () => {
     try {
+      const start = performance.now();
+      const kept = await recallPrepared(path, marks);
+      if (kept) {
+        const entry = toEntry(kept.raw, kept.source);
+        measure('pandiflow:portrait', start, { cached: true, body: Boolean(entry.body), outKb: kept.kb });
+        ready.set(path, entry);
+        return entry;
+      }
       let blob = await recall(path);
       if (!blob) {
         blob = await source(path);
         remember(path, blob);
       }
-      const entry = await prepare(blob, marks);
+      const entry = await inTurn(path, () => prepare(path, blob, marks), urgent);
       ready.set(path, entry);
       return entry;
     } catch {
@@ -68,7 +87,7 @@ export function usePortrait(path, marks) {
   useEffect(() => {
     if (!path || entry) return undefined;
     let alive = true;
-    loadPortrait(path, marks).then((e) => alive && e && setTick((n) => n + 1));
+    loadPortrait(path, marks, true).then((e) => alive && e && setTick((n) => n + 1));
     return () => {
       alive = false;
     };
@@ -96,22 +115,129 @@ function remember(path, blob) {
 
 const cacheKey = (path) => new Request(`${location.origin}/__portraits/${path}`);
 
+// --- Préparations gardées sur l'appareil ----------------------------------------------------
+// Une préparation ne dépend que de l'image (son chemin contient sa version), de ses repères et du calcul
+// (PREP_VERSION) : la clé contient les trois. Les morceaux sont rangés d'abord, la fiche (meta) en dernier :
+// une fiche présente veut dire une préparation complète.
+const stable = (v) => (v && typeof v === 'object' ? (Array.isArray(v) ? `[${v.map(stable)}]` : `{${Object.keys(v).sort().map((k) => `${k}:${stable(v[k])}`)}}`) : String(v));
+function marksKey(marks) {
+  if (!marks) return 'sans-reperes';
+  let h = 2166136261;
+  for (const ch of stable(marks)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return (h >>> 0).toString(16);
+}
+const prepBase = (path, marks) => `${location.origin}/__portraits-prets/v${PREP_VERSION}/${path}/${marksKey(marks)}/`;
+
+// Range une préparation complète ; renvoie le poids de ce qui est rangé (Ko), pour le compteur de performance
+function storePrepared(path, marks, raw) {
+  const parts = {};
+  if (raw.main) parts.main = raw.main;
+  if (raw.body) Object.assign(parts, raw.body.blobs);
+  const kb = Math.round(Object.values(parts).reduce((s, b) => s + (b?.size || 0), 0) / 1024);
+  // une image qui n'a pas pu être produite n'est pas gardée : elle sera refaite au prochain lancement
+  const complete = (raw.main || raw.already) && Object.values(parts).every(Boolean);
+  if (!complete || !('caches' in window)) return kb;
+  const base = prepBase(path, marks);
+  caches
+    .open(PREP_CACHE)
+    .then(async (cache) => {
+      await Promise.all(Object.entries(parts).map(([k, b]) => cache.put(new Request(base + k), new Response(b, { headers: { 'Content-Type': 'image/png' } }))));
+      const meta = { skin: raw.skin, neck: raw.neck, keyed: raw.keyed, ratio: raw.ratio, main: Boolean(raw.main), body: raw.body ? { arms: raw.body.arms } : null };
+      await cache.put(new Request(base + 'meta'), new Response(JSON.stringify(meta), { headers: { 'Content-Type': 'application/json' } }));
+    })
+    .catch(() => {});
+  return kb;
+}
+
+// La préparation gardée, ou null (jamais faite, rangement incomplet, stockage vidé par le système)
+async function recallPrepared(path, marks) {
+  if (!('caches' in window)) return null;
+  try {
+    const cache = await caches.open(PREP_CACHE);
+    const base = prepBase(path, marks);
+    const hit = await cache.match(base + 'meta');
+    if (!hit) return null;
+    const meta = await hit.json();
+    const get = async (k) => (await cache.match(base + k))?.blob() ?? null;
+    const [main, ...parts] = await Promise.all([meta.main ? get('main') : recall(path), ...(meta.body ? BODY_PARTS.map(get) : [])]);
+    if (!main || parts.some((b) => !b)) return null;
+    const body = meta.body ? { blobs: Object.fromEntries(BODY_PARTS.map((k, i) => [k, parts[i]])), arms: meta.body.arms } : null;
+    const kb = Math.round([main, ...parts].reduce((s, b) => s + b.size, 0) / 1024);
+    return { raw: { main: meta.main ? main : null, skin: meta.skin, neck: meta.neck, keyed: meta.keyed, ratio: meta.ratio, body }, source: main, kb };
+  } catch {
+    return null;
+  }
+}
+
+// Au démarrage : seules les préparations des visages actuels des enfants (avec leurs repères actuels)
+// restent sur l'appareil ; list = [[chemin, repères], …]
+export async function keepPrepared(list) {
+  if (!('caches' in window)) return;
+  try {
+    const cache = await caches.open(PREP_CACHE);
+    const keep = new Set(list.map(([path, marks]) => prepBase(path, marks)));
+    for (const req of await cache.keys()) if (!keep.has(req.url.slice(0, req.url.lastIndexOf('/') + 1))) cache.delete(req);
+  } catch {
+    /* rien */
+  }
+}
+
+// Préparations une à la fois : la pose affichée passe devant les poses chargées en avance
+const turns = [];
+let turning = false;
+function inTurn(path, fn, urgent) {
+  return new Promise((resolve, reject) => {
+    const turn = { path, fn, resolve, reject };
+    if (urgent) turns.unshift(turn);
+    else turns.push(turn);
+    nextTurn();
+  });
+}
+function promote(path) {
+  const i = turns.findIndex((t) => t.path === path);
+  if (i > 0) turns.unshift(...turns.splice(i, 1));
+}
+async function nextTurn() {
+  if (turning) return;
+  turning = true;
+  while (turns.length) {
+    const t = turns.shift();
+    try {
+      t.resolve(await t.fn());
+    } catch (e) {
+      t.reject(e);
+    }
+  }
+  turning = false;
+}
+
+// Ce que l'avatar utilise : des adresses d'images (blob:) et les mesures ; raw null = image brute, telle quelle
+function toEntry(raw, sourceBlob) {
+  if (!raw) return { url: URL.createObjectURL(sourceBlob), skin: null, neck: null, keyed: false, ratio: 1, body: null };
+  const b = raw.body;
+  const body = b ? { ...Object.fromEntries(BODY_PARTS.map((k) => [k, b.blobs[k] ? URL.createObjectURL(b.blobs[k]) : ''])), arms: b.arms } : null;
+  return { url: URL.createObjectURL(raw.main || sourceBlob), skin: raw.skin, neck: raw.neck, keyed: raw.keyed, ratio: raw.ratio, body };
+}
+
 // Image avec le haut du corps : les repères des bras sont là
 export const hasBody = (m) => Boolean(m && Number.isFinite(m.elbowLeftX) && Number.isFinite(m.waistY));
 
-const toUrl = (canvas, fallback = null) =>
-  new Promise((resolve) => canvas.toBlob((b) => resolve(b || fallback ? URL.createObjectURL(b || fallback) : ''), 'image/png'));
+const toPng = (canvas) => new Promise((resolve) => canvas.toBlob((b) => resolve(b || null), 'image/png'));
 
-// Durée de chaque préparation, lue par le compteur de performance caché (js/lib/perf.js)
-async function prepare(blob, marks) {
+// Prépare l'image, range le résultat sur l'appareil et renvoie ce que l'avatar utilise ; la durée est lue
+// par le compteur de performance caché (js/lib/perf.js)
+async function prepare(path, blob, marks) {
   const start = performance.now();
-  const entry = await prepareImage(blob, marks);
-  measure('pandiflow:portrait', start, { body: Boolean(entry.body), keyed: entry.keyed, kb: Math.round(blob.size / 1024) });
-  return entry;
+  const raw = await prepareImage(blob, marks);
+  const outKb = raw ? storePrepared(path, marks, raw) : 0;
+  measure('pandiflow:portrait', start, { cached: false, body: Boolean(raw?.body), keyed: raw?.keyed ?? false, kb: Math.round(blob.size / 1024), outKb });
+  return toEntry(raw, blob);
 }
 
 // Détourage + couleur de peau, en une seule lecture de l'image ; pour un personnage avec le haut du corps,
-// aussi les masques du t-shirt et de la peau, l'ombrage du tissu et l'épaisseur des bras (bodyMaps)
+// aussi les masques du t-shirt et de la peau, l'ombrage du tissu et l'épaisseur des bras (bodyMaps).
+// Renvoie les images produites (main : l'image détourée, null si elle l'était déjà) et les mesures, ou
+// null si l'image n'a pas pu être lue (elle s'affiche alors telle quelle).
 async function prepareImage(blob, marks) {
   try {
     const bitmap = await createImageBitmap(blob);
@@ -129,10 +255,10 @@ async function prepareImage(blob, marks) {
     const neck = keyed && marks && !withBody ? measureNeck(img.data, w, h, (marks.eyeLeftX + marks.eyeRightX) / 2, marks.chinY) : null;
     const body = withBody ? await bodyMaps(img.data, w, h, marks) : null;
     if (keyed !== 'already') ctx.putImageData(img, 0, 0);
-    const url = keyed === 'already' ? URL.createObjectURL(blob) : await toUrl(canvas, blob);
-    return { url, skin, neck, keyed: keyed !== false, ratio: h / w, body };
+    const main = keyed === 'already' ? null : await toPng(canvas);
+    return { main, already: keyed === 'already', skin, neck, keyed: keyed !== false, ratio: h / w, body };
   } catch {
-    return { url: URL.createObjectURL(blob), skin: null, neck: null, keyed: false, ratio: 1, body: null };
+    return null;
   }
 }
 
@@ -276,17 +402,17 @@ async function bodyMaps(px, w, h, m) {
   const hs = headShade.getContext('2d');
   hs.filter = `blur(${Math.max(3, Math.round(mw / 60))}px)`;
   hs.drawImage(headRaw, 0, 0);
-  const urls = await Promise.all([
-    toUrl(make(white((p) => cloth[p]))),
-    toUrl(make(white((p) => skinW[p]))),
-    toUrl(shade),
-    toUrl(make(white((p) => head[p]))),
-    toUrl(make(white((p) => hair[p]))),
-    toUrl(headShade),
+  // dans l'ordre de BODY_PARTS
+  const blobs = await Promise.all([
+    toPng(make(white((p) => cloth[p]))),
+    toPng(make(white((p) => skinW[p]))),
+    toPng(shade),
+    toPng(make(white((p) => head[p]))),
+    toPng(make(white((p) => hair[p]))),
+    toPng(headShade),
   ]);
-  const [clothUrl, skinUrl, shadeUrl, hoodUrl, hairUrl, headShadeUrl] = urls;
   return {
-    cloth: clothUrl, skinMask: skinUrl, shade: shadeUrl, hood: hoodUrl, hair: hairUrl, headShade: headShadeUrl,
+    blobs: Object.fromEntries(BODY_PARTS.map((k, i) => [k, blobs[i]])),
     arms: { l: armWidths(px, w, h, m, 'Left'), r: armWidths(px, w, h, m, 'Right') },
   };
 }
