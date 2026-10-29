@@ -38,11 +38,12 @@ export const hasHero = (id) => Boolean(HEROES[id]);
 
 // ctx : l'étape de l'exercice ({ phase, secs, anger… }), passée à Pandi et au héros
 // exclusive : les petits Pandi de l'écran du dessous s'arrêtent pendant l'exercice
-export function mountCalm(canvas, { hero, ctx = {}, date, still = false, exclusive = true }) {
+// host, className, label, onFirstDraw : comme pour mountPandi (stage.js)
+export function mountCalm(host, { hero, ctx = {}, date, still = false, exclusive = true, className = '', label, onFirstDraw = null }) {
   const H = HEROES[hero];
   const cast = H.make();
   cast.place(...H.at);
-  const ctl = mountPandi(canvas, { act: H.act, ctx, framing: 'calm', frames: { calm: H.frame }, spot: H.pandi, cast, date, still, maxDpr: 1.5, exclusive });
+  const ctl = mountPandi(host, { act: H.act, ctx, framing: 'calm', frames: { calm: H.frame }, spot: H.pandi, cast, date, still, maxDpr: 1.5, exclusive, className, label, onFirstDraw });
   cast.attach?.(ctl.actor);
   cast.set(ctx);
   // une nouvelle étape relance l'horloge d'étape de Pandi ; un tapotement ou une trouvaille la garde

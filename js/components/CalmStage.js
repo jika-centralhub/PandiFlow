@@ -25,7 +25,11 @@ export function CalmStage({ hero, ctx = {}, label = 'Pandi et son ami font l’e
     loadScene()
       .then((m) => {
         if (!alive || !ref.current) return;
-        ctl.current = m.mountCalm(ref.current, { hero, ctx, date: eveningDate(), still: prefersReducedMotion() });        setReady(true);
+        ctl.current = m.mountCalm(ref.current, {
+          hero, ctx, date: eveningDate(), still: prefersReducedMotion(), className: 'cc-stage3d', label,
+          onFirstDraw: () => ctl.current?.canvas.classList.add('ready'),
+        });
+        setReady(true);
       })
       .catch((e) => console.warn('Pandi : coin calme 3D indisponible', e?.message));
     return () => {
@@ -38,5 +42,6 @@ export function CalmStage({ hero, ctx = {}, label = 'Pandi et son ami font l’e
     if (ready) ctl.current?.set(ctx);
   }, [key]);
 
-  return html`<canvas ref=${ref} class=${`cc-stage3d ${ready ? 'ready' : ''}`} role="img" aria-label=${label} />`;
+  // La surface 3D (canvas WebGL de classe cc-stage3d, voir stage.js) est posée dans ce support sans boîte
+  return html`<span ref=${ref} class="cc-stage3d-host" style="display:contents" />`;
 }

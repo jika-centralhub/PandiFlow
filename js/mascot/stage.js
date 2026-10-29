@@ -1,12 +1,19 @@
-// La scène de Pandi : un seul moteur WebGL pour toute l'app, qui dessine chaque Pandi visible
-// (un par carte d'enfant, un grand pendant le minuteur) dans son propre <canvas>.
+// La scène de Pandi : chaque Pandi visible (un par carte d'enfant, un grand pendant le minuteur, celui du
+// coin calme…) a sa propre surface WebGL, posée telle quelle dans la page.
+// Avant, un seul moteur caché dessinait tout puis recopiait chaque image dans un <canvas> 2D : sur iPhone,
+// cette copie oblige Safari à attendre la carte graphique et à rapatrier l'image, 30 fois par seconde et
+// par Pandi (mesuré le 28/10/2026 sur un iPhone 14 Pro : 75 % du temps du processeur, 13 images/s).
+// Les surfaces sont gardées et réutilisées (une carte qui change reprend une surface libre) : le moteur
+// garde ses shaders déjà compilés au lieu de tout recompiler à chaque note.
 // Lumière de studio d'animation : grande lumière chaude devant à gauche, contre-jour froid qui
 // détoure la fourrure, ciel doux pour les reflets des yeux et de la truffe.
 import { THREE, blobTexture } from './pandi3d.js';
 import { PandiActor } from './actor.js';
 
-let renderer = null, env = null, raf = 0, last = 0, solo = null;
+let raf = 0, last = 0, solo = null;
 const views = new Set();
+const surfaces = []; // { canvas, renderer, env, busy, lost }
+const KEEP_FREE = 3; // surfaces libres gardées pour les prochains Pandi
 
 function studio(r) {
   const s = new THREE.Scene();
@@ -36,16 +43,43 @@ function studio(r) {
   return tex;
 }
 
-function ensureRenderer() {
-  if (renderer) return renderer;
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power', preserveDrawingBuffer: false });
+// Une surface : un <canvas> et son moteur WebGL, avec sa lumière de studio (propre à ce moteur)
+function makeSurface() {
+  const canvas = document.createElement('canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'low-power', preserveDrawingBuffer: false });
   renderer.setPixelRatio(1);
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.setClearColor(0x000000, 0);
-  renderer.setSize(256, 256, false);
-  env = studio(renderer);
-  return renderer;
+  const s = { canvas, renderer, env: studio(renderer), busy: false, lost: false };
+  // iOS peut reprendre le contexte d'une app en arrière-plan : la lumière de studio est refaite au retour
+  canvas.addEventListener('webglcontextlost', () => (s.lost = true));
+  canvas.addEventListener('webglcontextrestored', () => {
+    s.lost = false;
+    s.env = studio(renderer);
+    for (const v of views) if (v.surface === s) v.scene.environment = s.env;
+  });
+  surfaces.push(s);
+  return s;
+}
+
+function acquire() {
+  const s = surfaces.find((x) => !x.busy && !x.lost) || makeSurface();
+  s.busy = true;
+  return s;
+}
+
+function release(s) {
+  s.busy = false;
+  s.canvas.remove();
+  s.canvas.className = '';
+  const free = surfaces.filter((x) => !x.busy);
+  if (s.lost || free.length > KEEP_FREE) {
+    surfaces.splice(surfaces.indexOf(s), 1);
+    s.env.dispose();
+    s.renderer.dispose();
+    s.renderer.forceContextLoss();
+  }
 }
 
 // Cadrages : tout Pandi (avec chapeau et bras levés), ou le haut du corps
@@ -54,7 +88,7 @@ const FRAMES = {
   bust: { y: 1.5, h: 2.0 },
 };
 
-function makeScene() {
+function makeScene(env) {
   const scene = new THREE.Scene();
   scene.environment = env;
   scene.environmentIntensity = 0.7;
@@ -78,10 +112,7 @@ function frame(view, dt) {
   const { canvas, camera } = view;
   const dpr = Math.min(window.devicePixelRatio || 1, view.maxDpr || 2);
   const w = Math.max(1, Math.round(canvas.clientWidth * dpr)), h = Math.max(1, Math.round(canvas.clientHeight * dpr));
-  if (canvas.width !== w || canvas.height !== h) {
-    canvas.width = w;
-    canvas.height = h;
-  }
+  if (canvas.width !== w || canvas.height !== h) view.surface.renderer.setSize(w, h, false);
   // cadrage « auto » : le haut du corps, sauf pour les numéros qui se passent par terre (chaussures, jouets…)
   const frames = view.frames || FRAMES;
   const want = frames[view.framing === 'auto' ? view.cast?.frame || view.actor.frame || view.base : view.framing] || frames.full || FRAMES.full;
@@ -114,34 +145,26 @@ function tick(now) {
 }
 
 function drawAll(dt, steps = 1) {
-  const r = renderer;
-  let RW = r.domElement.width, RH = r.domElement.height;
   for (const v of views) {
-    if (!v.visible || !v.active || !v.canvas.isConnected) continue;
+    if (!v.visible || !v.active || !v.canvas.isConnected || v.surface.lost) continue;
     if (solo && v !== solo && solo.canvas.isConnected) continue; // une scène plein écran : les autres attendent
     // les petits Pandi des cartes se contentent de 30 images par seconde
     v.acc += dt * steps;
     if (v.fps && steps === 1 && v.acc < 1 / v.fps - 0.004) continue;
     const step = v.acc / steps;
     v.acc = 0;
-    const [w, h] = frame(v, step * steps);
-    if (w > RW || h > RH) {
-      RW = Math.max(RW, Math.ceil(w / 64) * 64);
-      RH = Math.max(RH, Math.ceil(h / 64) * 64);
-      r.setSize(RW, RH, false);
-    }
+    frame(v, step * steps);
     for (let i = 0; i < steps; i++) {
       v.actor.update(v.still ? 0 : step, v.camera);
       v.cast?.update(v.still ? 0 : step, v.camera);
     }
     v.shadow.scale.setScalar(1 - Math.min(0.45, v.actor.rig.root.position.y * 1.2));
     v.shadow.material.opacity = 0.34 * (1 - Math.min(0.6, v.actor.rig.root.position.y * 1.5));
-    r.setViewport(0, 0, w, h);
-    r.setScissor(0, 0, w, h);
-    r.setScissorTest(true);
-    r.render(v.scene, v.camera);
-    v.ctx.clearRect(0, 0, w, h);
-    v.ctx.drawImage(r.domElement, 0, RH - h, w, h, 0, 0, w, h);
+    v.surface.renderer.render(v.scene, v.camera);
+    if (!v.drawn) {
+      v.drawn = true;
+      v.onFirstDraw?.();
+    }
   }
 }
 
@@ -168,14 +191,30 @@ export function webglOk() {
   }
 }
 
-// Monte un Pandi dans un <canvas> : renvoie de quoi lui faire jouer un numéro et le démonter
+// Monte un Pandi dans host : sa surface (un <canvas> WebGL de classe className) y est ajoutée ; si host
+// est lui-même un <canvas> (bancs d'essai), la surface prend sa place le temps du numéro.
+// Renvoie de quoi lui faire jouer un numéro et le démonter ; onFirstDraw : sa première image est dessinée.
 // framing : 'full' (tout Pandi), 'bust' (le haut du corps) ou 'auto' (base, sauf numéros qui demandent tout)
 // Scène à plusieurs (coin calme) : spot { x, z, turn } place Pandi, cast { group, update(dt, camera), frame }
 // est l'autre personnage, frames remplace les cadrages ({ x, y, h, w }), maxDpr limite la définition ;
 // exclusive : tant qu'elle est affichée, les autres Pandi de l'écran (cachés dessous) ne sont plus dessinés.
-export function mountPandi(canvas, { act = 'idle', ctx = {}, framing = 'full', base = 'bust', date, look, brushColor, still = false, fps = 0, onCue, spot = null, cast = null, frames = null, maxDpr = 0, exclusive = false } = {}) {
-  ensureRenderer();
-  const { scene, shadow } = makeScene();
+export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', base = 'bust', date, look, brushColor, still = false, fps = 0, onCue, spot = null, cast = null, frames = null, maxDpr = 0, exclusive = false, className = '', label = 'Pandi le panda', onFirstDraw = null } = {}) {
+  const surface = acquire();
+  const canvas = surface.canvas;
+  const stand = host instanceof HTMLCanvasElement ? host : null;
+  canvas.className = stand ? stand.className : className;
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', stand?.getAttribute('aria-label') || label);
+  const standDisplay = stand?.style.display;
+  if (stand) {
+    canvas.style.cssText = stand.style.cssText;
+    stand.after(canvas);
+    stand.style.display = 'none';
+  } else {
+    canvas.style.cssText = '';
+    host.appendChild(canvas);
+  }
+  const { scene, shadow } = makeScene(surface.env);
   const actor = new PandiActor({ date, look, brushColor });
   if (spot) {
     // Pandi, son ombre et ses objets posés au sol suivent sa place ; les effets restent dans la scène
@@ -188,14 +227,15 @@ export function mountPandi(canvas, { act = 'idle', ctx = {}, framing = 'full', b
   if (cast) scene.add(cast.group);
   actor.play(act, ctx);
   actor.onCue = onCue || null;
-  const view = { canvas, ctx: canvas.getContext('2d'), scene, shadow, camera: new THREE.PerspectiveCamera(24, 1, 0.1, 40), actor, cast, frames, maxDpr, framing, base, visible: true, active: true, still, fps, acc: 0 };
+  const view = { canvas, surface, scene, shadow, camera: new THREE.PerspectiveCamera(24, 1, 0.1, 40), actor, cast, frames, maxDpr, framing, base, visible: true, active: true, still, fps, acc: 0, drawn: false, onFirstDraw };
   const io = 'IntersectionObserver' in window ? new IntersectionObserver(([e]) => (view.visible = e.isIntersecting)) : null;
   io?.observe(canvas);
   views.add(view);
   if (exclusive) solo = view;
   if (!raf) raf = requestAnimationFrame(tick);
-  return {
+  const ctl = {
     actor,
+    canvas,
     play: (name, c) => actor.play(name, c),
     set: (c) => actor.setContext(c),
     setFraming: (f) => (view.framing = f),
@@ -203,12 +243,25 @@ export function mountPandi(canvas, { act = 'idle', ctx = {}, framing = 'full', b
     setCue: (fn) => (actor.onCue = fn),
     // une image (animations réduites : Pandi reste immobile mais garde sa pose)
     still: (on) => (view.still = on),
+    // Bancs d'essai qui montrent beaucoup de Pandi : l'image du moment est recopiée dans le <canvas> d'origine,
+    // puis la surface est rendue (un navigateur ne garde qu'une quinzaine de contextes WebGL à la fois)
+    freeze() {
+      if (!stand) return ctl.destroy();
+      frame(view, 0);
+      surface.renderer.render(scene, view.camera);
+      stand.width = canvas.width;
+      stand.height = canvas.height;
+      stand.getContext('2d').drawImage(canvas, 0, 0);
+      ctl.destroy();
+    },
     destroy() {
       io?.disconnect();
       views.delete(view);
       if (solo === view) solo = null;
       actor.wear.dispose();
       cast?.dispose?.();
+      release(surface);
+      if (stand) stand.style.display = standDisplay;
       if (!views.size) {
         cancelAnimationFrame(raf);
         raf = 0;
@@ -216,4 +269,5 @@ export function mountPandi(canvas, { act = 'idle', ctx = {}, framing = 'full', b
       }
     },
   };
+  return ctl;
 }
