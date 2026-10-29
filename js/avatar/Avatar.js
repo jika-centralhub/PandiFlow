@@ -355,7 +355,8 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
   // Dans une autre image SVG, la taille CSS en px vaut des unités de cette image
   const box = nest ? { x: nest.x, y: nest.y, width: nest.w, height: nest.h } : {};
   const css = nest ? { ...(style || {}), width: `${nest.w}px`, height: `${nest.h}px` } : style;
-  return html`<svg class=${`avatar ${still ? 'still' : ''} ${geo ? 'whole3d' : ''} pose-${pose} ${cls}`} viewBox=${viewBox} xmlns="http://www.w3.org/2000/svg" style=${css} ...${box} role="img" aria-label="Avatar">
+  // has3d : visage 3D (image), qui ne doit pas être redessiné à chaque image (avatar.css)
+  return html`<svg class=${`avatar ${still ? 'still' : ''} ${pic ? 'has3d' : ''} ${geo ? 'whole3d' : ''} pose-${pose} ${cls}`} viewBox=${viewBox} xmlns="http://www.w3.org/2000/svg" style=${css} ...${box} role="img" aria-label="Avatar">
     <defs>
       <radialGradient id=${`${id}-skin`} cx="42%" cy="34%" r="70%">
         <stop offset="0%" stop-color=${shade(skin, 0.2)} />

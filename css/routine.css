@@ -31,6 +31,9 @@
   will-change: transform; outline: none;
 }
 .cr-card.far { opacity: 0; pointer-events: none; }
+/* La carte du centre porte le Pandi 3D : sans filtre (saturate(1) ne change rien à l'œil mais fait
+   refiltrer toute la carte à chaque image du Pandi) */
+.cr-card.center { filter: none; }
 .cr-card.center { box-shadow: 0 2.2cqh 0 rgba(42, 35, 80, .22), 0 5cqh 10cqh rgba(10, 6, 40, .4), 0 0 0 .9cqh color-mix(in srgb, var(--kid), #fff 35%); }
 .cr-card:focus-visible { box-shadow: 0 0 0 1.2cqh var(--gold); }
 /* Une tâche notée devient « faite », en doré, quelle que soit la note : la télé ne compare pas les enfants */
@@ -62,7 +65,7 @@
 .cr-timer-btn:active { transform: translateY(.8cqh) scale(.96); box-shadow: 0 .3cqh 0 color-mix(in srgb, var(--kid), #000 32%); }
 .cr-card .tile-badge { top: -2cqh; right: -1cqh; width: 15cqh; height: 15cqh; font-size: 9cqh; }
 .cr-arrow { position: absolute; top: 50%; z-index: 20; width: calc(var(--u) * 8.4); height: calc(var(--u) * 8.4); margin-top: calc(var(--u) * -4.2); border-radius: 50%; display: grid; place-items: center;
-  font-size: calc(var(--u) * 6); line-height: 1; font-weight: 700; background: rgba(255, 255, 255, .22); box-shadow: inset 0 0 0 2px var(--line); backdrop-filter: blur(4px); transition: opacity .3s, transform .15s; }
+  font-size: calc(var(--u) * 6); line-height: 1; font-weight: 700; background: rgba(255, 255, 255, .28); box-shadow: inset 0 0 0 2px var(--line); transition: opacity .3s, transform .15s; }
 .cr-arrow.prev { left: calc(var(--u) * .8); }
 .cr-arrow.next { right: calc(var(--u) * .8); }
 .cr-arrow:disabled { opacity: 0; pointer-events: none; }
@@ -153,7 +156,7 @@
 
 /* ----- Grand écran du minuteur (télé) ----- */
 .timer-stage { --tc: var(--green); position: fixed; inset: 0; z-index: 45; display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 9); padding: calc(var(--u) * 5);
-  background: radial-gradient(circle at 34% 50%, color-mix(in srgb, var(--tc), #1d1650 72%), #0e0a2e 78%); backdrop-filter: blur(8px); animation: fade-in .35s ease; }
+  background: radial-gradient(circle at 34% 50%, color-mix(in srgb, var(--tc), #1d1650 72%), #0e0a2e 78%); animation: fade-in .35s ease; }
 .timer-stage::after { content: ''; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 calc(var(--u) * 30) color-mix(in srgb, var(--tc), transparent 35%); opacity: 0; transition: opacity .6s; }
 .ts-hurry { --tc: var(--gold); }
 .ts-rush { --tc: #f7c86a; }
@@ -203,7 +206,7 @@
 
 /* ----- Compte à rebours du départ à l'école ----- */
 .departure { --dc: var(--green); display: flex; align-items: center; gap: calc(var(--u) * 2.4); margin: 0 calc(var(--u) * 3.5) calc(var(--u) * 2); padding: calc(var(--u) * 1.2) calc(var(--u) * 3);
-  border-radius: 999px; background: rgba(0, 0, 0, .25); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--dc), transparent 40%); backdrop-filter: blur(6px); animation: fade-up .5s ease both; transition: box-shadow .6s; }
+  border-radius: 999px; background: rgba(0, 0, 0, .32); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--dc), transparent 40%); animation: fade-up .5s ease both; transition: box-shadow .6s; }
 /* Le départ aussi reste calme : pas de rouge, pas de tremblement */
 .departure.d-hurry { --dc: var(--gold); }
 .departure.d-rush { --dc: #f7c86a; }
@@ -273,10 +276,14 @@
 }
 
 /* ----- Soirée douce : à partir de l'histoire du soir, tout se calme avant le coucher ----- */
-#sky { transition: filter 3s ease; }
-#sky.doux { filter: brightness(.6) saturate(.75); }
+/* Assombrir par un voile plutôt que par un filtre : un filtre sur le ciel ou sur une colonne serait refait à
+   chaque image (étoiles, nuages, Pandi 3D) ; un voile noir à 40 % donne la même luminosité que brightness(.6) */
+#sky::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: #000; opacity: 0; transition: opacity 3s ease; }
+#sky.doux::after { opacity: .4; }
 #sky.doux .sky-cloud { animation-duration: 240s !important; }
-.evening.soir-doux .kid-col { transition: filter 3s ease; filter: brightness(.9) saturate(.85); }
+.evening.soir-doux .kid-col, .kid-col.asleep { position: relative; isolation: isolate; }
+.evening.soir-doux .kid-col::after, .kid-col.asleep::after { content: ''; position: absolute; inset: 0; z-index: 30; border-radius: inherit; pointer-events: none;
+  background: #000; opacity: .1; animation: fade-in 3s ease; }
 .evening.soir-doux .cr-card.center .cr-emoji { animation-duration: 3.6s; }
 .evening.soir-doux .cr-dot.on .cr-dot-ico { animation-duration: 5s; }
 .evening.soir-doux :is(.cr-dot.done, .cr-dot.pause, .cr-dot.gold, .cr-dot.timing)::after { animation-duration: 4.4s; }

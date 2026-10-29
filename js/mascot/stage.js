@@ -4,7 +4,10 @@
 // cette copie oblige Safari à attendre la carte graphique et à rapatrier l'image, 30 fois par seconde et
 // par Pandi (mesuré le 28/10/2026 sur un iPhone 14 Pro : 75 % du temps du processeur, 13 images/s).
 // Les surfaces sont gardées et réutilisées (une carte qui change reprend une surface libre) : le moteur
-// garde ses shaders déjà compilés au lieu de tout recompiler à chaque note.
+// garde ses shaders déjà compilés au lieu de tout recompiler à chaque note. Un Pandi qui ne se voit plus
+// (caché sous le minuteur, sous le coin calme, hors de l'écran) prête la sienne au Pandi qui arrive, et
+// la retrouve quand il réapparaît : sur iPhone, une surface neuve compile toute sa 3D et figeait l'écran
+// jusqu'à 4,7 s à l'ouverture du minuteur (mesuré le 29/10/2026).
 // Lumière de studio d'animation : grande lumière chaude devant à gauche, contre-jour froid qui
 // détoure la fourrure, ciel doux pour les reflets des yeux et de la truffe.
 import { THREE, blobTexture } from './pandi3d.js';
@@ -14,6 +17,9 @@ let raf = 0, last = 0, solo = null;
 const views = new Set();
 const surfaces = []; // { canvas, renderer, env, busy, lost }
 const KEEP_FREE = 3; // surfaces libres gardées pour les prochains Pandi
+// Vérifier chaque shader après sa compilation oblige le navigateur à attendre la fin de la compilation :
+// seulement pendant le développement
+const CHECK_SHADERS = ['localhost', '127.0.0.1'].includes(location.hostname);
 
 function studio(r) {
   const s = new THREE.Scene();
@@ -51,6 +57,7 @@ function makeSurface() {
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.setClearColor(0x000000, 0);
+  renderer.debug.checkShaderErrors = CHECK_SHADERS;
   const s = { canvas, renderer, env: studio(renderer), busy: false, lost: false };
   // iOS peut reprendre le contexte d'une app en arrière-plan : la lumière de studio est refaite au retour
   canvas.addEventListener('webglcontextlost', () => (s.lost = true));
@@ -63,9 +70,46 @@ function makeSurface() {
   return s;
 }
 
-function acquire() {
-  const s = surfaces.find((x) => !x.busy && !x.lost) || makeSurface();
+// Un Pandi qui n'est pas dessiné en ce moment : en pause, hors de l'écran, sans taille (caché), ou sous
+// une scène plein écran
+const idle = (v) => !v.active || !v.visible || !v.canvas.clientWidth || !v.canvas.clientHeight || (solo && v !== solo && solo.canvas?.isConnected);
+
+// Une surface pour view : une libre, sinon celle d'un Pandi qui ne se voit pas, sinon une neuve
+function acquire(view) {
+  let s = surfaces.find((x) => !x.busy && !x.lost);
+  if (!s) {
+    const lender = [...views].find((v) => v !== view && v.surface && !v.surface.lost && idle(v));
+    s = lender ? detach(lender) : makeSurface();
+  }
   s.busy = true;
+  return s;
+}
+
+// La surface ou la place vide remplace l'élément du Pandi dans la page, avec ses classes (ready comprise)
+function swapIn(view, el) {
+  const old = view.canvas;
+  el.className = old.className;
+  el.setAttribute('role', 'img');
+  el.setAttribute('aria-label', old.getAttribute('aria-label') || '');
+  el.style.cssText = old.style.cssText;
+  old.replaceWith(el);
+  view.io?.unobserve(old);
+  view.io?.observe(el);
+  view.canvas = el;
+}
+
+function attach(view, s) {
+  view.surface = s;
+  view.scene.environment = s.env;
+  swapIn(view, s.canvas);
+}
+
+// Le Pandi garde sa place avec un <canvas> vide (même taille, mêmes classes) et rend sa surface
+function detach(view) {
+  const s = view.surface;
+  view.surface = null;
+  view.place ||= document.createElement('canvas');
+  swapIn(view, view.place);
   return s;
 }
 
@@ -146,11 +190,14 @@ function tick(now) {
 
 function drawAll(dt, steps = 1) {
   for (const v of views) {
-    if (!v.visible || !v.active || !v.canvas.isConnected || v.surface.lost) continue;
-    if (solo && v !== solo && solo.canvas.isConnected) continue; // une scène plein écran : les autres attendent
+    // idle : en pause, caché, ou une scène plein écran passe devant (les autres attendent)
+    if (!v.canvas.isConnected || v.surface?.lost || idle(v)) continue;
+    // il réapparaît après avoir prêté sa surface : il en reprend une et se dessine tout de suite
+    const back = !v.surface;
+    if (back) attach(v, acquire(v));
     // les petits Pandi des cartes se contentent de 30 images par seconde
     v.acc += dt * steps;
-    if (v.fps && steps === 1 && v.acc < 1 / v.fps - 0.004) continue;
+    if (!back && v.fps && steps === 1 && v.acc < 1 / v.fps - 0.004) continue;
     const step = v.acc / steps;
     v.acc = 0;
     frame(v, step * steps);
@@ -199,7 +246,10 @@ export function webglOk() {
 // est l'autre personnage, frames remplace les cadrages ({ x, y, h, w }), maxDpr limite la définition ;
 // exclusive : tant qu'elle est affichée, les autres Pandi de l'écran (cachés dessous) ne sont plus dessinés.
 export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', base = 'bust', date, look, brushColor, still = false, fps = 0, onCue, spot = null, cast = null, frames = null, maxDpr = 0, exclusive = false, className = '', label = 'Pandi le panda', onFirstDraw = null } = {}) {
-  const surface = acquire();
+  // la scène plein écran est déclarée avant de chercher une surface : les Pandi qu'elle cache prêtent la leur
+  const view = { drawn: false };
+  if (exclusive) solo = view;
+  const surface = acquire(view);
   const canvas = surface.canvas;
   const stand = host instanceof HTMLCanvasElement ? host : null;
   canvas.className = stand ? stand.className : className;
@@ -227,15 +277,18 @@ export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', bas
   if (cast) scene.add(cast.group);
   actor.play(act, ctx);
   actor.onCue = onCue || null;
-  const view = { canvas, surface, scene, shadow, camera: new THREE.PerspectiveCamera(24, 1, 0.1, 40), actor, cast, frames, maxDpr, framing, base, visible: true, active: true, still, fps, acc: 0, drawn: false, onFirstDraw };
+  Object.assign(view, { canvas, surface, scene, shadow, camera: new THREE.PerspectiveCamera(24, 1, 0.1, 40), actor, cast, frames, maxDpr, framing, base, visible: true, active: true, still, fps, acc: 0, onFirstDraw });
   const io = 'IntersectionObserver' in window ? new IntersectionObserver(([e]) => (view.visible = e.isIntersecting)) : null;
+  view.io = io;
   io?.observe(canvas);
   views.add(view);
-  if (exclusive) solo = view;
   if (!raf) raf = requestAnimationFrame(tick);
   const ctl = {
     actor,
-    canvas,
+    // l'élément du Pandi dans la page (sa surface, ou sa place vide quand il l'a prêtée)
+    get canvas() {
+      return view.canvas;
+    },
     play: (name, c) => actor.play(name, c),
     set: (c) => actor.setContext(c),
     setFraming: (f) => (view.framing = f),
@@ -247,11 +300,12 @@ export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', bas
     // puis la surface est rendue (un navigateur ne garde qu'une quinzaine de contextes WebGL à la fois)
     freeze() {
       if (!stand) return ctl.destroy();
+      if (!view.surface) attach(view, acquire(view));
       frame(view, 0);
-      surface.renderer.render(scene, view.camera);
-      stand.width = canvas.width;
-      stand.height = canvas.height;
-      stand.getContext('2d').drawImage(canvas, 0, 0);
+      view.surface.renderer.render(scene, view.camera);
+      stand.width = view.canvas.width;
+      stand.height = view.canvas.height;
+      stand.getContext('2d').drawImage(view.canvas, 0, 0);
       ctl.destroy();
     },
     destroy() {
@@ -260,7 +314,8 @@ export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', bas
       if (solo === view) solo = null;
       actor.wear.dispose();
       cast?.dispose?.();
-      release(surface);
+      if (view.surface) release(view.surface);
+      else view.canvas.remove();
       if (stand) stand.style.display = standDisplay;
       if (!views.size) {
         cancelAnimationFrame(raf);

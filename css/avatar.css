@@ -10,6 +10,13 @@
 .avatar .av-char { transform-origin: 50% 100%; animation: av-breathe 3.6s ease-in-out infinite; }
 .avatar .av-head { transform-origin: 50% 92%; animation: av-sway 5.4s ease-in-out infinite; }
 .avatar .av-eyes { transform-origin: 50% 50%; animation: av-blink 4.8s infinite; }
+/* Personnage au visage 3D, au repos : il respire par la boîte du dessin, que la carte graphique fait bouger
+   sans rien redessiner. Animer un groupe à l'intérieur du SVG oblige Safari à recalculer à chaque image
+   tous les masques et fondus du personnage (iPhone : l'écran plafonnait vers 23 images/s). Dessiné dans une
+   autre image (scène de l'enfant) ou avec un décor qui ne doit pas respirer, il reste immobile au repos ;
+   il saute et danse toujours quand il est content. */
+.avatar.has3d.pose-idle .av-char, .avatar.has3d.pose-idle .av-head { animation: none; }
+svg.avatar.has3d.pose-idle:not(.still):not(svg svg):not(:has(> .av-bg)) { transform-origin: 50% 100%; animation: av-breathe 3.6s ease-in-out infinite; }
 .avatar .av-arm-l, .avatar .av-arm-r { transform-origin: 50% 8%; transition: transform .4s cubic-bezier(.3, 1.5, .5, 1); }
 .avatar .av-fore-l, .avatar .av-fore-r { transition: transform .4s cubic-bezier(.3, 1.5, .5, 1); }
 

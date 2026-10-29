@@ -65,7 +65,7 @@ h1, h2, h3, p { margin: 0; }
 .sky-moon::before { width: 22%; height: 22%; top: 28%; left: 52%; }
 .sky-moon::after { width: 14%; height: 14%; top: 60%; left: 30%; }
 @keyframes moon-glow { 50% { box-shadow: 0 0 calc(var(--u) * 11) rgba(255, 233, 166, .7), 0 0 calc(var(--u) * 26) rgba(255, 233, 166, .3); } }
-.sky-cloud { position: absolute; height: calc(var(--u) * 7); border-radius: 999px; background: rgba(255, 255, 255, .07); filter: blur(1px); animation: cloud linear infinite; }
+.sky-cloud { position: absolute; height: calc(var(--u) * 7); border-radius: 999px; background: rgba(255, 255, 255, .07); animation: cloud linear infinite; }
 .sky-cloud::before, .sky-cloud::after { content: ''; position: absolute; background: inherit; border-radius: 50%; }
 .sky-cloud::before { width: 45%; height: 160%; left: 15%; bottom: 30%; }
 .sky-cloud::after { width: 35%; height: 130%; left: 50%; bottom: 35%; }
@@ -126,9 +126,11 @@ h1, h2, h3, p { margin: 0; }
 .evening { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .columns { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: calc(var(--u) * 3); padding: 0 calc(var(--u) * 3.5) calc(var(--u) * 3); padding-bottom: max(calc(var(--u) * 3), env(safe-area-inset-bottom)); }
 .kid-col { --kid-l: color-mix(in srgb, var(--kid), #fff 30%); display: flex; flex-direction: column; min-height: 0; border-radius: var(--radius); padding: calc(var(--u) * 2.4);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--kid), transparent 72%), color-mix(in srgb, var(--kid), transparent 88%));
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--kid), transparent 45%), 0 calc(var(--u) * 2) calc(var(--u) * 6) rgba(5, 3, 30, .3);
-  backdrop-filter: blur(6px); }
+  background: linear-gradient(180deg, color-mix(in srgb, var(--kid), transparent 68%), color-mix(in srgb, var(--kid), transparent 85%)), rgba(18, 13, 56, .3);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--kid), transparent 45%), 0 calc(var(--u) * 2) calc(var(--u) * 6) rgba(5, 3, 30, .3); }
+/* Pas de flou d'arrière-plan sur les grandes surfaces qui restent à l'écran : sur iPhone, il est refait à
+   chaque image dès que quelque chose bouge dessous ou dedans (ciel, Pandi 3D), et l'écran plafonnait vers
+   23 images/s ; un fond un peu plus dense le remplace. Les flous restent pour les fenêtres passagères. */
 .kid-col.done { box-shadow: inset 0 0 0 3px var(--gold), 0 0 calc(var(--u) * 6) rgba(255, 210, 63, .45); }
 .kid-head { display: flex; align-items: center; gap: calc(var(--u) * 2); margin-bottom: calc(var(--u) * 1.2); }
 .kid-avatar { flex: none; width: calc(var(--u) * 11.5); height: calc(var(--u) * 11.5); border-radius: 50%; overflow: hidden; position: relative;
@@ -181,7 +183,7 @@ h1, h2, h3, p { margin: 0; }
 
 /* ===== Fenêtres (modales) ===== */
 .overlay { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: calc(var(--u) * 3);
-  background: rgba(10, 8, 40, .6); backdrop-filter: blur(5px); animation: fade-in .25s ease; }
+  background: rgba(10, 8, 40, .72); animation: fade-in .25s ease; }
 @keyframes fade-in { from { opacity: 0; } }
 .sheet { width: min(100%, calc(var(--u) * 150)); max-height: 100%; overflow: auto; border-radius: calc(var(--u) * 7); padding: calc(var(--u) * 5);
   background: linear-gradient(180deg, #ffffff, #f4f0ff); color: var(--ink); box-shadow: 0 calc(var(--u) * 3) calc(var(--u) * 10) rgba(0, 0, 0, .45);
@@ -225,7 +227,7 @@ h1, h2, h3, p { margin: 0; }
 
 /* ===== Célébrations ===== */
 .celebrate { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 6); padding: calc(var(--u) * 4);
-  background: radial-gradient(circle at 35% 55%, rgba(120, 78, 200, .97), rgba(16, 12, 52, .98) 72%); backdrop-filter: blur(8px); animation: fade-in .4s ease; }
+  background: radial-gradient(circle at 35% 55%, rgba(120, 78, 200, .97), rgba(16, 12, 52, .98) 72%); animation: fade-in .4s ease; }
 .celebrate .stage { width: calc(var(--u) * 62); height: calc(var(--u) * 74); flex: none; position: relative; animation: stage-in .8s cubic-bezier(.3, 1.5, .5, 1); }
 @keyframes stage-in { from { transform: scale(.2) rotate(-20deg); opacity: 0; } }
 .celebrate .rays { position: absolute; inset: -30%; background: repeating-conic-gradient(from 0deg, rgba(255, 236, 150, .28) 0 10deg, transparent 10deg 20deg); border-radius: 50%; mask: radial-gradient(circle, #000 30%, transparent 70%); -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%); animation: spin 14s linear infinite; }
@@ -273,7 +275,7 @@ h1, h2, h3, p { margin: 0; }
   background: radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--kid), #fff 45%), color-mix(in srgb, var(--kid), #000 20%)); box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .35), 0 calc(var(--u) * 2) calc(var(--u) * 6) rgba(0, 0, 0, .3); }
 .child-stage .avatar { position: absolute; inset: 0; }
 .child-stage .stage-floor { position: absolute; left: 10%; right: 10%; bottom: 2%; height: 8%; border-radius: 50%; background: rgba(0, 0, 0, .18); filter: blur(4px); }
-.child-panel { display: flex; flex-direction: column; min-height: 0; border-radius: var(--radius); background: rgba(255, 255, 255, .1); box-shadow: inset 0 0 0 2px var(--line); backdrop-filter: blur(6px); overflow: hidden; container-type: inline-size; }
+.child-panel { display: flex; flex-direction: column; min-height: 0; border-radius: var(--radius); background: linear-gradient(rgba(255, 255, 255, .1), rgba(255, 255, 255, .1)), rgba(18, 13, 56, .3); box-shadow: inset 0 0 0 2px var(--line); overflow: hidden; container-type: inline-size; }
 /* Onglets : icône au-dessus du texte, taille calée sur la largeur du panneau (cqi) pour que les cinq
    onglets restent visibles en plein écran, à la télé ou sur une tablette */
 .tabs { display: flex; gap: .4em; padding: .5em; font-size: clamp(12px, 3.5cqi, calc(var(--u) * 3.4)); background: rgba(0, 0, 0, .18); overflow-x: auto; scrollbar-width: none; }
@@ -614,7 +616,7 @@ canvas.pandi3d.ready { opacity: 1; transform: none; }
 .row.muted-row { background: #f8f6fe; }
 
 /* ===== Téléphone : proposition du plein écran en paysage ===== */
-.landscape-offer { position: fixed; left: 50%; bottom: max(calc(var(--u) * 3), env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 35; width: min(94vw, calc(var(--u) * 150)); display: flex; align-items: center; gap: calc(var(--u) * 3); padding: calc(var(--u) * 2.6) calc(var(--u) * 3.4); border-radius: calc(var(--u) * 5); background: rgba(42, 35, 80, .94); backdrop-filter: blur(10px); box-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 8) rgba(0, 0, 0, .4), inset 0 0 0 2px var(--line); color: #fff; animation: lo-in .5s cubic-bezier(.3, 1.4, .5, 1); }
+.landscape-offer { position: fixed; left: 50%; bottom: max(calc(var(--u) * 3), env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 35; width: min(94vw, calc(var(--u) * 150)); display: flex; align-items: center; gap: calc(var(--u) * 3); padding: calc(var(--u) * 2.6) calc(var(--u) * 3.4); border-radius: calc(var(--u) * 5); background: rgba(42, 35, 80, .96); box-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 8) rgba(0, 0, 0, .4), inset 0 0 0 2px var(--line); color: #fff; animation: lo-in .5s cubic-bezier(.3, 1.4, .5, 1); }
 @keyframes lo-in { from { transform: translate(-50%, 160%); } }
 .lo-icon { font-size: calc(var(--u) * 8); line-height: 1; flex: none; }
 .lo-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: calc(var(--u) * .6); font-size: calc(var(--u) * 3.3); line-height: 1.3; }

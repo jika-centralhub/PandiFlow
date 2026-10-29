@@ -18,7 +18,7 @@
 .cr-card.night .cr-hint { color: rgba(255, 255, 255, .75); }
 .cr-card.night.locked { opacity: .82; }
 .cr-card.night.asleep { background: linear-gradient(160deg, #241d58, #0f0b30); }
-.kid-col.asleep { filter: brightness(.7) saturate(.8); transition: filter 1.6s ease; }
+.kid-col.asleep::after { opacity: .3; animation-duration: 1.6s; } /* voile de routine.css, comme brightness(.7) */
 
 /* Bandeau sous la barre du haut : départ à l'école (matin) ; le coffre de l'équipe est au milieu de la barre du haut */
 .strip { display: flex; align-items: center; gap: calc(var(--u) * 2); margin: 0 calc(var(--u) * 3.5) calc(var(--u) * 2); }
@@ -83,7 +83,7 @@
 
 /* Grands moments d'équipe */
 .team-moment { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * 3); padding: calc(var(--u) * 4);
-  background: radial-gradient(circle at 50% 45%, rgba(155, 108, 240, .97), rgba(30, 18, 72, .98) 72%); backdrop-filter: blur(8px); animation: fade-in .4s ease; text-align: center; }
+  background: radial-gradient(circle at 50% 45%, rgba(155, 108, 240, .97), rgba(30, 18, 72, .98) 72%); animation: fade-in .4s ease; text-align: center; }
 .tm-treasure { background: radial-gradient(circle at 50% 45%, rgba(255, 196, 70, .97), rgba(60, 30, 90, .98) 72%); }
 .tm-help, .tm-gift { background: radial-gradient(circle at 50% 45%, rgba(255, 126, 182, .97), rgba(60, 24, 90, .98) 72%); }
 .tm-stage { display: flex; align-items: flex-end; justify-content: center; gap: calc(var(--u) * 2); }
