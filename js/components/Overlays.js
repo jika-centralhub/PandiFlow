@@ -7,7 +7,7 @@ import { getItem } from '../avatar/items.js';
 import { ItemThumb } from './ItemThumb.js';
 import { Pandi } from './Coin.js';
 import { PandiCounter } from './ui.js';
-import { sfx, say, canSay, stopSaying } from '../lib/sounds.js';
+import { sfx } from '../lib/sounds.js';
 import { fireworks, coinRain, confettiBurst, flyCoins, dropCoins } from '../anim/fx.js';
 import { sleep } from '../lib/util.js';
 import { ROUTINES } from '../domain.js';
@@ -46,7 +46,7 @@ export function OverlayHost() {
 }
 
 // Le paquet cadeau de Pandi : il frétille, le couvercle saute, la carte privilège monte.
-// Pas de chiffre ni de pandi : une carte à lire (Pandi la lit à voix haute pour les petits).
+// Pas de chiffre ni de pandi : une carte à lire (sans voix).
 export function GiftBox() {
   return html`<svg class="gift" viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
@@ -82,16 +82,12 @@ function SurpriseReveal({ childId, card, team = false, soft = false, onClose }) 
       if (soft) sfx.softChime();
       else sfx.chest();
       await sleep(450);
-      if (!alive) return;
-      if (!soft) confettiBurst(wrap.current, ['#FFD23F', '#FFF3B0', '#A698FF', '#5EC8FF']);
-      await sleep(900);
-      if (alive) say(card.text);
+      if (alive && !soft) confettiBurst(wrap.current, ['#FFD23F', '#FFF3B0', '#A698FF', '#5EC8FF']);
     })();
     const t = setTimeout(onClose, 60000);
     return () => {
       alive = false;
       clearTimeout(t);
-      stopSaying();
     };
   }, []);
   if (!child || !card) return null;
@@ -106,7 +102,6 @@ function SurpriseReveal({ childId, card, team = false, soft = false, onClose }) 
       <h2>${team ? `Une surprise de Pandi pour toute l’équipe !` : `Une surprise de Pandi pour ${child.name} !`}</h2>
       <p>${phase === 'shake' ? 'Pandi a laissé un paquet…' : `Pandi avait envie de ${team ? 'vous' : 'te'} faire plaisir 💛`}</p>
       <div class="sheet-actions">
-        ${canSay() && html`<button class="btn btn-ghost" onClick=${() => { sfx.tap(); say(card.text); }}>🔊 Écouter</button>`}
         <button class="btn btn-gold btn-big" onClick=${() => { sfx.tap(); onClose(); }}>Merci Pandi !</button>
       </div>
     </div>
