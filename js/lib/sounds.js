@@ -1,5 +1,6 @@
-// Sons synthétisés en WebAudio : aucun fichier audio à charger.
+// Sons synthétisés en WebAudio : aucun fichier audio à charger, sauf les phrases enregistrées de Pandi.
 import { getState } from './store.js';
+import { VOIX, voixUrl } from './voix.js';
 
 let ctx = null;
 let master = null;
@@ -35,30 +36,92 @@ export function unlockAudio() {
   window.addEventListener('pointerdown', once);
 }
 
-// Pandi lit une phrase à voix haute (la voix française du téléphone) : pour les petits qui ne lisent
-// pas encore. Rien si le son est coupé ou si le navigateur ne sait pas parler.
-// onEnd : appelé quand il a fini de parler (seulement si la phrase a bien été lancée)
+// Pandi lit une phrase à voix haute : pour les petits qui ne lisent pas encore. Une phrase enregistrée
+// (js/lib/voix.js) passe par le même WebAudio que les bruitages : une fois le son débloqué par un premier
+// toucher, elle joue sans nouveau geste (iPhone). Les autres sont lues par la voix française du téléphone.
+// Rien si le son est coupé ou si le navigateur ne sait pas parler.
+// onEnd : appelé quand il a fini de parler (seulement si la phrase a bien été lancée, et pas si on l'arrête)
 export function say(text, { onEnd } = {}) {
   try {
-    const synth = window.speechSynthesis;
-    if (!getState().prefs.sound || !synth || !text) return false;
-    synth.cancel();
-    const u = new SpeechSynthesisUtterance(String(text).replace(/\p{Extended_Pictographic}|️|‍/gu, '').trim());
-    u.lang = 'fr-FR';
-    u.rate = 0.92;
-    u.pitch = 1.15;
-    u.volume = soft ? 0.6 : 1;
-    const voice = synth.getVoices().find((v) => v.lang?.toLowerCase().startsWith('fr'));
-    if (voice) u.voice = voice;
-    if (onEnd) u.onend = onEnd;
-    synth.speak(u);
-    return true;
+    if (!getState().prefs.sound || !text) return false;
+    const clean = String(text).replace(/\p{Extended_Pictographic}|️|‍/gu, '').trim();
+    stopSaying();
+    const a = VOIX[clean] && audio();
+    return a ? playVoice(a, VOIX[clean], clean, onEnd) : speak(clean, onEnd);
   } catch {
     return false;
   }
 }
+
+function speak(text, onEnd) {
+  const synth = window.speechSynthesis;
+  if (!synth) return false;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'fr-FR';
+  u.rate = 0.92;
+  u.pitch = 1.15;
+  u.volume = soft ? 0.6 : 1;
+  const voice = synth.getVoices().find((v) => v.lang?.toLowerCase().startsWith('fr'));
+  if (voice) u.voice = voice;
+  if (onEnd) u.onend = onEnd;
+  synth.speak(u);
+  return true;
+}
+
+let speaking = null; // la phrase enregistrée en cours : { stop }
+let voiceBus = null;
+const voiceBuffers = new Map(); // nom -> Promise<AudioBuffer>, chargé à la première lecture
+
+function loadVoice(a, nom) {
+  if (!voiceBuffers.has(nom)) {
+    const p = fetch(voixUrl(nom))
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`voix ${nom} : ${r.status}`))))
+      .then((data) => new Promise((ok, ko) => a.decodeAudioData(data, ok, ko)));
+    p.catch(() => voiceBuffers.delete(nom));
+    voiceBuffers.set(nom, p);
+  }
+  return voiceBuffers.get(nom);
+}
+
+function playVoice(a, nom, text, onEnd) {
+  const line = { stopped: false, src: null };
+  line.stop = () => {
+    line.stopped = true;
+    try {
+      line.src?.stop();
+    } catch {}
+  };
+  speaking = line;
+  loadVoice(a, nom).then(
+    (buffer) => {
+      if (line.stopped) return;
+      if (!voiceBus) {
+        voiceBus = a.createGain();
+        voiceBus.connect(a.destination);
+      }
+      voiceBus.gain.value = soft ? 0.6 : 1;
+      line.src = a.createBufferSource();
+      line.src.buffer = buffer;
+      line.src.connect(voiceBus);
+      line.src.onended = () => {
+        if (line.stopped) return;
+        if (speaking === line) speaking = null;
+        onEnd?.();
+      };
+      line.src.start();
+    },
+    // Fichier introuvable (hors ligne) : la voix du téléphone prend le relais
+    () => {
+      if (!line.stopped && !speak(text, onEnd)) onEnd?.();
+    },
+  );
+  return true;
+}
+
 export const canSay = () => typeof window !== 'undefined' && 'speechSynthesis' in window;
 export function stopSaying() {
+  speaking?.stop();
+  speaking = null;
   try {
     window.speechSynthesis?.cancel();
   } catch {}
