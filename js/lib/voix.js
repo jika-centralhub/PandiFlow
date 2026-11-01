@@ -8,6 +8,10 @@ export const VOIX = {
   'Bonjour les enfants ! Je suis Pandi. Le matin et le soir, je fais la routine avec vous. Quand vous écoutez du premier coup, je danse de joie ! Avec vos pandi, vous choisirez des habits et des objets pour votre personnage. On commence ?': 'bonjour-plusieurs-matin-soir',
   // La fête d'anniversaire (Anniversaire.js, words)
   'Joyeux anniversaire !': 'anniv-voeu',
+  "Tu as un an de plus aujourd'hui ! Je t'offre des pandi, et tu choisis un cadeau parmi les surprises de Pandi !": 'anniv-cadeaux-un',
+  "Tu as un an de plus aujourd'hui ! Tu choisis un cadeau parmi les surprises de Pandi !": 'anniv-cadeaux-un-sans-pandi',
+  "Vous avez un an de plus aujourd'hui ! Je vous offre des pandi, et vous choisirez chacun un cadeau parmi les surprises de Pandi !": 'anniv-cadeaux-plusieurs',
+  "Vous avez un an de plus aujourd'hui ! Vous choisirez chacun un cadeau parmi les surprises de Pandi !": 'anniv-cadeaux-plusieurs-sans-pandi',
   "Merci d'avoir fait la fête avec nous !": 'anniv-merci',
   'Encore une danse ? Joyeux anniversaire !': 'anniv-encore',
 };
