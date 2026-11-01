@@ -140,12 +140,13 @@ export function GreetBar({ onGreet, onLater }) {
   </div>`;
 }
 
+// Sans prénom, pour pouvoir l'enregistrer à l'avance : quatre versions (un ou plusieurs enfants, avec ou sans matin)
 export function greetText(kids, withMorning) {
   const when = withMorning ? 'Le matin et le soir' : 'Chaque soir';
   if (kids.length === 1) {
-    return `Bonjour ${kids[0].name} ! Je suis Pandi. ${when}, je fais la routine avec toi. Quand tu écoutes du premier coup, je danse de joie ! Avec tes pandi, tu choisiras des habits et des objets pour ton personnage. On commence ?`;
+    return `Bonjour ! Je suis Pandi. ${when}, je fais la routine avec toi. Quand tu écoutes du premier coup, je danse de joie ! Avec tes pandi, tu choisiras des habits et des objets pour ton personnage. On commence ?`;
   }
-  return `${kids.map((k) => `Bonjour ${k.name} !`).join(' ')} Je suis Pandi. ${when}, je fais la routine avec vous. Quand vous écoutez du premier coup, je danse de joie ! Avec vos pandi, vous choisirez des habits et des objets pour votre personnage. On commence ?`;
+  return `Bonjour les enfants ! Je suis Pandi. ${when}, je fais la routine avec vous. Quand vous écoutez du premier coup, je danse de joie ! Avec vos pandi, vous choisirez des habits et des objets pour votre personnage. On commence ?`;
 }
 
 export function Bonjour({ onClose }) {
