@@ -1,13 +1,8 @@
 /* ===== Thèmes de la boutique : la vitrine de Pandi, le cadeau d'entrée, le livre des thèmes ===== */
 
-/* La carte de la vitrine, en tête des rayons : plus large que les autres, aux couleurs du thème */
-.vitrine-card { grid-column: span 2; background: linear-gradient(150deg, #ffffff 0%, color-mix(in srgb, var(--c), #fff 55%) 100%); }
-.vitrine-card .rc-label { font-size: calc(var(--u) * 4.6); }
-.vitrine-card .rc-thumb { width: calc(var(--u) * 12); height: calc(var(--u) * 12); }
-.rc-badge.gift { background: linear-gradient(180deg, #fff2b0, var(--gold)); color: #6b4300; box-shadow: 0 calc(var(--u) * .6) 0 var(--gold-d); }
 .book-card .rc-ico { background: #fff3e2; }
 
-/* La vitrine ouverte (son titre passe à la ligne plutôt que d'être coupé) */
+/* Pendant un thème, la vitrine est toute la boutique (son titre passe à la ligne plutôt que d'être coupé) */
 .vitrine .rayon-head h3 { white-space: normal; line-height: 1.1; font-size: calc(var(--u) * 4.1); }
 .vitrine .item-grid { margin-top: calc(var(--u) * 1.6); }
 .vt-gift { padding: calc(var(--u) * 3); border-radius: calc(var(--u) * 5); margin-bottom: calc(var(--u) * 2);
@@ -20,6 +15,7 @@
 .item-card.mine .tag.muted { background: var(--green); }
 .vt-got { margin: 0 0 calc(var(--u) * 1); font-size: calc(var(--u) * 3.8); }
 .vt-note { margin-top: calc(var(--u) * 3); text-align: center; font-size: calc(var(--u) * 3.4); opacity: .85; }
+.vt-book { margin-top: calc(var(--u) * 3); }
 
 /* Le livre des thèmes : une page par thème, les avatars dans le décor */
 .theme-book { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 70), 1fr)); gap: calc(var(--u) * 3); }
@@ -45,7 +41,3 @@
 .tc-thumb svg { width: 92%; height: 92%; }
 .tc-meta { font-size: calc(var(--u) * 3.1); color: var(--ink-soft); }
 .theme-now { background: linear-gradient(160deg, #fff, color-mix(in srgb, var(--c), #fff 82%)); box-shadow: inset 4px 0 0 var(--c); }
-
-@media (orientation: portrait) {
-  .vitrine-card { grid-column: auto; }
-}

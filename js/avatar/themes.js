@@ -1,5 +1,6 @@
 // Catalogue des thèmes de la boutique. Un thème met en vitrine des objets qui existent déjà dans leurs
-// rayons (ils y restent, avant comme après) ; il habille Pandi (accessoires 3D de js/mascot/gear.js) et
+// rayons ; pendant le thème, la boutique ne montre que cette vitrine, puis tous les rayons reviennent
+// (les objets du thème y restent) ; il habille Pandi (accessoires 3D de js/mascot/gear.js) et
 // donne son décor à la scène de l'enfant quand il n'en a pas choisi.
 // Règles du panel : pas de compte à rebours, pas de « dernier jour », pas de compteur de collection.
 import { getItem, offeredTo, shopItems } from './items.js';

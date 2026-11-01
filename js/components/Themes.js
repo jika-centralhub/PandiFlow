@@ -1,7 +1,8 @@
 // Thèmes de la boutique : la section des parents (lancer, programmer, arrêter) et le livre des thèmes
 // (une photo des avatars à la fin de chaque thème, gardée en souvenir).
-// Règles du panel : une vitrine, jamais une rareté. Rien ne disparaît, pas de compte à rebours,
-// pas de collection à compléter ; un cadeau d'entrée pour chaque enfant, sans condition.
+// Règles du panel : une vitrine, jamais une rareté. Pendant le thème, la boutique ne montre que la vitrine
+// (choix des parents) ; ses objets restent en vente après. Pas de compte à rebours, pas de collection à
+// compléter ; un cadeau d'entrée pour chaque enfant, sans condition.
 import { html, useState } from '../vendor/preact-htm.js';
 import { useStore, getState, toast } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
@@ -72,14 +73,14 @@ export function ThemeParent() {
 
   function stop(t) {
     const started = t.start <= today;
-    if (!confirm(started ? 'Arrêter le thème aujourd’hui ? La vitrine disparaît ; ses objets restent dans la boutique.' : 'Annuler ce thème programmé ?')) return;
+    if (!confirm(started ? 'Arrêter le thème aujourd’hui ? La boutique retrouve tous ses rayons ; les objets du thème y restent.' : 'Annuler ce thème programmé ?')) return;
     sfx.pop();
     actions.stopTheme(t.id);
   }
 
   return html`<div class="themes-parent">
     <h2>Thèmes de la boutique</h2>
-    <p class="hint">Une vitrine de Pandi pendant ${THEME_DAYS} jours, une semaine sur deux. Rien ne disparaît : les objets du thème restent dans leur rayon, avant comme après, sans compte à rebours ni collection à compléter. À l’ouverture, chaque enfant choisit un cadeau parmi ${GIFT_CHOICES} (${GIFT_MAX} pandi au plus), sans condition. Pandi porte la tenue du thème sur la télé, la scène de l’enfant prend son décor, et une photo rejoint le livre des thèmes à la fin.</p>
+    <p class="hint">Une vitrine de Pandi pendant ${THEME_DAYS} jours, une semaine sur deux. Pendant le thème, la boutique n’a qu’une rubrique : la vitrine, avec tous les objets du thème. Les autres rayons reviennent après, et les objets du thème y restent, sans compte à rebours ni collection à compléter. À l’ouverture, chaque enfant choisit un cadeau parmi ${GIFT_CHOICES} (${GIFT_MAX} pandi au plus), sans condition. Pandi porte la tenue du thème sur la télé, la scène de l’enfant prend son décor, et une photo rejoint le livre des thèmes à la fin.</p>
 
     ${current && (() => {
       const theme = getTheme(current.theme);

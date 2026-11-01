@@ -53,7 +53,7 @@ const RAYON_COLORS = {
   bg: '#4D9BFF', fx: '#F06BD8', vehicle: '#E2363F', flag: '#3DD6D0', gear: '#A8E05F', yard: '#2FCF74', magic: '#FFD23F', judaica: '#3D6FE0',
 };
 
-function RayonCard({ slot, list, index, look, bal = null, badge = true, onOpen }) {
+function RayonCard({ slot, list, index, look, bal = null, onOpen }) {
   const prices = list.map((it) => it.price).filter((p) => p > 0);
   const min = prices.length ? Math.min(...prices) : null;
   const affordable = bal == null ? 0 : list.filter((it) => it.price <= bal).length;
@@ -63,7 +63,7 @@ function RayonCard({ slot, list, index, look, bal = null, badge = true, onOpen }
     <span class="rc-label">${SLOTS[slot].label}</span>
     <span class="rc-meta">${list.length} objet${list.length > 1 ? 's' : ''}${bal != null && min != null ? html` · dès ${min} <${Coin} />` : ''}</span>
     <span class="rc-thumbs">${preview.map((it) => html`<span key=${it.id} class="rc-thumb"><${ItemThumb} item=${it} look=${look} /></span>`)}</span>
-    ${badge && affordable > 0 && html`<span class="rc-badge">${affordable} pour toi !</span>`}
+    ${affordable > 0 && html`<span class="rc-badge">${affordable} pour toi !</span>`}
   </button>`;
 }
 
@@ -124,18 +124,6 @@ function Inventory({ child, owned, rayon, onRayon, onEquip }) {
   </div>`;
 }
 
-// La vitrine du thème : la première carte de la boutique (ses objets restent aussi dans leur rayon)
-function VitrineCard({ theme, child, gift, index, onOpen }) {
-  const items = vitrineItems(theme, child);
-  return html`<button class="rayon-card vitrine-card" style=${{ '--c': theme.color, '--i': index }} onClick=${() => { sfx.tap(); onOpen(); }}>
-    <span class="rc-ico">${theme.emoji}</span>
-    <span class="rc-label">La vitrine de Pandi : ${theme.name}</span>
-    <span class="rc-meta">${items.length} objets du thème</span>
-    <span class="rc-thumbs">${items.slice(0, 4).map((it) => html`<span key=${it.id} class="rc-thumb"><${ItemThumb} item=${it} look=${child.look} /></span>`)}</span>
-    ${!gift && html`<span class="rc-badge gift">🎁 Un cadeau pour toi</span>`}
-  </button>`;
-}
-
 function BookCard({ index, onOpen }) {
   return html`<button class="rayon-card book-card" style=${{ '--c': '#C98A5B', '--i': index }} onClick=${() => { sfx.tap(); onOpen(); }}>
     <span class="rc-ico">📖</span>
@@ -144,20 +132,22 @@ function BookCard({ index, onOpen }) {
   </button>`;
 }
 
-function PlainHead({ icon, label, color, onBack }) {
+function PlainHead({ icon, label, color, onBack = null }) {
   return html`<div class="rayon-head" style=${{ '--c': color }}>
-    <button class="rh-back" aria-label="Tous les rayons" onClick=${() => { sfx.tap(); onBack(); }}>←</button>
+    ${onBack && html`<button class="rh-back" aria-label="Retour" onClick=${() => { sfx.tap(); onBack(); }}>←</button>`}
     <h3><span class="rh-ico">${icon}</span>${label}</h3>
   </div>`;
 }
 
-function Vitrine({ child, theme, owned, bal, gift, giftOpts, onBack, onPick, onGiftPick, onEquip }) {
+// Pendant un thème, la boutique n'a qu'une rubrique : la vitrine, avec tous les objets du thème
+// (les autres rayons reviennent après le thème, et ses objets y restent)
+function Vitrine({ child, theme, owned, bal, gift, giftOpts, hasBook, onBook, onPick, onGiftPick, onEquip }) {
   const giftItem = gift && getItem(gift);
   // Tant que le cadeau n'est pas choisi, ses objets ne sont proposés qu'en cadeau (pas à acheter)
   const items = vitrineItems(theme, child).filter((it) => gift || !giftOpts.some((g) => g.id === it.id));
   let i = 0;
   return html`<div class="vitrine" style=${{ '--c': theme.color }}>
-    <${PlainHead} icon=${theme.emoji} label=${`La vitrine de Pandi : ${theme.name}`} color=${theme.color} onBack=${onBack} />
+    <${PlainHead} icon=${theme.emoji} label=${`La vitrine de Pandi : ${theme.name}`} color=${theme.color} />
     ${!gift && giftOpts.length > 0 && html`<div class="vt-gift">
       <h3>🎁 Ton cadeau pour commencer : choisis-en un !</h3>
       <p>${theme.intro}</p>
@@ -169,7 +159,8 @@ function Vitrine({ child, theme, owned, bal, gift, giftOpts, onBack, onPick, onG
       const worn = isWorn(child.equipped, it);
       return html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${worn ? 'equipped' : 'mine'} note=${worn ? null : 'À toi'} onClick=${() => onEquip(it)} />`;
     })}</div>
-    <p class="vt-note">À regarder, à rêver : ces objets restent dans la boutique.</p>
+    <p class="vt-note">À regarder, à rêver : après le thème, ces objets restent dans la boutique, avec tous les autres rayons.</p>
+    ${hasBook && html`<div class="rayons vt-book"><${BookCard} index=${i} onOpen=${onBook} /></div>`}
   </div>`;
 }
 
@@ -180,17 +171,15 @@ function Shop({ child, owned, bal, rayon, onRayon, onPick, theme = null, gift = 
     .filter((it) => rayonOf(it) === slot && !owned.has(it.id) && offeredTo(it, sex))
     .sort((a, b) => Number(starredFor(b, sex)) - Number(starredFor(a, sex)) || a.price - b.price);
   const slots = SLOT_ORDER.filter((slot) => slot !== 'magic' && bySlot(slot).length);
-  if (rayon === 'vitrine' && theme) {
-    return html`<${Vitrine} child=${child} theme=${theme} owned=${owned} bal=${bal} gift=${gift} giftOpts=${giftOpts} onBack=${() => onRayon(null)} onPick=${onPick} onGiftPick=${onGiftPick} onEquip=${onEquip} />`;
-  }
   if (rayon === 'livre') return html`<div><${PlainHead} icon="📖" label="Le livre des thèmes" color="#C98A5B" onBack=${() => onRayon(null)} /><${ThemeBook} /></div>`;
-  if (!slots.length && !theme) return html`<p style="padding:20px;text-align:center">Tu as déjà tout acheté. Bravo, ${accord(child, 'champion', 'championne')} ! 🏆</p>`;
+  if (theme) {
+    return html`<${Vitrine} child=${child} theme=${theme} owned=${owned} bal=${bal} gift=${gift} giftOpts=${giftOpts} hasBook=${hasBook} onBook=${() => onRayon('livre')} onPick=${onPick} onGiftPick=${onGiftPick} onEquip=${onEquip} />`;
+  }
+  if (!slots.length) return html`<p style="padding:20px;text-align:center">Tu as déjà tout acheté. Bravo, ${accord(child, 'champion', 'championne')} ! 🏆</p>`;
   if (!rayon || !slots.includes(rayon)) {
-    const first = theme ? 1 : 0;
     return html`<div class="rayons">
-      ${theme && html`<${VitrineCard} theme=${theme} child=${child} gift=${gift || !giftOpts.length} index=${0} onOpen=${() => onRayon('vitrine')} />`}
-      ${slots.map((slot, i) => html`<${RayonCard} key=${slot} slot=${slot} index=${i + first} look=${child.look} bal=${bal} badge=${!theme} list=${bySlot(slot)} onOpen=${onRayon} />`)}
-      ${hasBook && html`<${BookCard} index=${slots.length + first} onOpen=${() => onRayon('livre')} />`}
+      ${slots.map((slot, i) => html`<${RayonCard} key=${slot} slot=${slot} index=${i} look=${child.look} bal=${bal} list=${bySlot(slot)} onOpen=${onRayon} />`)}
+      ${hasBook && html`<${BookCard} index=${slots.length} onOpen=${() => onRayon('livre')} />`}
     </div>`;
   }
   const list = bySlot(rayon).filter((it) => !affordableOnly || it.price <= bal);

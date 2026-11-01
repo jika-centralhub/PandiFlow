@@ -747,8 +747,8 @@ export function surpriseBoard(settings, now = Date.now()) {
 
 // --- Thèmes de la boutique ------------------------------------------------------------------------
 // Un thème (catalogue dans js/avatar/themes.js) met quelques objets en vitrine pendant une semaine, une
-// semaine sur deux. Rien ne disparaît : ses objets restent dans leur rayon, avant comme après. Pas de
-// compte à rebours, pas de collection à compléter. À l'ouverture, chaque enfant choisit un cadeau parmi
+// semaine sur deux. Pendant le thème, la boutique n'a que cette vitrine ; après, ses objets restent dans
+// leur rayon. Pas de compte à rebours, pas de collection à compléter. À l'ouverture, chaque enfant choisit un cadeau parmi
 // trois (owned_items, source 'gift', daté pendant le thème). À la fin, une photo des avatars rejoint le
 // livre des thèmes. settings.themes : [{ id, theme, start, end, photo }] (start et end inclus, AAAA-MM-JJ)
 export const THEME_DAYS = 7; // durée par défaut d'un thème
