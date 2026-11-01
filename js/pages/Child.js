@@ -4,7 +4,7 @@ import { useStore, toast } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import { balance, isOwned, challengesForChild, activeChildren, accord, sexOf, tasksForChild, findRating, COLOR_META, ROUTINES, activeThemeEntry, themeGiftOf, pastThemes } from '../domain.js';
 import { routineDate, toISODate } from '../lib/dates.js';
-import { getTheme, giftOptions, vitrineItems } from '../avatar/themes.js';
+import { getTheme, giftOptions, vitrineItems, waitsForTheme } from '../avatar/themes.js';
 import { ThemeBook } from '../components/Themes.js';
 import { isWorn, wouldRemove } from '../avatar/wear.js';
 import { Avatar, COVERED_BY_SKIN } from '../avatar/Avatar.js';
@@ -97,7 +97,7 @@ function grouped(slot, list) {
   return groups;
 }
 
-function Inventory({ child, owned, rayon, onRayon, onEquip }) {
+function Inventory({ child, owned, rayon, theme = null, onRayon, onEquip }) {
   const mine = ITEMS.filter((i) => owned.has(i.id));
   const costumeOn = Boolean(child.equipped?.skin);
   if (!mine.length) {
@@ -118,6 +118,8 @@ function Inventory({ child, owned, rayon, onRayon, onEquip }) {
       <div class="item-grid">${g.items.map((it) => {
         const worn = isWorn(child.equipped, it);
         const hidden = worn && costumeOn && COVERED_BY_SKIN.includes(it.slot);
+        // Pendant un thème, les autres décors attendent la fin du thème
+        if (waitsForTheme(theme, it)) return html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state="locked" note="Après le thème" onClick=${() => onEquip(it)} />`;
         return html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${worn ? 'equipped' : ''} note=${hidden ? 'Sous le costume' : null} onClick=${() => onEquip(it)} />`;
       })}</div>
     </div>`)}
@@ -329,6 +331,11 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
   };
 
   function equipToggle(item) {
+    if (waitsForTheme(theme, item)) {
+      sfx.tap();
+      toast(`${theme.emoji} Ton décor « ${item.short || item.name} » revient après le thème ${theme.name}`);
+      return;
+    }
     if (!isWorn(child.equipped, item)) replaced(item);
     const on = actions.toggleWear(child.id, item.id);
     if (!on) sfx.pop();
@@ -392,7 +399,7 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
         </nav>
         <div class="tab-content" key=${`${current}-${rayon || ''}`}>
           ${current === 'look' && html`<${LookEditor} look=${child.look} onChange=${(look) => actions.saveLook(child.id, look)} onPhoto=${() => (actions.isParentUnlocked() ? setPhoto(true) : setGate(true))} />`}
-          ${current === 'affaires' && html`<${Inventory} child=${child} owned=${owned} rayon=${rayon} onRayon=${openRayon} onEquip=${equipToggle} />`}
+          ${current === 'affaires' && html`<${Inventory} child=${child} owned=${owned} rayon=${rayon} theme=${theme} onRayon=${openRayon} onEquip=${equipToggle} />`}
           ${current === 'boutique' && html`<${Shop} child=${child} owned=${owned} bal=${bal} rayon=${rayon} onRayon=${openRayon} onPick=${(it) => { sfx.tap(); setBuying(it); }}
             theme=${theme} gift=${gift} giftOpts=${giftOpts} hasBook=${hasBook} onGiftPick=${(it) => { sfx.tap(); setGifting(it); }} onEquip=${equipToggle} />`}
           ${current === 'defis' && html`<${Challenges} child=${child} state=${s} />`}

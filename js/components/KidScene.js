@@ -141,10 +141,9 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
   const ride = vehicle ? vehicle.ride || RIDES[vehicle.id] : null;
   const book = items.judaica || null;
   const sky = vehicle?.zone === 'sky';
-  // Sans décor acheté, le véhicule (sinon l'objet du Judaïsme, sinon le thème de la boutique en cours)
+  // Sans décor acheté, le thème de la boutique en cours (sinon le véhicule, sinon l'objet du Judaïsme)
   // apporte son décor 3D, quand il en a un
-  const themed = !bg && (THEMES[vehicle?.id] || THEMES[book?.id] || (themeScene && { img: themeScene }));
-  const theme = themed && hasArt(themed.img) ? themed : null;
+  const theme = bg ? null : [themeScene && { img: themeScene }, THEMES[vehicle?.id], THEMES[book?.id]].find((t) => t && hasArt(t.img)) || null;
   const scenery = bg || (theme && {
     id: theme.img,
     art: { cover: FRAME },

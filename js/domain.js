@@ -747,8 +747,9 @@ export function surpriseBoard(settings, now = Date.now()) {
 
 // --- Thèmes de la boutique ------------------------------------------------------------------------
 // Un thème (catalogue dans js/avatar/themes.js) met quelques objets en vitrine pendant une semaine, une
-// semaine sur deux. Pendant le thème, la boutique n'a que cette vitrine ; après, ses objets restent dans
-// leur rayon. Pas de compte à rebours, pas de collection à compléter. À l'ouverture, chaque enfant choisit un cadeau parmi
+// semaine sur deux. Pendant le thème, la boutique n'a que cette vitrine et la scène de l'enfant prend le
+// décor du thème ; après, ses objets restent dans leur rayon et chaque enfant retrouve la tenue qu'il
+// avait au début du thème (les objets reçus pendant le thème restent à lui). Pas de compte à rebours, pas de collection à compléter. À l'ouverture, chaque enfant choisit un cadeau parmi
 // trois (owned_items, source 'gift', daté pendant le thème). À la fin, une photo des avatars rejoint le
 // livre des thèmes. settings.themes : [{ id, theme, start, end, photo }] (start et end inclus, AAAA-MM-JJ)
 export const THEME_DAYS = 7; // durée par défaut d'un thème
@@ -757,11 +758,22 @@ export const THEME_HISTORY = 30;
 const themesOf = (settings) => (Array.isArray(settings?.themes) ? settings.themes : []);
 const byStart = (a, b) => String(a.start).localeCompare(String(b.start));
 
-export const activeThemeEntry = (settings, today) => themesOf(settings).find((t) => t.start <= today && today <= t.end) || null;
+// Un thème lancé depuis la v1.20 (ask) ne commence que quand les enfants ont dit oui (agreed) ; ceux
+// d'avant comptent comme acceptés. Tant qu'ils n'ont pas répondu, l'interface reste normale.
+export const themeOn = (t) => Boolean(t && (!t.ask || t.agreed));
+export const activeThemeEntry = (settings, today) => themesOf(settings).find((t) => t.start <= today && today <= t.end && themeOn(t)) || null;
+export const pendingThemeEntry = (settings, today) => themesOf(settings).find((t) => t.start <= today && today <= t.end && !themeOn(t)) || null;
 
-// Les thèmes à venir (déjà programmés) et ceux qui sont finis, du plus récent au plus ancien
+// Les thèmes à venir (déjà programmés) et ceux qui sont finis (et ont eu lieu), du plus récent au plus ancien
 export const upcomingThemes = (settings, today) => themesOf(settings).filter((t) => t.start > today).sort(byStart);
-export const pastThemes = (settings, today) => themesOf(settings).filter((t) => t.end < today).sort(byStart).reverse();
+export const pastThemes = (settings, today) => themesOf(settings).filter((t) => t.end < today && themeOn(t)).sort(byStart).reverse();
+
+// Le jour du thème (0 le premier jour où il a eu lieu : le jour du oui des enfants, sinon son début)
+export function themeDay(entry, date) {
+  const base = entry.agreed ? toISODate(new Date(entry.agreed)) : entry.start;
+  const from = base > entry.start ? base : entry.start;
+  return Math.max(0, Math.round((new Date(`${date}T12:00:00`) - new Date(`${from}T12:00:00`)) / 864e5));
+}
 
 // Date proposée pour le prochain thème : aujourd'hui, ou une semaine après la fin du dernier
 export function nextThemeStart(settings, today) {
@@ -786,8 +798,11 @@ export function themeGiftOf(owned, childId, entry) {
 }
 
 // add (un thème programmé ou lancé), stop (il s'arrête aujourd'hui : il finit hier, ou disparaît s'il
-// n'avait pas commencé), photo (la photo du livre, une seule fois). Fonction pure, rejouée sur les
-// réglages les plus récents du serveur comme pour les surprises.
+// n'avait pas commencé), agree (les enfants ont dit oui, une seule fois), decline (ils ont dit non : le
+// thème est annulé), photo (la photo du livre, une seule fois), before (la tenue d'un enfant gardée
+// au début du thème, une seule fois : before[childId] = equipped), restored (cette tenue lui a été
+// rendue à la fin : restored[childId] = date). Fonction pure, rejouée sur les réglages les plus récents
+// du serveur comme pour les surprises.
 export function applyThemeOp(list, desc) {
   let out = Array.isArray(list) ? [...list] : [];
   const id = desc.type === 'add' ? desc.entry?.id : desc.id;
@@ -800,8 +815,16 @@ export function applyThemeOp(list, desc) {
     const end = addDays(desc.today, -1);
     if (end < x.start) out.splice(i, 1);
     else if (end < x.end) out[i] = { ...x, end };
+  } else if (x && desc.type === 'agree') {
+    if (!themeOn(x)) out[i] = { ...x, agreed: desc.at || true };
+  } else if (x && desc.type === 'decline') {
+    if (!themeOn(x)) out.splice(i, 1);
   } else if (x && desc.type === 'photo') {
     if (!x.photo && desc.photo) out[i] = { ...x, photo: desc.photo };
+  } else if (x && desc.type === 'before') {
+    if (desc.childId && desc.equipped && !x.before?.[desc.childId]) out[i] = { ...x, before: { ...x.before, [desc.childId]: desc.equipped } };
+  } else if (x && desc.type === 'restored') {
+    if (desc.childId && !x.restored?.[desc.childId]) out[i] = { ...x, restored: { ...x.restored, [desc.childId]: desc.at || true } };
   }
   out.sort(byStart);
   while (out.length > THEME_HISTORY) out.shift();

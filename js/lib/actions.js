@@ -11,7 +11,7 @@ import { toISODate, nextRoutineStart, addDays, eveningDate } from './dates.js';
 import { hashPin, checkPin } from './pin.js';
 import { getItem } from '../avatar/items.js';
 import { HEAD_SLOTS, headItems, isWorn, wear, unwear } from '../avatar/wear.js';
-import { getTheme, giftOptions, themeLooks } from '../avatar/themes.js';
+import { getTheme, giftOptions, themeLooks, waitsForTheme } from '../avatar/themes.js';
 import { setThemeLooks } from '../mascot/themeLook.js';
 import { normalizeLook, randomLook } from '../avatar/palette.js';
 import { setPortraitSource, primePortrait, portraitPath, loadPortrait, forgetPortrait, hasBody, keepPrepared } from './portraits.js';
@@ -84,6 +84,7 @@ export async function reload() {
   ensureMorningTasks();
   markSeen();
   ensureThemePhotos();
+  ensureThemeOutfits();
 }
 
 // --- Pilotage de l'adoption ---------------------------------------------------------------
@@ -397,9 +398,11 @@ export function buy(childId, itemId) {
 // Mettre un objet (il retire seulement ce qui le gêne : sur la tête, plusieurs objets compatibles se
 // portent ensemble), ou vider un emplacement (itemId null)
 export function equip(childId, slot, itemId) {
+  const item = itemId ? getItem(itemId) : null;
+  if (waitsNow(item)) return;
+  holdOutfit(childId);
   const child = getState().children.find((c) => c.id === childId);
   if (!child) return;
-  const item = itemId ? getItem(itemId) : null;
   let equipped = child.equipped || {};
   if (item) equipped = wear(equipped, item);
   else if (HEAD_SLOTS.includes(slot)) for (const it of headItems(equipped).filter((x) => x.slot === slot)) equipped = unwear(equipped, it);
@@ -409,9 +412,11 @@ export function equip(childId, slot, itemId) {
 
 // Mettre ou enlever un objet précis (la garde-robe de l'enfant)
 export function toggleWear(childId, itemId) {
-  const child = getState().children.find((c) => c.id === childId);
   const item = getItem(itemId);
-  if (!child || !item) return false;
+  if (!item || waitsNow(item)) return false;
+  holdOutfit(childId);
+  const child = getState().children.find((c) => c.id === childId);
+  if (!child) return false;
   const on = isWorn(child.equipped, item);
   put('children', [{ ...child, equipped: on ? unwear(child.equipped, item) : wear(child.equipped, item) }]);
   return !on;
@@ -542,12 +547,31 @@ export const cancelSurprise = (id) => surpriseOp({ type: 'cancel', id });
 export function launchTheme(themeId, start, days = domain.THEME_DAYS) {
   const end = addDays(start, Math.max(1, days) - 1);
   if (domain.themeOverlaps(getState().settings, start, end)) return { error: 'Un autre thème est déjà prévu à ces dates.' };
-  const entry = { id: uid(), theme: themeId, start, end };
+  // ask : le jour venu, Pandi demande aux enfants s'ils sont d'accord (écran de la routine)
+  const entry = { id: uid(), theme: themeId, start, end, ask: true };
   listOp('themes', { type: 'add', entry });
   return { entry };
 }
 
-export const stopTheme = (id) => listOp('themes', { type: 'stop', id, today: toISODate(new Date()) });
+export function stopTheme(id) {
+  const entry = (getState().settings.themes || []).find((t) => t.id === id);
+  listOp('themes', { type: 'stop', id, today: toISODate(new Date()) });
+  // Arrêté le jour même où il a commencé, le thème disparaît : on rend tout de suite les tenues gardées
+  if (entry && !(getState().settings.themes || []).some((t) => t.id === id)) {
+    for (const [childId, before] of Object.entries(entry.before || {})) {
+      const child = getState().children.find((c) => c.id === childId);
+      if (child && !entry.restored?.[childId]) put('children', [{ ...child, equipped: JSON.parse(JSON.stringify(before)) }]);
+    }
+  }
+  ensureThemePhotos();
+  ensureThemeOutfits();
+}
+
+// Les enfants ont répondu : oui, le thème commence (on garde leur tenue de côté) ; non, il est annulé
+export function answerTheme(id, yes) {
+  listOp('themes', { type: yes ? 'agree' : 'decline', id, at: new Date().toISOString() });
+  if (yes) ensureThemeOutfits();
+}
 
 // Le cadeau d'entrée : l'enfant choisit un objet parmi ceux proposés, le reçoit et le porte tout de suite
 export function takeThemeGift(childId, itemId) {
@@ -575,6 +599,51 @@ export function ensureThemePhotos() {
     const photo = { at: new Date().toISOString(), kids: kids.map((k) => ({ childId: k.id, name: k.name, color: k.color, look: k.look, equipped: k.equipped || {} })) };
     listOp('themes', { type: 'photo', id: t.id, photo });
   }
+}
+
+// La tenue pendant un thème. Au début, celle de chaque enfant est gardée de côté et son décor (s'il
+// n'est pas du thème) attend la fin : la scène prend le décor du thème. À la fin (après la photo du
+// livre), chacun reprend exactement la tenue d'avant ; les objets reçus pendant le thème restent à lui.
+export function ensureThemeOutfits() {
+  const s = getState();
+  if (s.status !== 'ready' || !s.family) return;
+  const today = toISODate(new Date());
+  const kids = domain.activeChildren(s.children);
+  for (const t of domain.pastThemes(s.settings, today)) {
+    for (const k of kids) {
+      const before = t.before?.[k.id];
+      if (!before || t.restored?.[k.id]) continue;
+      const child = getState().children.find((c) => c.id === k.id);
+      put('children', [{ ...child, equipped: JSON.parse(JSON.stringify(before)) }]);
+      listOp('themes', { type: 'restored', id: t.id, childId: k.id, at: new Date().toISOString() });
+    }
+  }
+  for (const k of kids) holdOutfit(k.id);
+}
+
+function holdOutfit(childId) {
+  const s = getState();
+  const entry = domain.activeThemeEntry(s.settings, toISODate(new Date()));
+  const child = s.children.find((c) => c.id === childId);
+  if (!entry || !child || entry.before?.[childId]) return;
+  let equipped = JSON.parse(JSON.stringify(child.equipped || {}));
+  // Thème lancé avant la v1.20 et déjà commencé : on retire de la tenue gardée ce qu'il a reçu pendant le thème
+  if (!entry.ask) {
+    for (const o of s.owned) {
+      if (o.child_id !== childId || !o.created_at) continue;
+      const day = toISODate(new Date(o.created_at));
+      if (entry.start <= day && day <= entry.end) equipped = unwear(equipped, getItem(o.item_id));
+    }
+  }
+  listOp('themes', { type: 'before', id: entry.id, childId, equipped });
+  const bg = getItem(child.equipped?.bg);
+  if (waitsForTheme(getTheme(entry.theme), bg)) put('children', [{ ...child, equipped: unwear(child.equipped, bg) }]);
+}
+
+// Pendant un thème, un décor hors thème attend la fin du thème
+function waitsNow(item) {
+  const entry = domain.activeThemeEntry(getState().settings, toISODate(new Date()));
+  return Boolean(entry && waitsForTheme(getTheme(entry.theme), item));
 }
 
 // Pandi porte la tenue du thème sur tous les écrans, d'après les thèmes des réglages

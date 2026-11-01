@@ -7,7 +7,7 @@ import { useStore, setPrefs, getState, visitPending } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import * as timers from '../lib/timers.js';
 import { timerKey } from '../lib/countdown.js';
-import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, TEAM_CARD, findTeamCard, teamCardLevel, pendingSurprise, promiseFor, firstEveningDue } from '../domain.js';
+import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, TEAM_CARD, findTeamCard, teamCardLevel, pendingSurprise, promiseFor, firstEveningDue, activeThemeEntry, pendingThemeEntry } from '../domain.js';
 import { routineDate, currentRoutine, addDays, formatLong, eveningDate } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { Modal, Logo } from '../components/ui.js';
@@ -20,6 +20,8 @@ import { DepartureBar } from '../components/Departure.js';
 import { CalmCorner } from '../components/CalmCorner.js';
 import { TeamPill, TeamSheet } from '../components/Team.js';
 import { Visite, GreetBar, FirstEveningCard } from '../components/Decouverte.js';
+import { ThemeAsk, FunFactBar } from '../components/ThemeAsk.js';
+import { funFact } from '../avatar/themes.js';
 import { flyCoins, burst, replay } from '../anim/fx.js';
 import { sfx, setSoftSound } from '../lib/sounds.js';
 import { navigate } from '../router.js';
@@ -303,6 +305,8 @@ const asleepByDate = {};
 
 // « Plus tard » sur le bonjour de Pandi : on le repropose au prochain lancement de l'app
 let greetLater = false;
+// « Plus tard » sur le thème proposé aux enfants : idem, au prochain lancement
+let themeLater = null;
 
 // Prochaine tâche sans note après celle du centre (on boucle au début si besoin)
 function nextOpen(list, from, isRated) {
@@ -329,6 +333,7 @@ export function Evening() {
   const [moods, setMoods] = useState({});
   const [firstMot, setFirstMot] = useState(null); // la soirée dont le mot de première soirée est montré la nuit
   const [later, setLater] = useState(greetLater);
+  const [askLater, setAskLater] = useState(themeLater);
   const [, setTick] = useState(0); // redessine chaque minute : un paquet de Pandi arrive à son heure
   const cards = useRef({});
   const heads = useRef({});
@@ -383,6 +388,9 @@ export function Evening() {
   const progress = Object.fromEntries(kids.map((k) => [k.id, routineProgress(k.id, date, s, routine)]));
   const withTasks = kids.filter((k) => progress[k.id].total > 0);
   const allDone = withTasks.length > 0 && withTasks.every((k) => progress[k.id].complete);
+  // Pendant un thème, le « Le savais-tu ? » de cette routine (le même pour tous les enfants)
+  const themeEntry = activeThemeEntry(s.settings, date);
+  const fact = themeEntry ? funFact(themeEntry, routine, date) : null;
 
   // Soirée douce : dès qu'un enfant arrive à l'histoire du soir, tout l'écran se calme
   // (ciel plus sombre, son plus bas, plus de fanfare ni de feu d'artifice)
@@ -570,6 +578,10 @@ export function Evening() {
     }
     if (res.palier) await showOverlay('team', { kind: 'palier', kids: res.palier.kids, soft: evening });
     if (res.treasure) await showOverlay('team', { kind: 'treasure', kids: kids.map((k) => k.id), reward: res.treasure, soft: evening });
+    // Toute la routine est finie pendant un thème : le « Le savais-tu ? » du jour
+    if (res.becameComplete && fact && date === today && kids.every((k) => routineProgress(k.id, date, getState(), routine).complete)) {
+      await showOverlay('funfact', { themeId: themeEntry.theme, fact });
+    }
   }
 
   const openChild = open && kids.find((k) => k.id === open.childId);
@@ -586,6 +598,9 @@ export function Evening() {
   const teamCard = evening && kids.length > 1 ? teamCardLevel(findTeamCard(s.ledger, date)) : null;
   const visiting = visitPending(s) && kids.length > 0 && !nightScreen;
   const showGreet = Boolean(s.settings.firstDay && !s.settings.greeted) && !visitPending(s) && !later && kids.length > 0 && date === today;
+  // Le thème programmé par les parents commence quand les enfants ont dit oui
+  const proposed = date === today && kids.length > 0 && !visiting && !nightScreen ? pendingThemeEntry(s.settings, date) : null;
+  const asking = proposed && askLater !== proposed.id ? proposed : null;
 
   return html`<div class=${`evening routine-${routine} ${doux ? 'soir-doux' : ''} page-enter`}>
     <${TopBar} onCalm=${() => setCalm(true)} chest=${kids.length > 1 && html`<${TeamPill} onOpen=${() => setTeam(true)} />`} />
@@ -594,6 +609,7 @@ export function Evening() {
       ${showGreet && html`<${GreetBar} onGreet=${greet} onLater=${() => { sfx.tap(); greetLater = true; setLater(true); }} />`}
       ${routine === 'matin' && date === today && html`<${DepartureBar} date=${date} />`}
       ${evening && kids.length > 1 && html`<${TeamCardBar} level=${teamCard} ready=${allDone} onOpen=${() => { sfx.tap(); setTeamCardOpen(true); }} />`}
+      ${fact && allDone && html`<${FunFactBar} onOpen=${() => { sfx.tap(); showOverlay('funfact', { themeId: themeEntry.theme, fact }); }} />`}
     </div>
     <div class="columns" style=${{ '--n': Math.max(1, kids.length) }}>
       ${kids.length === 0 && html`<div class="empty-col">Ajoute un enfant dans l'espace parent ⚙️ pour commencer !</div>`}
@@ -670,5 +686,6 @@ export function Evening() {
     ${teamCardOpen && html`<${TeamCardSheet} kids=${kids} current=${teamCard} onPick=${pickTeamCard} onClose=${() => setTeamCardOpen(false)} />`}
     ${nightScreen && html`<${NightScreen} kids=${withTasks} onWake=${wake} mot=${firstMot} onMotClose=${() => { sfx.tap(); setFirstMot(null); }} />`}
     ${visiting && html`<${Visite} kids=${kids} onDone=${() => actions.endVisit()} />`}
+    ${asking && html`<${ThemeAsk} key=${asking.id} entry=${asking} kids=${kids} onLater=${() => { themeLater = asking.id; setAskLater(asking.id); }} />`}
   </div>`;
 }

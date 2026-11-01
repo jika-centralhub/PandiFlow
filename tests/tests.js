@@ -4,7 +4,7 @@ import * as cd from '../js/lib/countdown.js';
 import { sha256Bytes, hashPin } from '../js/lib/pin.js';
 import { normalizeLook, DEFAULT_LOOK, randomLook } from '../js/avatar/palette.js';
 import { getItem, offeredTo, starredFor, rayonOf } from '../js/avatar/items.js';
-import { THEME_CATALOG, getTheme, giftOptions, vitrineItems, themeLooks, GIFT_MAX } from '../js/avatar/themes.js';
+import { THEME_CATALOG, getTheme, giftOptions, vitrineItems, themeLooks, GIFT_MAX, waitsForTheme, funFact } from '../js/avatar/themes.js';
 import { setThemeLooks, themeLookFor } from '../js/mascot/themeLook.js';
 import * as w from '../js/avatar/wear.js';
 import { buildFamilySeed, fitsAge, eveBefore } from '../js/lib/seed.js';
@@ -689,6 +689,54 @@ test('thème : arrêter le thème en cours le fait finir hier ; un thème à ven
   eq(list.find((t) => t.id === 't1').photo.at, 'a');
   eq(d.pastThemes({ themes: list }, '2026-11-05').map((t) => t.id), ['t1']);
   eq(d.mergeSettings({ themes: 'abîmé' }).themes, []);
+});
+
+test('thème : il ne commence qu’avec le oui des enfants ; un non l’annule', () => {
+  const ask = (list, id, start, end) => d.applyThemeOp(list, { type: 'add', entry: { id, theme: 'espace', start, end, ask: true } });
+  let list = ask([], 't1', '2026-11-01', '2026-11-07');
+  const s = () => ({ themes: list });
+  eq(d.activeThemeEntry(s(), '2026-11-01'), null, 'pas encore de oui : interface normale');
+  eq(d.pendingThemeEntry(s(), '2026-11-01').id, 't1', 'la question est posée');
+  eq(d.pendingThemeEntry(s(), '2026-10-31'), null, 'pas avant le premier jour');
+  eq(themeLooks(list).length, 0, 'Pandi ne porte pas la tenue avant le oui');
+  list = d.applyThemeOp(list, { type: 'agree', id: 't1', at: '2026-11-02T17:00:00.000Z' });
+  eq(d.activeThemeEntry(s(), '2026-11-02').id, 't1', 'oui : le thème a lieu');
+  eq(d.pendingThemeEntry(s(), '2026-11-02'), null);
+  eq(themeLooks(list).length, 1);
+  eq(d.themeDay(d.activeThemeEntry(s(), '2026-11-02'), '2026-11-02'), 0, 'le premier fun fact le jour du oui');
+  eq(d.themeDay(list[0], '2026-11-05'), 3);
+  list = d.applyThemeOp(list, { type: 'decline', id: 't1' });
+  eq(list.length, 1, 'un non après le oui ne change rien');
+  // Un non annule le thème ; un thème d'avant la v1.20 (sans ask) compte comme accepté
+  let other = d.applyThemeOp(ask([], 't2', '2026-11-01', '2026-11-07'), { type: 'decline', id: 't2' });
+  eq(other, [], 'non : le thème est annulé');
+  other = themeAdd([], 'old', '2026-11-01', '2026-11-07');
+  eq(d.activeThemeEntry({ themes: other }, '2026-11-03').id, 'old');
+  // Jamais accepté : il ne rejoint pas le livre des thèmes
+  other = ask([], 't3', '2026-11-01', '2026-11-07');
+  eq(d.pastThemes({ themes: other }, '2026-11-20'), []);
+});
+
+test('thème : la tenue d’avant est gardée une fois, rendue une fois ; un fun fact par jour et par routine', () => {
+  let list = themeAdd([], 't1', '2026-11-01', '2026-11-07');
+  list = d.applyThemeOp(list, { type: 'before', id: 't1', childId: 'c1', equipped: { bg: 'plage', hat: 'pirate' } });
+  list = d.applyThemeOp(list, { type: 'before', id: 't1', childId: 'c1', equipped: { outfit: 'pyjama_fusee' } });
+  eq(list[0].before.c1, { bg: 'plage', hat: 'pirate' }, 'la première tenue gardée reste');
+  list = d.applyThemeOp(list, { type: 'restored', id: 't1', childId: 'c1', at: 'a' });
+  list = d.applyThemeOp(list, { type: 'restored', id: 't1', childId: 'c1', at: 'b' });
+  eq(list[0].restored.c1, 'a');
+  const espace = getTheme('espace');
+  ok(waitsForTheme(espace, getItem('plage')), 'un décor hors thème attend la fin');
+  ok(!waitsForTheme(espace, getItem('espace')), 'le décor du thème peut se mettre');
+  ok(!waitsForTheme(null, getItem('espace')), 'sans thème, rien n’attend');
+  for (const t of THEME_CATALOG) {
+    eq(t.facts?.matin?.length, 7, `7 fun facts du matin pour ${t.id}`);
+    eq(t.facts?.soir?.length, 7, `7 fun facts du soir pour ${t.id}`);
+  }
+  const entry = list[0];
+  ok(funFact(entry, 'matin', '2026-11-01') === espace.facts.matin[0], 'jour 1, matin');
+  ok(funFact(entry, 'soir', '2026-11-07') === espace.facts.soir[6], 'jour 7, soir');
+  ok(funFact(entry, 'soir', '2026-11-08') === espace.facts.soir[0], 'au-delà de 7 jours, on recommence');
 });
 
 test('thème : le cadeau d’entrée, trois au choix, 60 pandi au plus, jamais un objet déjà à l’enfant', () => {
