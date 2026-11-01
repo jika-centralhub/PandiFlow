@@ -4,6 +4,9 @@
 import { html } from '../vendor/preact-htm.js';
 import { sparkle } from './draw.js';
 import { letters } from './judaica.js';
+import { getState } from '../lib/store.js';
+import { ageOf } from '../domain.js';
+import { garageSfx } from '../lib/sounds.js';
 
 // Petits effets dessinés autour des images : gyrophares, fumée, flamme, faisceau, vague
 const blink = (lights) => html`<g>${lights.map(([cx, cy, color, delay], i) => html`<ellipse key=${i} class="blink-light" style=${{ animationDelay: `${delay}s` }} cx=${cx} cy=${cy} rx="7" ry="4.6" fill=${color} opacity="0.55" />`)}</g>`;
@@ -17,6 +20,38 @@ const candles = (ctx, tips) => html`<g>
   ${tips.map(([x, y]) => html`<g key=${x}><circle class="candle-glow" cx=${x} cy=${y - 6} r="9" fill=${`url(#${ctx.id}-glow)`} />${flame(x, y, 0.55, 'candle-flame')}</g>`)}
   <g class="chabbat-sparkles">${sparkle(14, 100, 4, 'tw', 0)}${sparkle(64, 96, 5, 'tw', 0.6)}${sparkle(40, 88, 3.4, 'tw', 1.1)}</g>
 </g>`;
+// --- Cadeaux d'anniversaire ---
+// La couronne : autant de bougies que l'âge de l'enfant (ctx.child), dessinées derrière l'image pour que
+// leur pied disparaisse dans la couronne ; rangées dans les creux entre les pointes, pour qu'on les compte
+const CROWN_GAPS = [[0.08, 0.18], [0.29, 0.42], [0.58, 0.71], [0.82, 0.92]];
+function crownCandles(ctx) {
+  const kid = ctx.child ? getState().children.find((c) => c.id === ctx.child) : null;
+  const n = Math.max(1, Math.min(12, ageOf(kid) || 5));
+  const per = CROWN_GAPS.map(() => 0);
+  for (let i = 0; i < n; i++) per[[1, 2, 0, 3][i % 4]]++;
+  const xs = CROWN_GAPS.flatMap(([a, b], k) => Array.from({ length: per[k] }, (_, j) => 50 + 100 * (a + ((b - a) * (j + 1)) / (per[k] + 1))));
+  return html`<g class="crown-candles">${xs.map((x, i) => html`<g key=${i}>
+    <rect x=${(x - 2).toFixed(1)} y="-8" width="4" height="28" rx="1.4" fill=${['#FF7EB6', '#5EC8FF', '#FFD23F'][i % 3]} stroke="rgba(0,0,0,.18)" stroke-width="0.5" />
+    <path d=${`M${(x - 2).toFixed(1)} -2 l4 -2.6 M${(x - 2).toFixed(1)} 5 l4 -2.6 M${(x - 2).toFixed(1)} 12 l4 -2.6`} stroke="#FFFFFF" stroke-width="1.3" />
+    ${flame(x, -8, 0.34)}
+  </g>`)}</g>`;
+}
+// Le gâteau-copain : ses cinq bougies allumées ; touché, il les souffle (un petit nuage), puis elles se rallument
+const CAKE_TIPS = [[158.7, 185.2], [164.4, 182.3], [171.8, 188.9], [180.7, 182.5], [186.1, 185]];
+function blowCandles(e) {
+  e.stopPropagation();
+  const g = e.currentTarget;
+  if (g.classList.contains('blown')) return;
+  g.classList.add('blown');
+  garageSfx.whoosh?.();
+  setTimeout(() => g.classList.remove('blown'), 2600);
+}
+const cakeFlames = () => html`<g class="gc-cake" onClick=${blowCandles}>
+  <rect x="145" y="177" width="54" height="70" fill="transparent" />
+  ${CAKE_TIPS.map(([x, y]) => html`<g key=${x} class="gc-flame">${flame(x, y, 0.22)}</g>`)}
+  <g class="gc-smoke">${CAKE_TIPS.map(([x, y], i) => html`<circle key=${x} cx=${x} cy=${y - 4} r="2.4" fill="#ECE8F6" style=${{ animationDelay: `${i * 0.06}s` }} />`)}</g>
+</g>`;
+
 // Le fil du cerf-volant, du sol jusqu'à lui
 const kiteString = html`<path d="M40 176 C30 140 62 108 54 62" stroke="#6B7486" stroke-width="1.2" fill="none" />`;
 
@@ -73,6 +108,13 @@ export const PLACE = {
     over: () => html`<path class="wave" d="M-20 172 Q0 164 20 172 T60 172 T100 172 T140 172 T180 172 T220 172 T260 172 L260 200 L-20 200 Z" fill="#4DA3FF" opacity="0.85" />`,
   },
   avion: { cx: 112, bottom: 140, w: 172, cls: 'veh-hover', ride: { hips: [126, 93], s: 0.15, front: 90 } },
+  // Cadeaux d'anniversaire : la montgolfière (l'enfant dans la nacelle) et le petit train (l'enfant dans
+  // la cabine de la locomotive ; ride2 : son frère ou sa sœur sur le banc du wagon, devant x1)
+  montgolfiere_anniv: { cx: 110, bottom: 176, h: 170, cls: 'veh-hover', ride: { hips: [110, 145], s: 0.19, front: 132 } },
+  train_fete: {
+    cx: 114, bottom: 180, w: 216, shadow: { rx: 100, ry: 7, dy: -2 }, cls: 'veh-bob',
+    ride: { hips: [126, 137], s: 0.18, front: 129 }, ride2: { hips: [64, 137], s: 0.18, front: 124, x1: 97 },
+  },
   helico: { cx: 104, bottom: 142, w: 180, cls: 'veh-hover', ride: { hips: [130, 113], s: 0.14, front: 116 } },
   fusee: {
     cx: 100, bottom: 146, h: 116, cls: 'veh-hover', ride: { hips: [100, 99], s: 0.17, win: { cx: 100, cy: 75, rx: 11.5, ry: 11.5 } },
@@ -115,6 +157,7 @@ export const PLACE = {
 
   // --- Chapeaux (haut du crâne à y = 26) ---
   couronne: { cx: 100, bottom: 54, w: 96, over: () => html`<g>${sparkle(134, 14, 7, 'tw', 0)}${sparkle(64, 22, 5, 'tw', 0.8)}</g>` },
+  couronne_anniv: { cx: 100, bottom: 54, w: 100, under: crownCandles },
   casquette: { cx: 100, bottom: 76, w: 122, h: 92 },
   casquette_equipe: { cx: 100, bottom: 76, w: 122, h: 92 },
   sorcier: { cx: 100, bottom: 64, w: 140, h: 130, over: () => sparkle(132, -40, 6, 'tw', 0.3) },
@@ -152,6 +195,7 @@ export const PLACE = {
 
   // --- Compagnons (aux pieds de l'enfant, à sa gauche) ---
   chaton: { cx: 176, bottom: 247, h: 76 },
+  gateau_copain: { cx: 172, bottom: 247, h: 70, over: cakeFlames },
   chiot: { cx: 172, bottom: 247, h: 72 },
   pandi: { cx: 170, bottom: 247, h: 70 },
   bebe_dragon: { cx: 170, bottom: 246, h: 76 },

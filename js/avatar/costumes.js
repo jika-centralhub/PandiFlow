@@ -771,6 +771,34 @@ const aquaman = {
 
 const HEROES = [spiderman, ironman, captainAmerica, hulk, thor, blackPanther, captainMarvel, batman, superman, wonderWoman, flash, aquaman];
 
+// --- Cadeau d'anniversaire (BIRTHDAY_GIFTS dans items.js : jamais en boutique) -----------------------
+// Le costume de fête : une veste multicolore, une chemise blanche, et une fleur à la boutonnière qui
+// lance des paillettes vers les autres (css/anniversaire.css). Pas de couvre-chef : sa couronne
+// d'anniversaire reste sur sa tête (headsOk).
+const PARTY_BANDS = ['#FF5E7E', '#FF9A3D', '#FFD23F', '#4CC9F0', '#9B6CF0'];
+const SPARKS = [[-30, -26, '#FFD23F'], [-40, 2, '#FF7EB6'], [-24, 24, '#5EC8FF'], [26, -30, '#FFFFFF'], [36, -4, '#FFD23F'], [30, 22, '#FF7EB6'], [2, -38, '#9B6CF0']];
+const costumeFete = {
+  id: 'costume_fete', name: 'Costume de fête', price: 0, exclusive: true, birthday: true, headsOk: true, shirt: '#9B6CF0', sleeve: '#4CC9F0',
+  torso: () => html`<g>
+    ${PARTY_BANDS.map((c, i) => html`<rect key=${c} x=${40 + i * 24} y="178" width="24" height="88" fill=${c} />`)}
+    <path d="M84 180 L100 228 L116 180 Z" fill="#FFFFFF" />
+    <path d="M100 196 L100 228" stroke="#E3E7EE" stroke-width="1.4" />
+    ${lapels('rgba(255, 255, 255, 0.16)', '#FFD23F')}
+    ${buttons(100, [238, 252], '#FFD23F', 3)}
+  </g>`,
+  collar: () => shirtCollar('#FFFFFF'),
+  sleeves: (_ctx, x) => html`<g>${['#FF5E7E', '#FFD23F', '#9B6CF0'].map((c, i) => html`<rect key=${c} x=${x} y=${198 + i * 9} width="20" height="5" fill=${c} />`)}</g>`,
+  over: () => html`<g class="cf-flower">
+    <path d="M125 210 L122 220" stroke="#3FAE5A" stroke-width="2" stroke-linecap="round" />
+    ${[0, 72, 144, 216, 288].map((a) => {
+      const r = (a * Math.PI) / 180;
+      return html`<circle key=${a} cx=${(125 + Math.cos(r) * 4.2).toFixed(1)} cy=${(205 + Math.sin(r) * 4.2).toFixed(1)} r="3.4" fill="#FF4F8B" stroke="#D62F6B" stroke-width="0.8" />`;
+    })}
+    <circle cx="125" cy="205" r="2.6" fill="#FFD23F" />
+    ${SPARKS.map(([dx, dy, c], i) => html`<path key=${i} class="cf-spark" style=${{ '--dx': `${dx}px`, '--dy': `${dy}px`, animationDelay: `${(i * 0.37).toFixed(2)}s` }} d=${starPath(125, 205, 3)} fill=${c} />`)}
+  </g>`,
+};
+
 export const COSTUMES = [
   pompier,
   police,
@@ -792,6 +820,7 @@ export const COSTUMES = [
   magicien,
   princesse,
   prince,
+  costumeFete,
 ];
 
 // Familles de costumes, pour ranger le rayon de la boutique

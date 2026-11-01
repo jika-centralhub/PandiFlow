@@ -301,9 +301,10 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
   }
   // Costume complet : il prend la place du haut, du chapeau, du masque, du cou et du dos
   const costume = items.skin || null;
-  if (costume) for (const slot of COVERED_BY_SKIN) delete items[slot];
+  // (headsOk : un costume sans couvre-chef, comme le costume de fête, garde les objets de la tête)
+  if (costume) for (const slot of COVERED_BY_SKIN) if (!(costume.headsOk && (slot === 'hat' || slot === 'face'))) delete items[slot];
   // Sur la tête, plusieurs objets compatibles : le serre-tête d'abord, ce qui se pose dessus ensuite
-  const heads = costume ? [] : headItems(worn);
+  const heads = costume && !costume.headsOk ? [] : headItems(worn);
   const layer = (it) => (zonesOf(it).every((z) => z === 'serre-tete') ? 0 : 1);
   const hats = heads.filter((it) => it.slot === 'hat').sort((a, b) => layer(a) - layer(b));
   const faces = heads.filter((it) => it.slot === 'face');

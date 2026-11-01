@@ -110,8 +110,10 @@ function TableArt({ box, ground = null }) {
 }
 
 // party : le soir de son anniversaire (et jusqu'au lendemain soir), le fond de fête passe avant tout autre
-// décor, celui du thème compris ; sa tenue n'est pas touchée, son décor revient ensuite tout seul
-export function KidScene({ child, equipped = child.equipped, tryOn = null, expr = 'happy', pose = 'idle', focus = 'all', interactive = true, onEmpty = null, themeScene = null, party = false, class: cls = '' }) {
+// décor, celui du thème compris ; sa tenue n'est pas touchée, son décor revient ensuite tout seul.
+// friend : son frère ou sa sœur, qui monte dans la deuxième place d'un véhicule qui en a une (le wagon
+// du petit train de fête : ride2 dans art-place.js)
+export function KidScene({ child, equipped = child.equipped, tryOn = null, expr = 'happy', pose = 'idle', focus = 'all', interactive = true, onEmpty = null, themeScene = null, party = false, friend = null, class: cls = '' }) {
   const id = useMemo(() => `ks${++n}`, []);
   const svg = useRef(null);
   const bgLayer = useRef(null);
@@ -309,12 +311,19 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
   };
 
   // Le véhicule avec l'enfant dedans : véhicule, enfant, puis l'avant du véhicule par-dessus ses hanches
+  // (et, avant lui, son frère ou sa sœur à la deuxième place, avec l'avant de cette place devant x1)
+  const ride2 = friend && vehicle?.art?.ride2;
   const rideInner = vehicle && ride && html`<g>
     <defs>
       ${ride.front && html`<clipPath id=${`${id}-front`}><rect x="-60" y=${ride.front} width="360" height="140" /></clipPath>`}
       ${ride.win && html`<clipPath id=${`${id}-win`}><ellipse cx=${ride.win.cx} cy=${ride.win.cy} rx=${ride.win.rx} ry=${ride.win.ry} /></clipPath>`}
+      ${ride2 && html`<clipPath id=${`${id}-front2`}><rect x="-60" y=${ride2.front} width=${ride2.x1 + 60} height="140" /></clipPath>`}
     </defs>
     ${vehicle.render({ id: `${id}-vehicle` })}
+    ${ride2 && html`<g class="ks-friend" aria-hidden="true">
+      <${Avatar} look=${friend.look} equipped=${friend.equipped} expr="happy" pose=${kidPose} mode="bust" seed=${friend.id} nest=${placeKid(ride2.hips[0], ride2.hips[1], ride2.s)} />
+    </g>
+    <g clip-path=${`url(#${id}-front2)`} aria-hidden="true">${vehicle.render({ id: `${id}-vfront2` })}</g>`}
     <g clip-path=${ride.win ? `url(#${id}-win)` : undefined}>${kid(placeKid(ride.hips[0], ride.hips[1], ride.s))}</g>
     ${ride.front && html`<g clip-path=${`url(#${id}-front)`} aria-hidden="true">${vehicle.render({ id: `${id}-vfront` })}</g>`}
   </g>`;

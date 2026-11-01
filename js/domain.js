@@ -841,14 +841,17 @@ export const LIST_OPS = { surprises: applySurpriseOp, themes: applyThemeOp };
 // --- Âge et anniversaire ------------------------------------------------------------------------------
 // La date de naissance (children.birthdate, AAAA-MM-JJ) donne l'âge ; sans elle, l'âge saisi à la main
 // (children.age, que l'app garde à jour : les anciennes versions et les statistiques le lisent).
-// Le soir de son anniversaire, l'enfant reçoit settings.birthday.pandi pandi et choisit un cadeau dans
-// tout le catalogue (même pendant un thème) ; Pandi, déguisé, lui souhaite joyeux anniversaire et danse
-// avec lui sous les feux d'artifice ; sa scène a un fond de fête jusqu'au lendemain 13 h (début de la
-// routine du soir), puis retrouve son décor : sa tenue n'est jamais modifiée. Un soir sans routine
+// Le soir de son anniversaire, l'enfant reçoit settings.birthday.pandi pandi (jamais affichés à la télé),
+// la couronne d'anniversaire, et choisit un cadeau parmi trois de la collection d'anniversaire (objets
+// qu'on n'obtient pas autrement : BIRTHDAY_GIFTS dans js/avatar/items.js) ; Pandi, déguisé, lui souhaite
+// joyeux anniversaire et danse avec lui sous les feux d'artifice, son frère ou sa sœur invité à côté ; sa
+// scène a un fond de fête jusqu'au lendemain 13 h (début de la routine du soir), puis retrouve son décor. Un soir sans routine
 // (Chabbat, sortie) : la fête a lieu au premier soir de routine, jusqu'à 7 jours après. Une fois par an :
 // la ligne birthday-<enfant>-<année> (kind 'birthday', evening_date = le soir de la fête) dit qu'elle a eu lieu.
 export const BIRTHDAY_GRACE = 7;
 export const BIRTHDAY_BG = 'anniversaire'; // le fond de fête (js/avatar/items.js, hors boutique)
+export const BIRTHDAY_CROWN = 'couronne_anniv'; // offerte à chaque fête, en plus du cadeau choisi
+export const GUEST_HAT = 'chapeau_invite'; // le chapeau du frère ou de la sœur pendant la fête
 const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
 export const validBirthdate = (iso, today = toISODate(new Date())) => ISO_DAY.test(String(iso || '')) && iso >= '2000-01-01' && iso <= today;
 
@@ -915,20 +918,19 @@ export function birthdayOf(child, state, evening) {
   const row = state.ledger.find((l) => l.id === birthdayRowId(child.id, year)) || null;
   const since = daysBetween(date, evening);
   const tonight = !row && since <= BIRTHDAY_GRACE && !eveningsRun(state, child.id, date, addDays(evening, -1));
-  const gift = state.owned.find((o) => o.child_id === child.id && o.source === 'birthday' && o.created_at && toISODate(new Date(o.created_at)) >= date);
+  const gift = state.owned.find((o) => o.child_id === child.id && o.source === 'birthday' && o.item_id !== BIRTHDAY_CROWN && o.created_at && toISODate(new Date(o.created_at)) >= date);
   return { year, date, age: ageOn(child.birthdate, date), row, party: row?.evening_date || (tonight ? evening : null), tonight, gift: gift?.item_id || null };
 }
 
 // L'anniversaire en ce moment. festive : le fond de fête (le jour et le soir de la fête, jusqu'au
-// lendemain 13 h) ; giftDue : la fête a eu lieu, le cadeau n'est pas encore choisi ; fullShop : la
-// boutique montre tout le catalogue (même pendant un thème)
+// lendemain 13 h) ; giftDue : la fête a eu lieu, le cadeau n'est pas encore choisi
 export function birthdayNow(child, state, now = new Date()) {
   const evening = eveningDate(now);
   const b = birthdayOf(child, state, evening);
   if (!b) return null;
   const festive = Boolean(b.party && (b.party === evening || (addDays(b.party, 1) === evening && new Date(now).getHours() < MORNING_END_HOUR)));
   const giftDue = Boolean(b.row && !b.gift);
-  return { ...b, evening, festive, giftDue, fullShop: festive || giftDue };
+  return { ...b, evening, festive, giftDue };
 }
 
 // Les enfants dont la fête est à lancer ce soir

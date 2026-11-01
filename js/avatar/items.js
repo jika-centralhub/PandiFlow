@@ -83,6 +83,29 @@ const hats = [
       ${sparkle(132, 20, 7, 'tw', 0)}${sparkle(66, 26, 5, 'tw', 0.8)}
     </g>`,
   },
+  // La couronne d'anniversaire : offerte à chaque fête (domain.BIRTHDAY_CROWN), avec autant de bougies
+  // que son âge (dessinées derrière l'image, art-place.js) ; jamais en boutique ni en défi
+  {
+    id: 'couronne_anniv', name: 'Couronne d’anniversaire', short: 'Couronne d’anniv', price: 0, exclusive: true, birthday: true,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-gold`, GOLD)}</defs>
+      <path d="M54 46 L58 8 L78 28 L100 -2 L122 28 L142 8 L146 46 Z" fill=${`url(#${id}-gold)`} stroke="#B8860B" stroke-width="2" stroke-linejoin="round" />
+      <rect x="52" y="40" width="96" height="14" rx="7" fill="#FFF6EE" stroke="#E7D7C7" stroke-width="2" />
+      ${[[64, '#FF7EB6'], [82, '#5EC8FF'], [100, '#FFD23F'], [118, '#FF7EB6'], [136, '#5EC8FF']].map(([x, c]) => html`<circle key=${x} cx=${x} cy="47" r="2.6" fill=${c} />`)}
+      <circle cx="58" cy="8" r="5" fill="#FF9EC7" /><circle cx="100" cy="-2" r="6" fill="#FFD23F" /><circle cx="142" cy="8" r="5" fill="#8FD0FF" />
+    </g>`,
+  },
+  // Le chapeau d'invité du frère ou de la sœur, pendant la fête seulement (jamais gardé)
+  {
+    id: 'chapeau_invite', name: 'Chapeau d’invité', price: 0, exclusive: true, party: true,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-cone`, ['#9B7BFF', '#FF7EB6'])}</defs>
+      <path d="M72 52 L104 -26 L130 52 Z" fill=${`url(#${id}-cone)`} stroke="#6A40C8" stroke-width="2" stroke-linejoin="round" />
+      <path d="M80 34 L124 34 M88 14 L116 14 M95 -4 L110 -4" stroke="#FFD23F" stroke-width="4" stroke-linecap="round" />
+      <circle cx="104" cy="-28" r="7" fill="#FFD23F" />
+      <path d="M70 52 C86 58 116 58 132 52" stroke="#FFFFFF" stroke-width="5" fill="none" stroke-linecap="round" />
+    </g>`,
+  },
   {
     id: 'sorcier', name: 'Chapeau de sorcier', price: 50,
     render: ({ id }) => html`<g>
@@ -319,6 +342,19 @@ const outfits = [
 
 // --- Compagnons (en bas à droite, ils flottent un peu) ---------------------------------------------
 const pets = [
+  // Cadeau d'anniversaire (BIRTHDAY_GIFTS) : il souffle ses bougies quand on le touche (art-place.js)
+  {
+    id: 'gateau_copain', name: 'Gâteau-copain', price: 0, exclusive: true, birthday: true,
+    render: () => html`<g transform="translate(170 214)">
+      <rect x="-20" y="-6" width="40" height="30" rx="8" fill="#F7D9A8" stroke="#D9A86A" stroke-width="1.6" />
+      <path d="M-20 0 C-14 6 -8 0 -2 6 C4 0 10 6 20 0 L20 -6 L-20 -6 Z" fill="#FF8FC0" />
+      <rect x="-13" y="-22" width="26" height="17" rx="6" fill="#F7D9A8" stroke="#D9A86A" stroke-width="1.4" />
+      <path d="M-13 -16 C-8 -11 -3 -16 2 -11 C7 -16 10 -12 13 -16 L13 -22 L-13 -22 Z" fill="#FF8FC0" />
+      ${[-7, 0, 7].map((x) => html`<g key=${x}><rect x=${x - 1.2} y="-31" width="2.4" height="9" fill="#FFFFFF" stroke="#FF7EB6" stroke-width="0.8" /><ellipse class="flame" cx=${x} cy="-33.5" rx="1.8" ry="2.8" fill="#FFB547" /></g>`)}
+      <circle cx="-6" cy="9" r="2.4" fill="#3A2A2A" /><circle cx="6" cy="9" r="2.4" fill="#3A2A2A" />
+      <path d="M-4 15 Q0 19 4 15" stroke="#C0396B" stroke-width="1.6" fill="none" stroke-linecap="round" />
+    </g>`,
+  },
   {
     id: 'chaton', name: 'Chaton', price: 70,
     render: () => html`<g transform="translate(168 210) scale(1.32)">
@@ -554,9 +590,14 @@ if (Object.keys(BY_ID).length !== ITEMS.length) {
 }
 export const getItem = (id) => BY_ID[id] || null;
 export const shopItems = () => ITEMS.filter((i) => !i.exclusive);
-export const rewardItems = () => ITEMS.filter((i) => i.exclusive && !i.pot && !i.party);
-// Le cadeau d'anniversaire se choisit dans tout le catalogue de la boutique, même pendant un thème
-export const birthdayGifts = (child, owned) => shopItems().filter((it) => it.price > 0 && it.slot !== 'magic' && offeredTo(it, child?.sex === 'fille' || child?.sex === 'garcon' ? child.sex : null) && !owned.has(it.id));
+export const rewardItems = () => ITEMS.filter((i) => i.exclusive && !i.pot && !i.party && !i.birthday);
+// Les cadeaux d'anniversaire : une seule collection, la même pour tous les enfants, qu'on n'obtient
+// d'aucune autre manière (ni boutique, ni défi). À chaque anniversaire, l'enfant en choisit un parmi trois
+// qu'il n'a pas encore (on en ajoutera un ou deux par an). Aucune valeur affichée (choix des parents,
+// avis du panel) ; la couronne (couronne_anniv) est offerte en plus, à chaque fête.
+export const BIRTHDAY_GIFTS = ['costume_fete', 'montgolfiere_anniv', 'gateau_copain', 'train_fete'];
+export const BIRTHDAY_CHOICES = 3;
+export const birthdayGifts = (child, owned) => BIRTHDAY_GIFTS.map(getItem).filter((it) => it && !owned.has(it.id)).slice(0, BIRTHDAY_CHOICES);
 export const potItems = () => ITEMS.filter((i) => i.pot);
 export const isGarageSlot = (slot) => slot in GARAGE_SLOTS;
 // Rayon de la boutique où se range un objet (les kippas et le talit katan vont au rayon Judaïsme)

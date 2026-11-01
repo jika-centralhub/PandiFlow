@@ -251,6 +251,29 @@ const VEHICLES = [
       <circle cx="210" cy="152" r="4" fill="#FFF3B0" />
       ${wheel(56, 164, 15)}${wheel(172, 164, 15)}</g>`,
   },
+  // --- Cadeaux d'anniversaire (BIRTHDAY_GIFTS dans items.js : jamais en boutique) ---
+  // La montgolfière : l'enfant flotte dans la nacelle
+  {
+    id: 'montgolfiere_anniv', act: 'fly', sound: 'whoosh', zone: 'sky', name: 'Montgolfière de fête', short: 'Montgolfière', price: 0, exclusive: true, birthday: true, box: '50 0 120 180',
+    render: () => html`<g class="veh-hover">
+      ${['#E2363F', '#FFD23F', '#4DA3FF', '#9B6CF0', '#FF7EB6'].map((c, i) => html`<path key=${c} d=${`M${70 + i * 16} 96 C${62 + i * 18} 60 ${64 + i * 18} 20 ${78 + i * 12} 8 L${86 + i * 12} 8 C${86 + i * 18} 20 ${86 + i * 18} 60 ${86 + i * 16} 96 Z`} fill=${c} />`)}
+      <path d="M78 96 L94 140 M142 96 L126 140" stroke="#C9A36A" stroke-width="2" />
+      <rect x="92" y="136" width="36" height="28" rx="4" fill="#C98A5B" stroke="#7E4520" stroke-width="2" />
+      <rect x="90" y="132" width="40" height="7" rx="3" fill="#D7263D" />
+    </g>`,
+  },
+  // Le petit train de fête : l'enfant conduit la locomotive, son frère ou sa sœur monte dans le wagon
+  {
+    id: 'train_fete', act: 'drive', sound: 'train', name: 'Petit train de fête', short: 'Petit train', price: 0, exclusive: true, birthday: true,
+    render: () => html`<g class="veh-bob">${shadow(116, 102)}
+      <rect x="14" y="120" width="82" height="36" rx="5" fill="#FFD23F" stroke="#C99A12" stroke-width="2" />
+      <path d="M96 146 L112 146" stroke="#2B2B33" stroke-width="4" />
+      <rect x="112" y="102" width="52" height="56" rx="6" fill="#E2363F" stroke="#A81C2C" stroke-width="2" />
+      <rect x="120" y="110" width="34" height="22" rx="4" fill=${glass} stroke="#A81C2C" stroke-width="1.6" />
+      <rect x="164" y="122" width="50" height="36" rx="10" fill="#E2363F" stroke="#A81C2C" stroke-width="2" />
+      <rect x="190" y="98" width="12" height="26" fill="#2B2B33" />
+      ${wheel(36, 162, 12)}${wheel(76, 162, 12)}${wheel(136, 162, 14)}${wheel(186, 164, 12)}</g>`,
+  },
 ];
 
 // --- Drapeaux (sur un mât, à droite de la scène) ----------------------------------------------------

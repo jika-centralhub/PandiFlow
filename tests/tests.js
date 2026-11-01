@@ -3,7 +3,7 @@ import { eveningDate, addDays, weekday, currentRoutine, routineDate, atTime, nex
 import * as cd from '../js/lib/countdown.js';
 import { sha256Bytes, hashPin } from '../js/lib/pin.js';
 import { normalizeLook, DEFAULT_LOOK, randomLook } from '../js/avatar/palette.js';
-import { getItem, offeredTo, starredFor, rayonOf, birthdayGifts, shopItems } from '../js/avatar/items.js';
+import { getItem, offeredTo, starredFor, rayonOf, birthdayGifts, shopItems, rewardItems, BIRTHDAY_GIFTS } from '../js/avatar/items.js';
 import { THEME_CATALOG, getTheme, giftOptions, vitrineItems, themeLooks, GIFT_MAX, waitsForTheme, funFact } from '../js/avatar/themes.js';
 import { setThemeLooks, themeLookFor, BIRTHDAY_LOOK } from '../js/mascot/themeLook.js';
 import * as w from '../js/avatar/wear.js';
@@ -955,7 +955,7 @@ test('anniversaire : la fête le soir même, une fois par an, avec les pandi des
   ok(d.applyBirthday(after, { familyId: 'f', childId: 'a', now: at('2026-11-03', 21) }).error, 'pas deux fois');
   eq(d.balance('a', after), 50);
   const b2 = d.birthdayNow(st.children[0], after, at('2026-11-03', 21));
-  ok(!b2.tonight && b2.festive && b2.giftDue && b2.fullShop, 'fête lancée : le cadeau à choisir');
+  ok(!b2.tonight && b2.festive && b2.giftDue, 'fête lancée : le cadeau à choisir');
   const other = d.applyBirthday({ ...st, settings: d.mergeSettings({ birthday: { pandi: 30 } }) }, { familyId: 'f', childId: 'a', now: at('2026-11-03') });
   eq(other.amount, 30);
   ok(d.applyBirthday(st, { familyId: 'f', childId: 'b', now: at('2026-11-03') }).error, 'sans date de naissance : pas de fête');
@@ -968,10 +968,12 @@ test('anniversaire : le fond de fête jusqu’au lendemain 13 h, le cadeau atten
   ok(d.birthdayNow(kid, after, at('2026-11-04', 2)).festive, 'après minuit, c’est encore la soirée');
   ok(d.birthdayNow(kid, after, at('2026-11-04', 8)).festive, 'le lendemain matin');
   const next = d.birthdayNow(kid, after, at('2026-11-04', 14));
-  ok(!next.festive && next.giftDue && next.fullShop, 'le lendemain soir : le décor revient, le cadeau attend encore');
-  const withGift = { ...after, owned: [{ child_id: 'a', item_id: 'kart', source: 'birthday', created_at: at('2026-11-04', 15).toISOString() }] };
+  ok(!next.festive && next.giftDue, 'le lendemain soir : le décor revient, le cadeau attend encore');
+  const crown = { child_id: 'a', item_id: d.BIRTHDAY_CROWN, source: 'birthday', created_at: at('2026-11-03').toISOString() };
+  ok(d.birthdayNow(kid, { ...after, owned: [crown] }, at('2026-11-04', 16)).giftDue, 'la couronne n’est pas le cadeau choisi');
+  const withGift = { ...after, owned: [crown, { child_id: 'a', item_id: 'train_fete', source: 'birthday', created_at: at('2026-11-04', 15).toISOString() }] };
   const done = d.birthdayNow(kid, withGift, at('2026-11-04', 16));
-  ok(!done.giftDue && !done.fullShop && done.gift === 'kart', 'cadeau choisi : la boutique redevient normale');
+  ok(!done.giftDue && done.gift === 'train_fete', 'cadeau choisi');
   ok(!d.birthdayNow(kid, { ...after, owned: [{ child_id: 'a', item_id: 'kart', source: 'gift', created_at: at('2026-11-04', 15).toISOString() }] }, at('2026-11-04', 16)).gift, 'un cadeau de thème ne compte pas');
   eq(d.partyEvenings(after, at('2026-11-03', 20)), ['2026-11-03']);
 });
@@ -989,14 +991,16 @@ test('anniversaire : un soir sans routine (Chabbat), la fête a lieu le soir sui
   ok(d.birthdayNow(kid, st, at('2026-11-03', 9)).festive, 'le matin de l’anniversaire, le fond de fête est déjà là');
 });
 
-test('anniversaire : le cadeau se choisit dans toute la boutique, sauf ce qu’il a déjà et ce qui ne s’achète pas', () => {
-  const list = birthdayGifts({ sex: 'fille' }, new Set(['kart']));
-  ok(list.length > 100, 'tout le catalogue');
-  ok(!list.some((it) => it.id === 'kart'), 'pas un objet déjà à lui');
-  ok(!list.some((it) => it.exclusive || it.slot === 'magic'), 'ni trésor de défi ni objet hors boutique');
-  ok(!list.some((it) => it.id === 'anniversaire'), 'le fond de fête n’est pas en vente');
-  ok(list.some((it) => it.price >= 500), 'même les plus chers');
-  ok(getItem('anniversaire')?.slot === 'bg' && !shopItems().some((it) => it.id === 'anniversaire'));
+test('anniversaire : trois cadeaux de la collection qu’il n’a pas encore, qu’on n’obtient pas autrement', () => {
+  eq(birthdayGifts({}, new Set()).map((it) => it.id), BIRTHDAY_GIFTS.slice(0, 3));
+  eq(birthdayGifts({}, new Set(['montgolfiere_anniv'])).map((it) => it.id), ['costume_fete', 'gateau_copain', 'train_fete'], 'ceux qu’il n’a pas');
+  eq(birthdayGifts({}, new Set(BIRTHDAY_GIFTS)).length, 0);
+  ok(BIRTHDAY_GIFTS.every((id) => getItem(id)?.exclusive && getItem(id).birthday), 'tous hors boutique');
+  const shop = new Set(shopItems().map((it) => it.id));
+  const rewards = new Set(rewardItems().map((it) => it.id));
+  ok([...BIRTHDAY_GIFTS, d.BIRTHDAY_CROWN, d.GUEST_HAT, d.BIRTHDAY_BG].every((id) => getItem(id) && !shop.has(id) && !rewards.has(id)), 'ni en boutique ni en défi');
+  eq([getItem('train_fete').slot, getItem('montgolfiere_anniv').slot, getItem('gateau_copain').slot, getItem('costume_fete').slot, getItem(d.BIRTHDAY_CROWN).slot], ['vehicle', 'vehicle', 'pet', 'skin', 'hat']);
+  ok(getItem('train_fete').art?.ride2, 'le wagon du train a une place pour le frère');
 });
 
 test('anniversaire : Pandi porte sa tenue de fête ce soir-là, avant celle du thème', () => {

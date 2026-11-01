@@ -87,7 +87,7 @@ function BirthdayRow() {
   const s = useStore();
   const pandi = s.settings.birthday?.pandi ?? 50;
   return html`<div class="row" style="margin-top:12px"><span class="emoji">🎂</span>
-    <div class="grow"><div class="title">Le soir de son anniversaire</div><div class="meta">Pandi, déguisé, lui souhaite joyeux anniversaire et danse avec lui sous les feux d’artifice. Il reçoit ces pandi et choisit un cadeau dans toute la boutique (même pendant un thème) ; sa scène a un fond de fête jusqu’au lendemain soir. Un soir sans routine : la fête a lieu le soir suivant.</div></div>
+    <div class="grow"><div class="title">Le soir de son anniversaire</div><div class="meta">Pandi, déguisé, lui souhaite joyeux anniversaire et danse avec lui sous les feux d’artifice ; son frère ou sa sœur est invité (chapeau d’invité, il tend la boîte-cadeau). Il reçoit sa couronne d’anniversaire (une bougie par année), ces pandi (jamais affichés à la télé), et choisit un cadeau parmi trois de la collection d’anniversaire, qu’on n’obtient pas autrement : costume de fête, montgolfière, gâteau-copain, petit train. Sa scène a un fond de fête jusqu’au lendemain soir. Un soir sans routine : la fête a lieu le soir suivant.</div></div>
     <${NumberInput} value=${pandi} onChange=${(v) => actions.updateSettings({ birthday: { ...s.settings.birthday, pandi: v } })} min=${0} max=${200} step=${10} />
   </div>`;
 }

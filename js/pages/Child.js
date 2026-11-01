@@ -8,7 +8,7 @@ import { getTheme, giftOptions, vitrineItems, waitsForTheme } from '../avatar/th
 import { ThemeBook } from '../components/Themes.js';
 import { isWorn, wouldRemove } from '../avatar/wear.js';
 import { Avatar, COVERED_BY_SKIN } from '../avatar/Avatar.js';
-import { ITEMS, SLOTS, shopItems, getItem, rayonOf, offeredTo, starredFor } from '../avatar/items.js';
+import { ITEMS, SLOTS, shopItems, getItem, rayonOf, offeredTo, starredFor, birthdayGifts } from '../avatar/items.js';
 import { COSTUME_GROUPS } from '../avatar/costumes.js';
 import { ItemThumb } from '../components/ItemThumb.js';
 import { PandiCounter, Modal } from '../components/ui.js';
@@ -166,51 +166,52 @@ function Vitrine({ child, theme, owned, bal, gift, giftOpts, hasBook, onBook, on
   </div>`;
 }
 
-// Le cadeau d'anniversaire : à choisir dans tout le catalogue (la boutique montre tous ses rayons, même
-// pendant un thème), puis le rappel de ce qu'il a choisi tant que dure la fête
-function BirthdayGiftNote({ birthday }) {
+// Le cadeau d'anniversaire : trois objets de la collection d'anniversaire (qu'on n'obtient pas autrement),
+// à essayer sur son personnage avant d'en choisir un, sans aucune valeur affichée ; puis le rappel de ce
+// qu'il a choisi tant que dure la fête. En tête de la boutique, pendant un thème comme en temps normal.
+function BirthdayGifts({ child, birthday, owned, onPick }) {
   if (birthday?.giftDue) {
-    return html`<div class="bd-gift"><h3>🎂 Ton cadeau d’anniversaire : choisis ce que tu veux !</h3>
-      <p>Dans toute la boutique, celui qui te fait le plus envie : c’est Pandi qui te l’offre.</p></div>`;
+    const list = birthdayGifts(child, owned);
+    if (!list.length) return null;
+    return html`<div class="bd-gift"><h3>🎂 Tes cadeaux d’anniversaire : choisis-en un !</h3>
+      <p>${list.length > 1 ? `${list.length === 3 ? 'Trois' : 'Deux'} surprises de Pandi, rien que pour les anniversaires. Touche-les pour les essayer sur toi.` : 'Une surprise de Pandi, rien que pour les anniversaires.'}</p>
+      <div class="item-grid">${list.map((it, i) => html`<${ItemCard} key=${it.id} item=${it} index=${i} look=${child.look} state="gift" note="Cadeau 🎂" onClick=${() => onPick(it)} />`)}</div>
+    </div>`;
   }
-  const item = birthday?.gift && getItem(birthday.gift);
+  const item = birthday?.festive && birthday.gift && getItem(birthday.gift);
   return item ? html`<p class="bd-got">🎂 Ton cadeau d’anniversaire : <b>${item.name}</b></p>` : null;
 }
 
 function Shop({ child, owned, bal, rayon, onRayon, onPick, theme = null, gift = null, giftOpts = [], hasBook = false, onGiftPick, onEquip, birthday = null, onBirthdayPick }) {
   const [affordableOnly, setAffordableOnly] = useState(false);
   const sex = sexOf(child);
-  const birthdayGift = Boolean(birthday?.giftDue);
   const bySlot = (slot) => shopItems()
     .filter((it) => rayonOf(it) === slot && !owned.has(it.id) && offeredTo(it, sex))
     .sort((a, b) => Number(starredFor(b, sex)) - Number(starredFor(a, sex)) || a.price - b.price);
   const slots = SLOT_ORDER.filter((slot) => slot !== 'magic' && bySlot(slot).length);
+  const gifts = html`<${BirthdayGifts} child=${child} birthday=${birthday} owned=${owned} onPick=${onBirthdayPick} />`;
   if (rayon === 'livre') return html`<div><${PlainHead} icon="📖" label="Le livre des thèmes" color="#C98A5B" onBack=${() => onRayon(null)} /><${ThemeBook} /></div>`;
   if (theme) {
-    return html`<${Vitrine} child=${child} theme=${theme} owned=${owned} bal=${bal} gift=${gift} giftOpts=${giftOpts} hasBook=${hasBook} onBook=${() => onRayon('livre')} onPick=${onPick} onGiftPick=${onGiftPick} onEquip=${onEquip} />`;
+    return html`<div>${gifts}<${Vitrine} child=${child} theme=${theme} owned=${owned} bal=${bal} gift=${gift} giftOpts=${giftOpts} hasBook=${hasBook} onBook=${() => onRayon('livre')} onPick=${onPick} onGiftPick=${onGiftPick} onEquip=${onEquip} /></div>`;
   }
-  if (!slots.length) return html`<p style="padding:20px;text-align:center">Tu as déjà tout acheté. Bravo, ${accord(child, 'champion', 'championne')} ! 🏆</p>`;
+  if (!slots.length) return html`<div>${gifts}<p style="padding:20px;text-align:center">Tu as déjà tout acheté. Bravo, ${accord(child, 'champion', 'championne')} ! 🏆</p></div>`;
   if (!rayon || !slots.includes(rayon)) {
     return html`<div>
-      <${BirthdayGiftNote} birthday=${birthday} />
+      ${gifts}
       <div class="rayons">
-        ${slots.map((slot, i) => html`<${RayonCard} key=${slot} slot=${slot} index=${i} look=${child.look} bal=${birthdayGift ? null : bal} list=${bySlot(slot)} onOpen=${onRayon} />`)}
+        ${slots.map((slot, i) => html`<${RayonCard} key=${slot} slot=${slot} index=${i} look=${child.look} bal=${bal} list=${bySlot(slot)} onOpen=${onRayon} />`)}
         ${hasBook && html`<${BookCard} index=${slots.length} onOpen=${() => onRayon('livre')} />`}
       </div>
     </div>`;
   }
-  const list = bySlot(rayon).filter((it) => birthdayGift || !affordableOnly || it.price <= bal);
+  const list = bySlot(rayon).filter((it) => !affordableOnly || it.price <= bal);
   let i = 0;
-  const card = (it) => (birthdayGift
-    ? html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state="gift" note="Cadeau 🎂" onClick=${() => onBirthdayPick(it)} />`
-    : html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${bal < it.price ? 'locked' : ''} price=${it.price} note=${starredFor(it, sex) ? 'Pour toi ✨' : null} onClick=${() => onPick(it)} />`);
   return html`<div>
-    <${RayonHead} slot=${rayon} onBack=${() => onRayon(null)} extra=${!birthdayGift && html`<button class=${`chip rh-filter ${affordableOnly ? 'on' : ''}`} onClick=${() => { sfx.tap(); setAffordableOnly(!affordableOnly); }}>💰 À ma portée</button>`} />
-    <${BirthdayGiftNote} birthday=${birthday} />
+    <${RayonHead} slot=${rayon} onBack=${() => onRayon(null)} extra=${html`<button class=${`chip rh-filter ${affordableOnly ? 'on' : ''}`} onClick=${() => { sfx.tap(); setAffordableOnly(!affordableOnly); }}>💰 À ma portée</button>`} />
     ${!list.length && html`<p class="hint" style="padding:12px;text-align:center">Rien à ta portée ici pour l'instant : encore quelques pandi à gagner ! 💪</p>`}
     ${grouped(rayon, list).map((g) => html`<div key=${g.id}>
       ${g.label && html`<h3 class="section-title">${g.icon} ${g.label}</h3>`}
-      <div class="item-grid">${g.items.map(card)}</div>
+      <div class="item-grid">${g.items.map((it) => html`<${ItemCard} key=${it.id} item=${it} index=${i++} look=${child.look} state=${bal < it.price ? 'locked' : ''} price=${it.price} note=${starredFor(it, sex) ? 'Pour toi ✨' : null} onClick=${() => onPick(it)} />`)}</div>
     </div>`)}
   </div>`;
 }
@@ -254,19 +255,19 @@ function Challenges({ child, state }) {
   })}</div>`;
 }
 
-function ItemPreview({ child, item, themeScene = null, party = false }) {
+function ItemPreview({ child, item, themeScene = null, party = false, friend = null }) {
   return item.garage || item.slot === 'bg'
-    ? html`<div class="buy-scene"><${KidScene} child=${child} tryOn=${{ slot: item.slot, itemId: item.id }} expr="joy" interactive=${false} themeScene=${themeScene} party=${party} /></div>`
+    ? html`<div class="buy-scene"><${KidScene} child=${child} tryOn=${{ slot: item.slot, itemId: item.id }} expr="joy" interactive=${false} themeScene=${themeScene} party=${party} friend=${friend} /></div>`
     : html`<div style="width:calc(var(--u)*44);height:calc(var(--u)*52);border-radius:calc(var(--u)*6);overflow:hidden;background:radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--kid), #fff 40%), var(--kid))">
         <${Avatar} look=${child.look} equipped=${child.equipped} tryOn=${{ slot: item.slot, itemId: item.id }} expr="joy" mode="full" seed=${child.id} />
       </div>`;
 }
 
 // Le cadeau d'entrée du thème (ou d'anniversaire) : l'enfant l'essaie, puis le choisit (aucun pandi)
-function GiftModal({ child, item, themeScene, party = false, text = 'Un cadeau de Pandi pour entrer dans le thème.', onTake, onClose }) {
+function GiftModal({ child, item, themeScene, party = false, friend = null, text = 'Un cadeau de Pandi pour entrer dans le thème.', onTake, onClose }) {
   return html`<${Modal} onClose=${onClose} style=${{ '--kid': child.color, width: 'min(100%, calc(var(--u) * 130))' }}>
     <div style="display:flex;gap:calc(var(--u)*5);align-items:center;flex-wrap:wrap;justify-content:center">
-      <${ItemPreview} child=${child} item=${item} themeScene=${themeScene} party=${party} />
+      <${ItemPreview} child=${child} item=${item} themeScene=${themeScene} party=${party} friend=${friend} />
       <div style="flex:1;min-width:calc(var(--u)*50)">
         <h2>${item.name}</h2>
         <p style="color:var(--ink-soft);margin-top:8px;font-size:calc(var(--u)*3.8)">${text} C'est celui-ci que tu choisis ?</p>
@@ -334,7 +335,8 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
   // (même pendant un thème : la vitrine laisse alors la place à tous les rayons)
   const bday = birthdayNow(child, s);
   const party = Boolean(bday?.festive);
-  const shopTheme = bday?.fullShop ? null : theme;
+  // Son frère ou sa sœur, qui monte avec lui dans le wagon du petit train de fête
+  const friend = activeChildren(s.children).find((k) => k.id !== child.id) || null;
   const tabs = activeChildren(s.children).length > 1 ? TABS : TABS.filter((t) => t.id !== 'equipe');
   const current = tabs.some((t) => t.id === tab) ? tab : 'boutique';
   const garage = hasGarage(child.equipped);
@@ -430,7 +432,7 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
     </header>
     <div class="child-body">
       <div class="scene-card" ref=${stage}>
-        <${KidScene} child=${child} expr=${cheer ? 'joy' : 'happy'} pose=${cheer ? 'cheer' : 'idle'} focus=${focus} onEmpty=${toShop} themeScene=${theme?.scene} party=${party} />
+        <${KidScene} child=${child} expr=${cheer ? 'joy' : 'happy'} pose=${cheer ? 'cheer' : 'idle'} focus=${focus} onEmpty=${toShop} themeScene=${theme?.scene} party=${party} friend=${friend} />
         ${garage && html`<span class="gc-hint">Touche un objet !</span>`}
       </div>
       <div class="child-panel">
@@ -443,7 +445,7 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
           ${current === 'look' && html`<${LookEditor} look=${child.look} onChange=${(look) => actions.saveLook(child.id, look)} onPhoto=${() => (actions.isParentUnlocked() ? setPhoto(true) : setGate(true))} />`}
           ${current === 'affaires' && html`<${Inventory} child=${child} owned=${owned} rayon=${rayon} theme=${theme} onRayon=${openRayon} onEquip=${equipToggle} />`}
           ${current === 'boutique' && html`<${Shop} child=${child} owned=${owned} bal=${bal} rayon=${rayon} onRayon=${openRayon} onPick=${(it) => { sfx.tap(); setBuying(it); }}
-            theme=${shopTheme} gift=${gift} giftOpts=${giftOpts} hasBook=${hasBook} onGiftPick=${(it) => { sfx.tap(); setGifting(it); }} onEquip=${equipToggle}
+            theme=${theme} gift=${gift} giftOpts=${giftOpts} hasBook=${hasBook} onGiftPick=${(it) => { sfx.tap(); setGifting(it); }} onEquip=${equipToggle}
             birthday=${bday} onBirthdayPick=${(it) => { sfx.tap(); setBdGifting(it); }} />`}
           ${current === 'defis' && html`<${Challenges} child=${child} state=${s} />`}
           ${current === 'equipe' && html`<${TeamPanel} me=${child} />`}
@@ -453,7 +455,7 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
     </div>
     ${buying && html`<${BuyModal} child=${child} item=${buying} bal=${bal} themeScene=${theme?.scene} party=${party} onBuy=${() => buy(buying)} onClose=${() => setBuying(null)} />`}
     ${gifting && html`<${GiftModal} child=${child} item=${gifting} themeScene=${theme?.scene} party=${party} onTake=${() => takeGift(gifting)} onClose=${() => setGifting(null)} />`}
-    ${bdGifting && html`<${GiftModal} child=${child} item=${bdGifting} themeScene=${theme?.scene} party=${party} text="Ton cadeau d’anniversaire, offert par Pandi 🎂." onTake=${() => takeBirthdayGift(bdGifting)} onClose=${() => setBdGifting(null)} />`}
+    ${bdGifting && html`<${GiftModal} child=${child} item=${bdGifting} themeScene=${theme?.scene} party=${party} friend=${friend} text="Ton cadeau d’anniversaire, offert par Pandi 🎂." onTake=${() => takeBirthdayGift(bdGifting)} onClose=${() => setBdGifting(null)} />`}
     ${gate && html`<${PinGate} onSuccess=${() => { setGate(false); setPhoto(true); }} onCancel=${() => setGate(false)} />`}
     ${photo && html`<${PhotoAvatar} child=${child} onClose=${() => setPhoto(false)} />`}
     ${bank && html`<${PandiBank} child=${child} onClose=${() => setBank(false)} />`}

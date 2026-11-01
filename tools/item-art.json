@@ -540,6 +540,35 @@
       "prompt": "A tall thin flagpole for a garden, seen from the front: a polished silver metal pole with a shiny golden ball on top and a small round grey base at the bottom, with no flag on it."
     },
     {
+      "id": "couronne_anniv",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's birthday party crown seen straight from the front at eye level, as if worn: a soft shiny golden crown with five rounded points, each point topped with a small fluffy pastel pompom (pink, sky blue, yellow), colorful round gems (cherry red, royal blue, pink, purple) along the band, and a soft white felt band with tiny colorful confetti dots at the bottom. No candles on it. No writing on it."
+    },
+    {
+      "id": "gateau_copain",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "style": "creature",
+      "prompt": "An adorable chubby birthday cake character sitting, seen from the front: a round two-tier cake with glossy pink strawberry frosting dripping over soft vanilla sponge, colorful sprinkles, a shiny red cherry on top, big shiny friendly eyes and a happy little smile on the lower tier, tiny chubby arms, and five small striped pink and white candles standing on the top tier that are not lit (no flame)."
+    },
+    {
+      "id": "montgolfiere_anniv",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A kid-sized toy-like hot-air balloon for a birthday, seen from the front with a slight three-quarter angle: a big round glossy balloon with bright vertical stripes in cherry red, sunny yellow, sky blue, purple and pink, little golden stars painted on it, a scalloped golden trim around its middle, ropes holding a sturdy round woven wicker basket with a red velvet rim, small colorful bunting flags hanging around the basket, an empty basket (nobody in it). No flame, no burner fire. No writing on it."
+    },
+    {
+      "id": "train_fete",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A kid-sized toy-like birthday party train seen exactly from the side, facing right: a chunky glossy cherry-red steam locomotive at the front on the right with a golden bell, a tall black smokestack with no smoke and a rounded cab with a wide open window and an empty seat (nobody in it), pulling one small open passenger wagon in sunny yellow with an empty bench seat (nobody in it), both decorated with colorful bunting flags, a few balloons in red, yellow and sky blue tied to the wagon, golden wheels with red spokes. No rails, no writing on it."
+    },
+    {
       "id": "fond_chambre",
       "size": "1024x1536",
       "quality": "high",

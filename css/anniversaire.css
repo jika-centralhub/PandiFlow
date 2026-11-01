@@ -37,13 +37,28 @@
 .bd-kid { position: relative; display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * .6);
   animation: bj-hop .7s cubic-bezier(.3, 1.6, .5, 1) both; animation-delay: calc(.4s + var(--i) * .25s); }
 .bd-kid .avatar { width: 100%; flex: 1; min-height: 0; }
-.bd-kid > span:not(.bd-crown) { font-weight: 700; font-size: calc(var(--u) * 4.4); color: var(--kid); text-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+.bd-kid > span:not(.bd-box) { font-weight: 700; font-size: calc(var(--u) * 4.4); color: var(--kid); text-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
 .bd-star { width: calc(var(--u) * 28); height: calc(var(--u) * 44); }
 .bd-other { width: calc(var(--u) * 19); height: calc(var(--u) * 31); }
-.bd-crown { position: absolute; top: calc(var(--u) * -4); left: 50%; z-index: 1; font-size: calc(var(--u) * 7); transform: translateX(-50%);
-  animation: bd-crown 1s ease-in-out infinite alternate; }
-@keyframes bd-crown { from { transform: translateX(-50%) translateY(0) rotate(-8deg); } to { transform: translateX(-50%) translateY(calc(var(--u) * -1.4)) rotate(8deg); } }
-.bd-kid .pandi-counter { margin-top: calc(var(--u) * .4); }
+/* L'invité tend la boîte-cadeau vers l'enfant fêté (il est à gauche de Pandi, ou tout à droite) */
+.bd-box { position: absolute; bottom: 34%; right: -12%; font-size: calc(var(--u) * 7); filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .35));
+  animation: bd-give 1.6s cubic-bezier(.3, 1.4, .5, 1) both; }
+.bd-other[style*="order: 4"] .bd-box { right: auto; left: -12%; animation-name: bd-give-left; }
+@keyframes bd-give { 0% { transform: translate(-40%, 30%) scale(.3) rotate(-20deg); opacity: 0; } 60% { transform: translate(10%, 0) scale(1.1) rotate(8deg); opacity: 1; } 100% { transform: translate(0, 0) scale(1) rotate(0); } }
+@keyframes bd-give-left { 0% { transform: translate(40%, 30%) scale(.3) rotate(20deg); opacity: 0; } 60% { transform: translate(-10%, 0) scale(1.1) rotate(-8deg); opacity: 1; } 100% { transform: translate(0, 0) scale(1) rotate(0); } }
+.bd-thanks { display: block; margin-top: calc(var(--u) * 1.2); font-size: .9em; color: #8a5a00; }
+
+/* Le costume de fête : la fleur de la boutonnière lance des paillettes vers les autres */
+.cf-spark { transform-box: fill-box; transform-origin: center; opacity: 0; animation: cf-spark 2.6s ease-out infinite; }
+@keyframes cf-spark { 0% { transform: translate(0, 0) scale(.3) rotate(0); opacity: 0; } 12% { opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(1.1) rotate(160deg); opacity: 0; } }
+
+/* Le gâteau-copain : touché, il souffle ses bougies (un petit nuage), puis elles se rallument */
+.gc-cake { cursor: pointer; }
+.gc-flame { transform-box: fill-box; transform-origin: 50% 100%; transition: transform .25s ease, opacity .25s ease; }
+.gc-cake.blown .gc-flame { transform: scale(.1); opacity: 0; transition-duration: .15s; }
+.gc-smoke circle { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.gc-cake.blown .gc-smoke circle { animation: gc-smoke 1.4s ease-out forwards; }
+@keyframes gc-smoke { 0% { transform: translate(0, 0) scale(.4); opacity: .9; } 100% { transform: translate(3px, -14px) scale(1.8); opacity: 0; } }
 
 .bd-bubble { max-width: calc(var(--u) * 160); }
 .bd-party .bd-title { margin-top: auto; }
@@ -65,8 +80,7 @@
   .bd-pandi { width: calc(var(--u) * 32); height: calc(var(--u) * 36); }
   .bd-star { width: calc(var(--u) * 24); height: calc(var(--u) * 37); }
   .bd-other { width: calc(var(--u) * 17); height: calc(var(--u) * 27); }
-  .bd-crown { font-size: calc(var(--u) * 5.4); top: calc(var(--u) * -2.6); }
-  .bd-kid > span:not(.bd-crown) { font-size: calc(var(--u) * 3.8); }
+  .bd-kid > span:not(.bd-box) { font-size: calc(var(--u) * 3.8); }
   .bd-bubble { padding: calc(var(--u) * 2.2) calc(var(--u) * 4); font-size: calc(var(--u) * 3.7); }
   .bd-party .sheet-actions { gap: calc(var(--u) * 1.6); margin-top: 0; }
   .bd-party .btn-big { padding-block: calc(var(--u) * 2.4); font-size: calc(var(--u) * 4.2); }
@@ -80,5 +94,5 @@
 .bd-got { margin: 0 0 calc(var(--u) * 3); font-weight: 600; color: var(--ink); }
 
 @media (prefers-reduced-motion: reduce) {
-  .bd-lights i, .bd-crown, .bd-ico { animation: none; }
+  .bd-lights i, .bd-ico, .cf-spark { animation: none; }
 }

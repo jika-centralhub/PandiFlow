@@ -669,16 +669,22 @@ function syncAges() {
 }
 
 // La fête commence (le parent touche « Lancer la fête » le soir de l'anniversaire) : les pandi
-// d'anniversaire, une fois par an. Renvoie { amount, age } ou { error }.
+// d'anniversaire, une fois par an, et la couronne d'anniversaire (gardée d'une année sur l'autre : ses
+// bougies suivent son âge), qu'il porte tout de suite. Renvoie { amount, age } ou { error }.
 export function startBirthday(childId) {
   const res = domain.applyBirthday(getState(), { familyId: familyId(), childId });
   if (res.error) return res;
   setState({ ledger: res.ledger });
   commit(res.ops);
+  const crown = getItem(domain.BIRTHDAY_CROWN);
+  if (crown) {
+    if (!domain.isOwned(childId, crown.id, getState().owned)) put('owned_items', [{ family_id: familyId(), child_id: childId, item_id: crown.id, source: 'birthday', created_at: new Date().toISOString() }]);
+    equip(childId, crown.slot, crown.id);
+  }
   return { amount: res.amount, age: res.age };
 }
 
-// Le cadeau d'anniversaire : n'importe quel objet de la boutique, même pendant un thème ; il le porte tout de suite
+// Le cadeau d'anniversaire : un des trois objets de la collection d'anniversaire qu'il n'a pas encore ; il le porte tout de suite
 export function takeBirthdayGift(childId, itemId) {
   const s = getState();
   const child = s.children.find((c) => c.id === childId);

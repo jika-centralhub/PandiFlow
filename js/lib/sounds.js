@@ -304,6 +304,11 @@ export const garageSfx = {
   ufo: () => {
     for (let i = 0; i < 8; i++) tone(i % 2 ? 720 : 520, { at: i * 0.16, dur: 0.18, type: 'sine', vol: 0.09, slide: i % 2 ? -200 : 200 });
   },
+  // Le petit train : « tchou-tchou » (un sifflet à deux notes, deux fois), puis il souffle en roulant
+  train: () => {
+    for (const at of [0, 0.45]) [587, 740].forEach((f) => tone(f, { at, dur: 0.32, type: 'triangle', vol: 0.09 }));
+    for (let i = 0; i < 8; i++) noise({ at: 0.9 + i * 0.2, dur: 0.12, vol: 0.12 - i * 0.01, freq: 900, q: 0.8 });
+  },
   neigh: () => {
     tone(620, { dur: 0.35, type: 'triangle', vol: 0.12, slide: 420 });
     tone(1040, { at: 0.32, dur: 0.6, type: 'triangle', vol: 0.1, slide: -560 });
