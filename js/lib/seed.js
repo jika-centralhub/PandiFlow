@@ -1,6 +1,7 @@
 import { uid } from './util.js';
 import { eveningDate } from './dates.js';
 import { normalizeLook, CHILD_COLORS } from '../avatar/palette.js';
+import { ageOf } from '../domain.js';
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
@@ -40,8 +41,8 @@ export const DEFAULT_MORNING_TASKS = [
 
 // La tâche convient-elle à l'âge de l'enfant ?
 export function fitsAge(task, child) {
-  const age = Number(child?.age);
-  if (child?.age == null || child.age === '' || !(age > 0)) return true;
+  const age = ageOf(child);
+  if (age == null) return true;
   return !(task.minAge && age < task.minAge) && !(task.maxAge && age > task.maxAge);
 }
 
@@ -59,23 +60,27 @@ export const DEMO_CHILDREN = [
   {
     name: 'Léa',
     age: 7,
+    birthdate: '2019-03-14',
     sex: 'fille',
     look: { face: 'ovale', skin: 'clair', hair: 'couettes', hairColor: 'chatain', eyes: 'grand', eyeColor: 'vert', freckles: true, missingTooth: true, outfit: 'rose' },
   },
   {
     name: 'Sacha',
     age: 5,
+    birthdate: '2021-06-02',
     sex: 'garcon',
     look: { face: 'rond', skin: 'caramel', hair: 'boucle', hairColor: 'brun_fonce', eyes: 'rieur', eyeColor: 'marron', dimples: true, outfit: 'turquoise' },
   },
 ];
 
-export function makeChild(familyId, { name, age = null, sex = null, color, look }, index = 0) {
+// birthdate (AAAA-MM-JJ) : l'âge en est calculé ; la colonne n'est écrite que si elle est connue
+export function makeChild(familyId, { name, age = null, birthdate = null, sex = null, color, look }, index = 0) {
   return {
     id: uid(),
     family_id: familyId,
     name,
-    age,
+    age: birthdate ? ageOf({ birthdate }) ?? age : age,
+    ...(birthdate ? { birthdate } : {}),
     sex,
     color: color || CHILD_COLORS[index % CHILD_COLORS.length],
     look: normalizeLook(look),

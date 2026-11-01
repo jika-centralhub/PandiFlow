@@ -9,10 +9,10 @@ import { buildFamilySeed, buildMorningSeed, makeChild, DEMO_CHILDREN } from './s
 import { uid, sleep, measure } from './util.js';
 import { toISODate, nextRoutineStart, addDays, eveningDate } from './dates.js';
 import { hashPin, checkPin } from './pin.js';
-import { getItem } from '../avatar/items.js';
+import { getItem, birthdayGifts } from '../avatar/items.js';
 import { HEAD_SLOTS, headItems, isWorn, wear, unwear } from '../avatar/wear.js';
 import { getTheme, giftOptions, themeLooks, waitsForTheme } from '../avatar/themes.js';
-import { setThemeLooks } from '../mascot/themeLook.js';
+import { setThemeLooks, BIRTHDAY_LOOK } from '../mascot/themeLook.js';
 import { normalizeLook, randomLook } from '../avatar/palette.js';
 import { setPortraitSource, primePortrait, portraitPath, loadPortrait, forgetPortrait, hasBody, keepPrepared } from './portraits.js';
 
@@ -85,6 +85,7 @@ export async function reload() {
   markSeen();
   ensureThemePhotos();
   ensureThemeOutfits();
+  syncAges();
 }
 
 // --- Pilotage de l'adoption ---------------------------------------------------------------
@@ -429,9 +430,9 @@ export function saveLook(childId, look) {
 }
 
 // --- Enfants -------------------------------------------------------------------------
-export function addChild({ name, age, sex = null, color, look }) {
+export function addChild({ name, age, birthdate = null, sex = null, color, look }) {
   const s = getState();
-  const child = makeChild(familyId(), { name, age, sex, color, look: look || randomLook() }, s.children.length);
+  const child = makeChild(familyId(), { name, age, birthdate, sex, color, look: look || randomLook() }, s.children.length);
   put('children', [child]);
   const links = s.tasks.filter((t) => !t.archived).map((t) => ({ family_id: familyId(), child_id: child.id, task_id: t.id }));
   if (links.length) put('child_tasks', links);
@@ -646,13 +647,50 @@ function waitsNow(item) {
   return Boolean(entry && waitsForTheme(getTheme(entry.theme), item));
 }
 
-// Pandi porte la tenue du thème sur tous les écrans, d'après les thèmes des réglages
-let lastThemes = null;
+// Pandi porte la tenue du thème sur tous les écrans, d'après les thèmes des réglages, et sa tenue
+// d'anniversaire les soirs de fête (elle passe avant celle du thème)
+let lastLooks = null;
 subscribe((st) => {
-  if (st.settings?.themes === lastThemes) return;
-  lastThemes = st.settings?.themes;
-  setThemeLooks(themeLooks(lastThemes));
+  const key = [st.settings?.themes, st.children, st.ledger, eveningDate()];
+  if (lastLooks && key.every((v, i) => v === lastLooks[i])) return;
+  lastLooks = key;
+  const parties = st.children && st.ledger && st.tasks ? domain.partyEvenings(st) : [];
+  setThemeLooks([...parties.map((d) => ({ start: d, end: d, look: BIRTHDAY_LOOK })), ...themeLooks(st.settings?.themes)]);
 });
+
+// --- Anniversaire ------------------------------------------------------------------------------------
+// L'âge suit la date de naissance : la colonne age est récrite le lendemain de l'anniversaire (les
+// anciennes versions de l'app et les statistiques la lisent encore)
+function syncAges() {
+  const s = getState();
+  if (s.status !== 'ready' || !s.family) return;
+  const stale = s.children.filter((c) => c.birthdate && domain.ageOf(c) != null && domain.ageOf(c) !== c.age);
+  if (stale.length) put('children', stale.map((c) => ({ ...c, age: domain.ageOf(c) })));
+}
+
+// La fête commence (le parent touche « Lancer la fête » le soir de l'anniversaire) : les pandi
+// d'anniversaire, une fois par an. Renvoie { amount, age } ou { error }.
+export function startBirthday(childId) {
+  const res = domain.applyBirthday(getState(), { familyId: familyId(), childId });
+  if (res.error) return res;
+  setState({ ledger: res.ledger });
+  commit(res.ops);
+  return { amount: res.amount, age: res.age };
+}
+
+// Le cadeau d'anniversaire : n'importe quel objet de la boutique, même pendant un thème ; il le porte tout de suite
+export function takeBirthdayGift(childId, itemId) {
+  const s = getState();
+  const child = s.children.find((c) => c.id === childId);
+  const b = child && domain.birthdayNow(child, s);
+  if (!b?.giftDue) return { error: 'Pas de cadeau d’anniversaire à choisir en ce moment.' };
+  const owned = new Set(s.owned.filter((o) => o.child_id === childId).map((o) => o.item_id));
+  const item = birthdayGifts(child, owned).find((it) => it.id === itemId);
+  if (!item) return { error: 'Ce cadeau n’est pas dans la boutique.' };
+  put('owned_items', [{ family_id: familyId(), child_id: childId, item_id: item.id, source: 'birthday', created_at: new Date().toISOString() }]);
+  equip(childId, item.slot, item.id);
+  return { item };
+}
 
 export async function setPin(pin) {
   updateSettings({ pinHash: await hashPin(pin, familyId()) });

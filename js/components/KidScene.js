@@ -10,6 +10,7 @@
 import { html, useEffect, useLayoutEffect, useMemo, useRef, useState } from '../vendor/preact-htm.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { getItem } from '../avatar/items.js';
+import { BIRTHDAY_BG } from '../domain.js';
 import { hasArt, artSize, artBox, artSrc, artImage } from '../avatar/art.js';
 import { THEMES, FRAME } from '../avatar/art-place.js';
 import { garageItems, Backdrop, ActFx, ACT_MS, ZONES, isDay } from './Garage.js';
@@ -108,7 +109,9 @@ function TableArt({ box, ground = null }) {
   </g>`;
 }
 
-export function KidScene({ child, equipped = child.equipped, tryOn = null, expr = 'happy', pose = 'idle', focus = 'all', interactive = true, onEmpty = null, themeScene = null, class: cls = '' }) {
+// party : le soir de son anniversaire (et jusqu'au lendemain soir), le fond de fête passe avant tout autre
+// décor, celui du thème compris ; sa tenue n'est pas touchée, son décor revient ensuite tout seul
+export function KidScene({ child, equipped = child.equipped, tryOn = null, expr = 'happy', pose = 'idle', focus = 'all', interactive = true, onEmpty = null, themeScene = null, party = false, class: cls = '' }) {
   const id = useMemo(() => `ks${++n}`, []);
   const svg = useRef(null);
   const bgLayer = useRef(null);
@@ -135,7 +138,7 @@ export function KidScene({ child, equipped = child.equipped, tryOn = null, expr 
   }, []);
 
   const items = garageItems(equipped, tryOn);
-  const bgId = tryOn?.slot === 'bg' ? tryOn.itemId : equipped?.bg;
+  const bgId = tryOn?.slot === 'bg' ? tryOn.itemId : party ? BIRTHDAY_BG : equipped?.bg;
   const bg = bgId ? getItem(bgId) : null;
   const vehicle = items.vehicle || null;
   const ride = vehicle ? vehicle.ride || RIDES[vehicle.id] : null;

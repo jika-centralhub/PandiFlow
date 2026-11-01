@@ -37,7 +37,8 @@ export function unlockAudio() {
 
 // Pandi lit une phrase à voix haute (la voix française du téléphone) : pour les petits qui ne lisent
 // pas encore. Rien si le son est coupé ou si le navigateur ne sait pas parler.
-export function say(text) {
+// onEnd : appelé quand il a fini de parler (seulement si la phrase a bien été lancée)
+export function say(text, { onEnd } = {}) {
   try {
     const synth = window.speechSynthesis;
     if (!getState().prefs.sound || !synth || !text) return false;
@@ -49,6 +50,7 @@ export function say(text) {
     u.volume = soft ? 0.6 : 1;
     const voice = synth.getVoices().find((v) => v.lang?.toLowerCase().startsWith('fr'));
     if (voice) u.voice = voice;
+    if (onEnd) u.onend = onEnd;
     synth.speak(u);
     return true;
   } catch {
@@ -151,6 +153,38 @@ export const sfx = {
     [784, 1047].forEach((f, i) => tone(f, { at: 0.2 + i * 0.1, dur: i ? 0.32 : 0.1, type: 'triangle', vol: 0.26 }));
   },
   pause: () => [660, 440].forEach((f, i) => tone(f, { at: i * 0.1, dur: 0.14, type: 'triangle', vol: 0.22 })),
+  // « Joyeux anniversaire » en boîte à musique, avec sa basse (une valse) : un temps = beat secondes
+  // (Pandi danse sur deux temps par seconde). Renvoie la durée de la chanson en secondes.
+  birthdaySong: (beat = 0.5) => {
+    const SONG = [
+      [67, 0.75], [67, 0.25], [69, 1], [67, 1], [72, 1], [71, 2],
+      [67, 0.75], [67, 0.25], [69, 1], [67, 1], [74, 1], [72, 2],
+      [67, 0.75], [67, 0.25], [79, 1], [76, 1], [72, 1], [71, 1], [69, 2],
+      [77, 0.75], [77, 0.25], [76, 1], [72, 1], [74, 1], [72, 3],
+    ];
+    const hz = (m) => 440 * 2 ** ((m - 69) / 12);
+    let at = 0;
+    for (const [m, d] of SONG) {
+      tone(hz(m), { at: at * beat, dur: Math.max(0.25, d * beat * 0.95), type: 'triangle', vol: 0.2 });
+      tone(hz(m + 12), { at: at * beat, dur: Math.max(0.2, d * beat * 0.6), type: 'sine', vol: 0.05 });
+      at += d;
+    }
+    // Les mesures commencent après la levée (un temps) : la basse sur le 1, l'accord sur le 2 et le 3
+    const CHORDS = [[48, 64, 67], [43, 62, 65], [43, 62, 65], [48, 64, 67], [48, 64, 67], [41, 65, 69], [43, 64, 67], [48, 64, 67]];
+    CHORDS.forEach(([bass, a, b], k) => {
+      const start = (1 + k * 3) * beat;
+      tone(hz(bass), { at: start, dur: beat * 0.9, type: 'triangle', vol: 0.16 });
+      if (k === CHORDS.length - 1) return;
+      for (const n of [1, 2]) [a, b].forEach((x) => tone(hz(x), { at: start + n * beat, dur: beat * 0.4, type: 'sine', vol: 0.045 }));
+    });
+    return at * beat;
+  },
+  // Un feu d'artifice : la fusée qui monte en sifflant, puis le bouquet qui éclate et crépite
+  boom: (at = 0) => {
+    noise({ at, dur: 0.5, vol: 0.05, freq: 900, to: 3200, q: 6, attack: 0.3 });
+    noise({ at: at + 0.5, dur: 0.6, vol: 0.22, freq: 160, filter: 'lowpass' });
+    for (let i = 0; i < 6; i++) noise({ at: at + 0.6 + i * 0.07 + Math.random() * 0.05, dur: 0.05, vol: 0.06, freq: 4000, q: 2 });
+  },
   // Fin du minuteur, en douceur : deux notes de carillon (à la place du réveil)
   carillon: () => [784, 1175].forEach((f, i) => tone(f, { at: i * 0.4, dur: 1.3, type: 'sine', vol: 0.2, attack: 0.01 })),
   // « Bonne nuit Pandi » : une petite berceuse qui descend

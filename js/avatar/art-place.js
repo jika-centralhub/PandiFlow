@@ -165,4 +165,5 @@ export const PLACE = {
   foret: { img: 'fond_foret', cover: FRAME },
   plage: { img: 'fond_plage', cover: FRAME },
   arcenciel: { img: 'fond_arcenciel', cover: FRAME },
+  anniversaire: { img: 'fond_anniversaire', cover: FRAME },
 };

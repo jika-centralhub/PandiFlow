@@ -10,7 +10,7 @@ import { useStore } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import { navigate } from '../router.js';
 import { Pandi } from '../components/Coin.js';
-import { Modal, NumberInput, SexPicker, Toggle } from '../components/ui.js';
+import { Modal, BirthdateInput, SexPicker, Toggle } from '../components/ui.js';
 import { PinPad } from '../components/PinGate.js';
 import { PhotoAvatar } from '../components/PhotoAvatar.js';
 import { LookEditor } from '../components/LookEditor.js';
@@ -18,7 +18,7 @@ import { InstallHelp } from '../components/Install.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { shareInvite, fmtCode, fmtDate } from '../components/FamilyMembers.js';
 import { CHILD_COLORS, KID_PALETTE } from '../avatar/palette.js';
-import { COLOR_META, PETIT_AGE, activeChildren, scaleOf, pointsFor, weeklyStones, routineOf } from '../domain.js';
+import { COLOR_META, PETIT_AGE, activeChildren, scaleOf, pointsFor, weeklyStones, routineOf, validBirthdate } from '../domain.js';
 import { DEFAULT_TASKS, EXTRA_TASKS, DEFAULT_MORNING_TASKS, fitsAge } from '../lib/seed.js';
 import { WEEKDAYS_SHORT } from '../lib/dates.js';
 import { canFullscreen, isInstalled } from '../lib/device.js';
@@ -88,7 +88,7 @@ const toggleIn = (set, key, on) => {
 export function AccueilDebut({ onJoin }) {
   const [step, setStep] = useState('comment');
   const [familyName, setFamilyName] = useState('');
-  const [kids, setKids] = useState([{ name: '', age: 6, sex: null, color: CHILD_COLORS[0] }]);
+  const [kids, setKids] = useState([{ name: '', birthdate: '', sex: null, color: CHILD_COLORS[0] }]);
   const [evening, setEvening] = useState(() => new Set(DEFAULT_TASKS.map((t) => t.key)));
   const [morningOn, setMorningOn] = useState(true);
   const [morning, setMorning] = useState(() => new Set(DEFAULT_MORNING_TASKS.map((t) => t.key)));
@@ -104,6 +104,8 @@ export function AccueilDebut({ onJoin }) {
   const setKid = (i, patch) => setKids((list) => list.map((k, j) => (j === i ? { ...k, ...patch } : k)));
   const nextColor = (c) => KID_PALETTE[(KID_PALETTE.indexOf(c) + 1) % KID_PALETTE.length];
   const validKids = kids.filter((k) => k.name.trim()).map((k) => ({ ...k, name: k.name.trim() }));
+  // Chaque enfant a besoin de sa date de naissance (son âge, son barème, son anniversaire)
+  const missingDate = validKids.some((k) => !validBirthdate(k.birthdate));
   // Une idée ne s'affiche que si elle convient à au moins un enfant
   const eveningList = [...DEFAULT_TASKS, ...EXTRA_TASKS].filter((t) => validKids.some((k) => fitsAge(t, k)));
   const chosenEvening = eveningList.filter((t) => evening.has(t.key));
@@ -121,7 +123,7 @@ export function AccueilDebut({ onJoin }) {
     try {
       await actions.createFamily({
         name: familyName.trim() || 'Ma famille',
-        children: validKids.map((k) => ({ name: k.name, age: k.age, sex: k.sex, color: k.color })),
+        children: validKids.map((k) => ({ name: k.name, birthdate: k.birthdate, sex: k.sex, color: k.color })),
         routines: {
           evening: chosenEvening.map((t) => t.key),
           morning: morningOn ? chosenMorning.map((t) => t.key) : null,
@@ -160,14 +162,15 @@ export function AccueilDebut({ onJoin }) {
         ${kids.map((k, i) => html`<div key=${i} class="row ac-kid" style=${{ '--kid': k.color }}>
           <button class="ac-color" aria-label=${`Changer la couleur de ${k.name || `l'enfant ${i + 1}`}`} title="Changer la couleur" onClick=${() => { sfx.pop(); setKid(i, { color: nextColor(k.color) }); }} />
           <input class="input grow" value=${k.name} maxLength="20" onInput=${(e) => setKid(i, { name: e.target.value })} placeholder=${`Prénom de l'enfant ${i + 1}`} />
-          <span class="ac-age"><${NumberInput} value=${k.age} onChange=${(v) => setKid(i, { age: v })} min=${2} max=${14} /> ans</span>
+          <span class="ac-age"><span class="ac-age-label">Né${k.sex === 'fille' ? 'e' : k.sex ? '' : '(e)'} le</span><${BirthdateInput} value=${k.birthdate} onChange=${(v) => setKid(i, { birthdate: v })} label=${`Date de naissance de ${k.name || `l'enfant ${i + 1}`}`} /></span>
           <${SexPicker} value=${k.sex} onChange=${(v) => setKid(i, { sex: v })} />
           ${kids.length > 1 && html`<button class="p-btn icon" onClick=${() => setKids((l) => l.filter((_, j) => j !== i))} aria-label="Retirer">✕</button>`}
         </div>`)}
-        ${kids.length < 6 && html`<button class="p-btn" onClick=${() => setKids((l) => [...l, { name: '', age: 6, sex: null, color: CHILD_COLORS[l.length % CHILD_COLORS.length] }])}>+ Un autre enfant</button>`}
+        ${kids.length < 6 && html`<button class="p-btn" onClick=${() => setKids((l) => [...l, { name: '', birthdate: '', sex: null, color: CHILD_COLORS[l.length % CHILD_COLORS.length] }])}>+ Un autre enfant</button>`}
       </div>
-      <p class="hint">L'âge choisit les tâches proposées et le barème (les moins de ${PETIT_AGE} ans ont un barème plus doux). « Garçon ou fille » est facultatif : il accorde les textes (« Bravo championne ! »). Touche la pastille pour changer la couleur de l'enfant.</p>
-      <${Actions} back=${() => go('comment')} next=${() => { sfx.tap(); go('soir'); }} disabled=${!validKids.length} />
+      <p class="hint">La date de naissance donne l'âge, qui choisit les tâches proposées et le barème (les moins de ${PETIT_AGE} ans ont un barème plus doux), et le soir de son anniversaire, je fais la fête avec l'enfant 🎂. « Garçon ou fille » est facultatif : il accorde les textes (« Bravo championne ! »). Touche la pastille pour changer la couleur de l'enfant.</p>
+      ${validKids.length > 0 && missingDate && html`<p class="srp-warning">🎂 Il manque une date de naissance.</p>`}
+      <${Actions} back=${() => go('comment')} next=${() => { sfx.tap(); go('soir'); }} disabled=${!validKids.length || missingDate} />
     <//>`;
   }
 

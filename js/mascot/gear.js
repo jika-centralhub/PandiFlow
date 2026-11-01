@@ -334,6 +334,42 @@ export const ACCESSORIES = [
       return placed;
     },
   },
+  // --- Tenue d'anniversaire (pas dans le tirage du jour : seulement les soirs de fête, themeLook.js) ---
+  {
+    id: 'ballons', slot: 'dos', name: 'Ballons de fête', bone: 'torso', theme: true,
+    build(occ) {
+      const out = new THREE.Group();
+      const string = new THREE.MeshBasicMaterial({ color: '#F4F1FF' });
+      const sways = [];
+      // noués dans le dos, ils flottent au-dessus de l'épaule opposée au chapeau de fête (visibles de face),
+      // chacun au bout de sa ficelle
+      for (const [color, top, phase] of [
+        ['#FF4F6D', [-0.47, 1.5, 0.12], 0],
+        ['#FFC93C', [-0.24, 1.74, 0.06], 1.3],
+        ['#4DA8FF', [-0.7, 1.26, 0.16], 2.4],
+      ]) {
+        const g = new THREE.Group();
+        g.position.set(-0.16, 0.34, -0.5);
+        const end = new THREE.Vector3(...top);
+        const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0, 0), new THREE.Vector3(end.x * 0.5 - 0.04, end.y * 0.5, end.z * 0.5), end.clone().setY(end.y - 0.15)]);
+        g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.0045, 5), string));
+        const skin = plastic(occ, color);
+        g.add(m(new THREE.SphereGeometry(0.13, 28, 20), skin, [end.x, end.y, end.z], [0, 0, 0], [1, 1.18, 1]));
+        g.add(m(new THREE.ConeGeometry(0.022, 0.035, 12), skin, [end.x, end.y - 0.15, end.z]));
+        out.add(g);
+        sways.push({ g, phase });
+      }
+      let t = 0;
+      out.userData.update = (dt, energy) => {
+        t += dt;
+        for (const s of sways) {
+          s.g.rotation.z = Math.sin(t * 1.3 + s.phase) * (0.06 + energy * 0.08);
+          s.g.rotation.x = Math.sin(t * 0.9 + s.phase * 1.7) * 0.05;
+        }
+      };
+      return out;
+    },
+  },
 ];
 
 function starShape(r) {

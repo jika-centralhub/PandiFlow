@@ -5,7 +5,8 @@ import { useStore } from '../lib/store.js';
 import { sfx } from '../lib/sounds.js';
 import { prefersReducedMotion } from '../lib/util.js';
 import { KID_PALETTE } from '../avatar/palette.js';
-import { SEXES } from '../domain.js';
+import { SEXES, ageOn, validBirthdate } from '../domain.js';
+import { toISODate } from '../lib/dates.js';
 
 // Compteur de pandi : le nombre défile comme un compteur kilométrique
 export function PandiCounter({ value, big = false, counterRef, id }) {
@@ -67,6 +68,16 @@ export function NumberInput({ value, onChange, min = 0, max = 999, step = 1 }) {
     <button onClick=${() => set(value - step)} aria-label="Moins">−</button>
     <output>${value}</output>
     <button onClick=${() => set(value + step)} aria-label="Plus">+</button>
+  </span>`;
+}
+
+// Date de naissance (AAAA-MM-JJ, '' tant qu'elle n'est pas choisie) : l'âge en est calculé
+export function BirthdateInput({ value, onChange, label = 'Date de naissance' }) {
+  const today = toISODate(new Date());
+  const age = validBirthdate(value, today) ? ageOn(value, today) : null;
+  return html`<span class="birthdate-input">
+    <input class="input date-input" type="date" min="2000-01-01" max=${today} value=${value || ''} aria-label=${label} onChange=${(e) => onChange(e.target.value || '')} />
+    ${age != null && html`<span class="bd-age">${age < 1 ? 'moins d’un an' : `${age} an${age > 1 ? 's' : ''}`}</span>`}
   </span>`;
 }
 

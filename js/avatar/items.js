@@ -487,6 +487,29 @@ const backgrounds = [
       <g fill="#fff"><ellipse cx="-4" cy="150" rx="26" ry="12" /><ellipse cx="204" cy="150" rx="26" ry="12" /></g>
     </g>`,
   },
+  // Le fond de fête de l'anniversaire : pas en boutique, la scène le prend d'elle-même le soir de la
+  // fête et jusqu'au lendemain soir (domain.birthdayNow), sans toucher à la tenue de l'enfant
+  {
+    id: 'anniversaire', name: 'Fête d’anniversaire', price: 0, exclusive: true, party: true,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-fe`, ['#8E6CFF', '#FF8FC8', '#FFC9A0'])}</defs>
+      ${frameRect(`url(#${id}-fe)`)}
+      ${[[-8, -30], [40, -36], [150, -34], [206, -24], [70, 8], [126, 0], [-10, 70], [212, 80]].map(([x, y], i) => html`<circle key=${i} class="tw" style=${{ animationDelay: `${(i * 0.41) % 2}s` }} cx=${x} cy=${y} r=${i % 3 ? 1.8 : 2.8} fill="#FFF6C8" />`)}
+      <path d="M-20 -14 Q100 34 220 -14" stroke="#FFF3D6" stroke-width="1.6" fill="none" />
+      ${[-8, 12, 32, 52, 72, 92, 112, 132, 152, 172, 192, 212].map((x, i) => {
+        const y = -14 + (48 * (x + 20) * (220 - x)) / (240 * 240);
+        return html`<path key=${x} class="flag" style=${{ animationDelay: `${(i % 4) * 0.2}s` }} d=${`M${x - 7} ${y.toFixed(1)} L${x + 7} ${y.toFixed(1)} L${x} ${(y + 15).toFixed(1)} Z`} fill=${['#FFD23F', '#5EC8FF', '#7CE07A', '#FF5E7E'][i % 4]} />`;
+      })}
+      ${[[-4, 62, '#FF5E7E', 0], [16, 46, '#FFD23F', 0.7], [30, 70, '#5EC8FF', 1.4], [172, 52, '#7CE07A', 0.4], [190, 70, '#FF8A3D', 1.1], [204, 44, '#B57BFF', 1.8]].map(([x, y, c, d], i) => html`<g key=${i} class="sway" style=${{ animationDelay: `${d}s` }}>
+        <path d=${`M${x} ${y + 15} Q${x + (i % 2 ? 5 : -5)} ${y + 50} ${x} ${y + 86}`} stroke="#FFFFFF" stroke-width="1" fill="none" opacity="0.8" />
+        <ellipse cx=${x} cy=${y} rx="12" ry="15" fill=${c} />
+        <path d=${`M${x - 3} ${y + 15} L${x + 3} ${y + 15} L${x} ${y + 19} Z`} fill=${c} />
+        <ellipse cx=${x - 4} cy=${y - 6} rx="3" ry="5" fill="#fff" opacity="0.45" />
+      </g>`)}
+      <rect x="-20" y="214" width="240" height="40" fill="#6B4BC8" />
+      ${[[-6, 222, '#FFD23F'], [28, 236, '#5EC8FF'], [60, 226, '#FF5E7E'], [140, 232, '#7CE07A'], [176, 222, '#FFD23F'], [206, 238, '#FF8FC8']].map(([x, y, c], i) => html`<rect key=${i} x=${x} y=${y} width="7" height="3.4" rx="1" fill=${c} transform=${`rotate(${(i * 47) % 90 - 45} ${x + 3.5} ${y + 1.7})`} />`)}
+    </g>`,
+  },
 ];
 
 // --- Effets ---------------------------------------------------------------------------------------
@@ -531,7 +554,9 @@ if (Object.keys(BY_ID).length !== ITEMS.length) {
 }
 export const getItem = (id) => BY_ID[id] || null;
 export const shopItems = () => ITEMS.filter((i) => !i.exclusive);
-export const rewardItems = () => ITEMS.filter((i) => i.exclusive && !i.pot);
+export const rewardItems = () => ITEMS.filter((i) => i.exclusive && !i.pot && !i.party);
+// Le cadeau d'anniversaire se choisit dans tout le catalogue de la boutique, même pendant un thème
+export const birthdayGifts = (child, owned) => shopItems().filter((it) => it.price > 0 && it.slot !== 'magic' && offeredTo(it, child?.sex === 'fille' || child?.sex === 'garcon' ? child.sex : null) && !owned.has(it.id));
 export const potItems = () => ITEMS.filter((i) => i.pot);
 export const isGarageSlot = (slot) => slot in GARAGE_SLOTS;
 // Rayon de la boutique où se range un objet (les kippas et le talit katan vont au rayon Judaïsme)

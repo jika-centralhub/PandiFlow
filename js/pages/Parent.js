@@ -2,13 +2,13 @@
 import { html, useState, useEffect } from '../vendor/preact-htm.js';
 import { useStore, setPrefs } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { SEXES, activeChildren, tasksForChild, findRating, balance, challengesForChild, COLOR_META, ROUTINES, routineOf, TEAM_CARD, findTeamCard, teamCardLevel, surpriseBoard } from '../domain.js';
+import { SEXES, ageOf, validBirthdate, nextBirthday, activeChildren, tasksForChild, findRating, balance, challengesForChild, COLOR_META, ROUTINES, routineOf, TEAM_CARD, findTeamCard, teamCardLevel, surpriseBoard } from '../domain.js';
 import { eveningDate, addDays, formatLong, WEEKDAYS_SHORT, currentRoutine } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { CHILD_COLORS } from '../avatar/palette.js';
 import { ITEMS, SLOTS, rewardItems, getItem } from '../avatar/items.js';
 import { ItemThumb } from '../components/ItemThumb.js';
-import { Modal, Toggle, NumberInput, ColorPicker, SexPicker } from '../components/ui.js';
+import { Modal, Toggle, NumberInput, ColorPicker, SexPicker, BirthdateInput } from '../components/ui.js';
 import { PinPad } from '../components/PinGate.js';
 import { PhotoAvatar } from '../components/PhotoAvatar.js';
 import { PandiBank } from '../components/PandiBank.js';
@@ -41,27 +41,55 @@ const EMOJIS = ['⏰', '☀️', '🥣', '🥐', '🧃', '🍽️', '🥦', '�
 function ChildForm({ child, onClose }) {
   const s = useStore();
   const [name, setName] = useState(child?.name || '');
+  const [birthdate, setBirthdate] = useState(child?.birthdate || '');
   const [age, setAge] = useState(child?.age || 6);
   const [sex, setSex] = useState(child?.sex || null);
   const [color, setColor] = useState(child?.color || CHILD_COLORS[s.children.length % CHILD_COLORS.length]);
+  // La date de naissance donne l'âge (et l'anniversaire) ; un enfant déjà inscrit sans date garde son âge
+  const dated = validBirthdate(birthdate);
+  const keepAge = !dated && Boolean(child);
+  const next = dated ? nextBirthday({ birthdate }) : null;
   function save() {
-    if (!name.trim()) return;
-    if (child) actions.saveChild({ ...child, name: name.trim(), age, sex, color });
-    else actions.addChild({ name: name.trim(), age, sex, color });
+    if (!name.trim() || !(dated || keepAge)) return;
+    const when = dated ? { birthdate, age: ageOf({ birthdate }) } : { age, ...(child && 'birthdate' in child ? { birthdate: null } : {}) };
+    if (child) actions.saveChild({ ...child, name: name.trim(), ...when, sex, color });
+    else actions.addChild({ name: name.trim(), ...when, sex, color });
     sfx.green();
     onClose();
   }
   return html`<${Modal} onClose=${onClose}>
     <h2>${child ? `Modifier ${child.name}` : 'Nouvel enfant'}</h2>
     <div class="field"><label>Prénom</label><input class="input" value=${name} maxLength="20" onInput=${(e) => setName(e.target.value)} placeholder="Prénom" /></div>
-    <div class="field"><label>Âge</label><${NumberInput} value=${age} onChange=${setAge} min=${2} max=${14} /></div>
+    <div class="field"><label>Date de naissance</label><${BirthdateInput} value=${birthdate} onChange=${setBirthdate} />
+      ${next && html`<p class="hint">🎂 ${next.days === 0 ? `Son anniversaire, c’est aujourd’hui : ${next.age} ans !` : `${next.age} ans le ${formatLong(next.date)} (dans ${next.days} jour${next.days > 1 ? 's' : ''}).`} Le soir de son anniversaire, Pandi fait la fête avec ${accordName(sex)}.</p>`}
+      ${keepAge && html`<p class="hint">Sans date, Pandi ne peut pas fêter son anniversaire. En attendant, son âge :</p><${NumberInput} value=${age} onChange=${setAge} min=${2} max=${14} />`}
+    </div>
     <div class="field"><label>C'est…</label><${SexPicker} value=${sex} onChange=${setSex} /></div>
     <div class="field"><label>Sa couleur (celle de sa colonne)</label><${ColorPicker} value=${color} onChange=${setColor} /></div>
     <div class="sheet-actions">
       ${child && html`<button class="p-btn danger" onClick=${() => { actions.archiveChild(child.id, !child.archived); onClose(); }}>${child.archived ? 'Réactiver' : 'Archiver'}</button>`}
-      <button class="btn btn-green" onClick=${save} disabled=${!name.trim()}>Enregistrer</button>
+      <button class="btn btn-green" onClick=${save} disabled=${!name.trim() || !(dated || keepAge)}>Enregistrer</button>
     </div>
   <//>`;
+}
+
+const accordName = (sex) => (sex === 'fille' ? 'elle' : sex === 'garcon' ? 'lui' : 'l’enfant');
+
+// L'âge et le prochain anniversaire d'un enfant, pour la liste des parents
+function ageMeta(c) {
+  const age = ageOf(c);
+  const next = nextBirthday(c);
+  if (!next) return `${age ? `${age} ans · ` : ''}🎂 date de naissance à ajouter · `;
+  return `${age} ans · 🎂 ${next.days === 0 ? 'aujourd’hui !' : next.days < 31 ? `dans ${next.days} jour${next.days > 1 ? 's' : ''}` : formatLong(next.date).replace(/^\S+ /, 'le ')} · `;
+}
+
+function BirthdayRow() {
+  const s = useStore();
+  const pandi = s.settings.birthday?.pandi ?? 50;
+  return html`<div class="row" style="margin-top:12px"><span class="emoji">🎂</span>
+    <div class="grow"><div class="title">Le soir de son anniversaire</div><div class="meta">Pandi, déguisé, lui souhaite joyeux anniversaire et danse avec lui sous les feux d’artifice. Il reçoit ces pandi et choisit un cadeau dans toute la boutique (même pendant un thème) ; sa scène a un fond de fête jusqu’au lendemain soir. Un soir sans routine : la fête a lieu le soir suivant.</div></div>
+    <${NumberInput} value=${pandi} onChange=${(v) => actions.updateSettings({ birthday: { ...s.settings.birthday, pandi: v } })} min=${0} max=${200} step=${10} />
+  </div>`;
 }
 
 function ChildrenSection() {
@@ -75,13 +103,14 @@ function ChildrenSection() {
     <div class="row-list">
       ${list.map((c) => html`<div key=${c.id} class=${`row ${c.archived ? 'muted' : ''}`} style=${{ '--kid': c.color }}>
         <div class="mini-head" style=${{ background: c.color }}><${Avatar} look=${c.look} mode="head" still=${true} /></div>
-        <div class="grow"><div class="title">${c.name}${c.archived ? ' (archivé)' : ''}</div><div class="meta">${c.sex ? `${SEXES[c.sex].label} · ` : ''}${c.age ? `${c.age} ans · ` : ''}${balance(c.id, s)} pandi</div></div>
+        <div class="grow"><div class="title">${c.name}${c.archived ? ' (archivé)' : ''}</div><div class="meta">${c.sex ? `${SEXES[c.sex].label} · ` : ''}${ageMeta(c)}${balance(c.id, s)} pandi</div></div>
         <button class="p-btn" onClick=${() => setPhotoFor(c)}>📸 Avatar photo</button>
         <button class="p-btn" onClick=${() => navigate(`enfant/${c.id}?onglet=look`)}>🪞 Look</button>
         <button class="p-btn" onClick=${() => setEditing(c)}>Modifier</button>
       </div>`)}
     </div>
     <div class="sheet-actions" style="justify-content:flex-start"><button class="btn btn-blue" onClick=${() => setEditing('new')}>+ Ajouter un enfant</button></div>
+    <${BirthdayRow} />
     ${editing && html`<${ChildForm} child=${editing === 'new' ? null : editing} onClose=${() => setEditing(null)} />`}
     ${photoFor && html`<${PhotoAvatar} child=${photoFor} onClose=${() => setPhotoFor(null)} onEdit=${() => navigate(`enfant/${photoFor.id}?onglet=look`)} />`}
   </div>`;

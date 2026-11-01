@@ -7,7 +7,7 @@ import { useStore, setPrefs, getState, visitPending } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import * as timers from '../lib/timers.js';
 import { timerKey } from '../lib/countdown.js';
-import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, TEAM_CARD, findTeamCard, teamCardLevel, pendingSurprise, promiseFor, firstEveningDue, activeThemeEntry, pendingThemeEntry } from '../domain.js';
+import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, TEAM_CARD, findTeamCard, teamCardLevel, pendingSurprise, promiseFor, firstEveningDue, activeThemeEntry, pendingThemeEntry, birthdayNow } from '../domain.js';
 import { routineDate, currentRoutine, addDays, formatLong, eveningDate } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { Modal, Logo } from '../components/ui.js';
@@ -21,6 +21,7 @@ import { CalmCorner } from '../components/CalmCorner.js';
 import { TeamPill, TeamSheet } from '../components/Team.js';
 import { Visite, GreetBar, FirstEveningCard } from '../components/Decouverte.js';
 import { ThemeAsk, FunFactBar } from '../components/ThemeAsk.js';
+import { BirthdayBar } from '../components/Anniversaire.js';
 import { funFact } from '../avatar/themes.js';
 import { flyCoins, burst, replay } from '../anim/fx.js';
 import { sfx, setSoftSound } from '../lib/sounds.js';
@@ -446,6 +447,19 @@ export function Evening() {
     showOverlay('bonjour', {});
   }
 
+  // L'anniversaire : le parent lance la fête (les pandi d'anniversaire sont donnés à ce moment-là, une
+  // fois par an), ou la rejoue plus tard dans la soirée (sans rien redonner)
+  function startParty(list) {
+    sfx.tap();
+    const gifts = {};
+    for (const k of list) {
+      const res = actions.startBirthday(k.id);
+      if (!res.error) gifts[k.id] = res;
+    }
+    // (un deuxième appui avant que le bandeau disparaisse ne relance pas la fête)
+    if (Object.keys(gifts).length) showOverlay('anniversaire', { childIds: list.map((k) => k.id), gifts });
+  }
+
   function focusIndex(child, list, withNight) {
     if (withNight && focus[child.id] === NIGHT_CARD) return list.length;
     const i = list.findIndex((t) => t.id === focus[child.id]);
@@ -601,12 +615,18 @@ export function Evening() {
   // Le thème programmé par les parents commence quand les enfants ont dit oui
   const proposed = date === today && kids.length > 0 && !visiting && !nightScreen ? pendingThemeEntry(s.settings, date) : null;
   const asking = proposed && askLater !== proposed.id ? proposed : null;
+  // L'anniversaire d'un enfant ce soir : la fête à lancer, ou à rejouer une fois lancée
+  const birthdays = evening && date === today && !visiting && !nightScreen ? kids.map((k) => ({ k, b: birthdayNow(k, s) })).filter(({ b }) => b?.party === date) : [];
+  const partyToStart = birthdays.filter(({ b }) => b.tonight).map(({ k }) => k);
+  const partyDone = birthdays.filter(({ b }) => b.row).map(({ k }) => k);
 
   return html`<div class=${`evening routine-${routine} ${doux ? 'soir-doux' : ''} page-enter`}>
     <${TopBar} onCalm=${() => setCalm(true)} chest=${kids.length > 1 && html`<${TeamPill} onOpen=${() => setTeam(true)} />`} />
     ${date !== today && html`<div class="past-banner">Tu modifies ${routine === 'matin' ? 'le matin' : 'la soirée'} du ${formatLong(date)}</div>`}
     <div class="strip">
       ${showGreet && html`<${GreetBar} onGreet=${greet} onLater=${() => { sfx.tap(); greetLater = true; setLater(true); }} />`}
+      ${partyToStart.length > 0 && html`<${BirthdayBar} kids=${partyToStart} onStart=${() => startParty(partyToStart)} />`}
+      ${!partyToStart.length && partyDone.length > 0 && !doux && html`<${BirthdayBar} kids=${partyDone} done=${true} onStart=${() => { sfx.tap(); showOverlay('anniversaire', { childIds: partyDone.map((k) => k.id), gifts: null }); }} />`}
       ${routine === 'matin' && date === today && html`<${DepartureBar} date=${date} />`}
       ${evening && kids.length > 1 && html`<${TeamCardBar} level=${teamCard} ready=${allDone} onOpen=${() => { sfx.tap(); setTeamCardOpen(true); }} />`}
       ${fact && allDone && html`<${FunFactBar} onOpen=${() => { sfx.tap(); showOverlay('funfact', { themeId: themeEntry.theme, fact }); }} />`}

@@ -2,7 +2,8 @@
 // Elles prennent l'état (ou une partie) et renvoient des valeurs calculées,
 // ce qui les rend testables (tests/index.html) et identiques en démo et en cloud.
 
-import { weekday, addDays, toISODate } from './lib/dates.js';
+import { weekday, addDays, toISODate, daysBetween, eveningDate } from './lib/dates.js';
+import { MORNING_END_HOUR } from './config.js';
 
 // La note d'une tâche dit si l'enfant a coopéré. Les valeurs green/orange/red restent celles de la base
 // (et de l'historique) ; « pause » = pas ce soir (une crise, un moment difficile), sans note.
@@ -46,6 +47,8 @@ export const DEFAULT_SETTINGS = {
   firstDay: null,
   greeted: null,
   firstEvening: null,
+  // Le soir de son anniversaire, l'enfant reçoit ces pandi (en plus d'un cadeau choisi dans tout le catalogue)
+  birthday: { pandi: 50 },
 };
 
 // Deux routines : le soir et le matin avant l'école. Même barème, même cagnotte, mêmes défis.
@@ -72,6 +75,7 @@ export function mergeSettings(settings) {
     surprises: Array.isArray(s.surprises) ? s.surprises : [],
     privileges: Array.isArray(s.privileges) ? s.privileges : null,
     themes: Array.isArray(s.themes) ? s.themes : [],
+    birthday: { ...DEFAULT_SETTINGS.birthday, ...(s.birthday || {}) },
   };
 }
 
@@ -114,8 +118,8 @@ export function findRating(ratings, childId, taskId, date) {
 // Le barème des petits va jusqu'à 5 ans ; âge inconnu = barème des grands
 export const PETIT_AGE = 6;
 export function scaleOf(child) {
-  const age = Number(child?.age);
-  return child?.age != null && child.age !== '' && age > 0 && age < PETIT_AGE ? 'petit' : 'grand';
+  const age = ageOf(child);
+  return age != null && age < PETIT_AGE ? 'petit' : 'grand';
 }
 
 export function pointsFor(color, settings, child = null) {
@@ -833,3 +837,121 @@ export function applyThemeOp(list, desc) {
 
 // Les listes des réglages qu'on modifie par petites opérations rejouables (voir actions.js)
 export const LIST_OPS = { surprises: applySurpriseOp, themes: applyThemeOp };
+
+// --- Âge et anniversaire ------------------------------------------------------------------------------
+// La date de naissance (children.birthdate, AAAA-MM-JJ) donne l'âge ; sans elle, l'âge saisi à la main
+// (children.age, que l'app garde à jour : les anciennes versions et les statistiques le lisent).
+// Le soir de son anniversaire, l'enfant reçoit settings.birthday.pandi pandi et choisit un cadeau dans
+// tout le catalogue (même pendant un thème) ; Pandi, déguisé, lui souhaite joyeux anniversaire et danse
+// avec lui sous les feux d'artifice ; sa scène a un fond de fête jusqu'au lendemain 13 h (début de la
+// routine du soir), puis retrouve son décor : sa tenue n'est jamais modifiée. Un soir sans routine
+// (Chabbat, sortie) : la fête a lieu au premier soir de routine, jusqu'à 7 jours après. Une fois par an :
+// la ligne birthday-<enfant>-<année> (kind 'birthday', evening_date = le soir de la fête) dit qu'elle a eu lieu.
+export const BIRTHDAY_GRACE = 7;
+export const BIRTHDAY_BG = 'anniversaire'; // le fond de fête (js/avatar/items.js, hors boutique)
+const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
+export const validBirthdate = (iso, today = toISODate(new Date())) => ISO_DAY.test(String(iso || '')) && iso >= '2000-01-01' && iso <= today;
+
+// L'âge à une date donnée (null sans date de naissance, ou avant la naissance)
+export function ageOn(birthdate, dateISO) {
+  const b = ISO_DAY.exec(String(birthdate || '').slice(0, 10));
+  const d = ISO_DAY.exec(String(dateISO || '').slice(0, 10));
+  if (!b || !d) return null;
+  const age = Number(d[1]) - Number(b[1]) - (d[2] + d[3] < b[2] + b[3] ? 1 : 0);
+  return age >= 0 ? age : null;
+}
+
+export function ageOf(child, today = toISODate(new Date())) {
+  const fromDate = ageOn(child?.birthdate, today);
+  if (fromDate != null) return fromDate;
+  const age = Number(child?.age);
+  return child?.age != null && child.age !== '' && age > 0 ? age : null;
+}
+
+// L'anniversaire d'une année (né un 29 février : le 28 les autres années)
+export function birthdayIn(birthdate, year) {
+  const [, m, d] = String(birthdate).slice(0, 10).split('-');
+  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  return `${year}-${m}-${m === '02' && d === '29' && !leap ? '28' : d}`;
+}
+
+// Le dernier anniversaire à cette date ou avant (null avant le premier)
+export function lastBirthday(birthdate, dateISO) {
+  if (ageOn(birthdate, dateISO) == null) return null;
+  const year = Number(dateISO.slice(0, 4));
+  const here = birthdayIn(birthdate, year);
+  const date = here <= dateISO ? here : birthdayIn(birthdate, year - 1);
+  return date > String(birthdate).slice(0, 10) ? date : null;
+}
+
+// Le prochain anniversaire (aujourd'hui compris), l'âge qu'il fêtera et dans combien de jours
+export function nextBirthday(child, today = toISODate(new Date())) {
+  if (!child?.birthdate || ageOn(child.birthdate, today) == null) return null;
+  const year = Number(today.slice(0, 4));
+  let date = birthdayIn(child.birthdate, year);
+  if (date < today) date = birthdayIn(child.birthdate, year + 1);
+  return { date, age: ageOn(child.birthdate, date), days: daysBetween(today, date) };
+}
+
+export const birthdayRowId = (childId, year) => `birthday-${childId}-${year}`;
+
+// Des routines du soir ont-elles eu lieu pour cet enfant entre deux soirs (inclus) ?
+function eveningsRun(state, childId, from, to) {
+  if (to < from) return false;
+  const evening = new Set(state.tasks.filter((t) => routineOf(t) === 'soir').map((t) => t.id));
+  return state.ratings.some((r) => r.child_id === childId && r.evening_date >= from && r.evening_date <= to && evening.has(r.task_id));
+}
+
+// L'anniversaire d'un enfant vu d'une soirée (evening = la date de la soirée, voir eveningDate) :
+// { year, date, age, row (la ligne des pandi, si la fête a eu lieu), party (le soir de la fête, ou null),
+//   tonight (la fête est à lancer ce soir), gift (l'objet choisi en cadeau, ou null) }
+// La fête n'est rattrapée que si aucune routine du soir n'a eu lieu depuis l'anniversaire (sinon, c'est
+// que la date de naissance a été saisie après coup : pas de fête surprise des jours plus tard).
+export function birthdayOf(child, state, evening) {
+  if (!child?.birthdate || child.archived) return null;
+  const date = lastBirthday(child.birthdate, evening);
+  if (!date) return null;
+  const year = Number(date.slice(0, 4));
+  const row = state.ledger.find((l) => l.id === birthdayRowId(child.id, year)) || null;
+  const since = daysBetween(date, evening);
+  const tonight = !row && since <= BIRTHDAY_GRACE && !eveningsRun(state, child.id, date, addDays(evening, -1));
+  const gift = state.owned.find((o) => o.child_id === child.id && o.source === 'birthday' && o.created_at && toISODate(new Date(o.created_at)) >= date);
+  return { year, date, age: ageOn(child.birthdate, date), row, party: row?.evening_date || (tonight ? evening : null), tonight, gift: gift?.item_id || null };
+}
+
+// L'anniversaire en ce moment. festive : le fond de fête (le jour et le soir de la fête, jusqu'au
+// lendemain 13 h) ; giftDue : la fête a eu lieu, le cadeau n'est pas encore choisi ; fullShop : la
+// boutique montre tout le catalogue (même pendant un thème)
+export function birthdayNow(child, state, now = new Date()) {
+  const evening = eveningDate(now);
+  const b = birthdayOf(child, state, evening);
+  if (!b) return null;
+  const festive = Boolean(b.party && (b.party === evening || (addDays(b.party, 1) === evening && new Date(now).getHours() < MORNING_END_HOUR)));
+  const giftDue = Boolean(b.row && !b.gift);
+  return { ...b, evening, festive, giftDue, fullShop: festive || giftDue };
+}
+
+// Les enfants dont la fête est à lancer ce soir
+export const birthdaysTonight = (state, now = new Date()) => activeChildren(state.children).filter((c) => birthdayNow(c, state, now)?.tonight);
+
+// Les soirs de fête : Pandi porte sa tenue d'anniversaire sur tous les écrans ces soirs-là
+export const partyEvenings = (state, now = new Date()) => [...new Set(activeChildren(state.children).map((c) => birthdayNow(c, state, now)?.party).filter(Boolean))];
+
+// La fête commence : les pandi d'anniversaire (une seule fois par an et par enfant)
+export function applyBirthday(state, { familyId, childId, now = new Date() }) {
+  const child = state.children.find((c) => c.id === childId);
+  const b = child && birthdayNow(child, state, now);
+  if (!b?.tonight) return { error: 'Pas d’anniversaire à fêter ce soir.' };
+  const amount = Math.max(0, Math.round(Number(mergeSettings(state.settings).birthday.pandi) || 0));
+  const row = {
+    id: birthdayRowId(childId, b.year),
+    family_id: familyId,
+    child_id: childId,
+    kind: 'birthday',
+    amount,
+    evening_date: b.evening,
+    note: b.age ? `Joyeux anniversaire ! ${b.age} ans 🎂` : 'Joyeux anniversaire ! 🎂',
+    created_at: new Date(now).toISOString(),
+  };
+  return { row, amount, age: b.age, ledger: [...state.ledger, row], ops: [{ op: 'put', table: 'ledger', rows: [row] }] };
+}

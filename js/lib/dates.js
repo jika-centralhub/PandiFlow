@@ -57,6 +57,9 @@ export function addDays(iso, days) {
   return toISODate(d);
 }
 
+// Nombre de jours de a à b (b après a : positif)
+export const daysBetween = (a, b) => Math.round((fromISODate(b) - fromISODate(a)) / 864e5);
+
 // 0 = dimanche … 6 = samedi (comme Date.getDay)
 export function weekday(iso) {
   return fromISODate(iso).getDay();

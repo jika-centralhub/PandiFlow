@@ -148,10 +148,11 @@ export function confettiBurst(el, colors) {
   });
 }
 
-export async function fireworks(duration = 2600) {
+// every : un bouquet toutes les every ms ; boom : le son de chaque bouquet ; alive() : false arrête le spectacle
+export async function fireworks(duration = 2600, { every = 380, boom = sfx.pop, alive = () => true } = {}) {
   if (prefersReducedMotion() || !conf()) return;
   const end = Date.now() + duration;
-  while (Date.now() < end) {
+  while (Date.now() < end && alive()) {
     conf()({
       particleCount: 60,
       startVelocity: 30,
@@ -162,8 +163,8 @@ export async function fireworks(duration = 2600) {
       colors: ['#FFD23F', '#FF7EB6', '#5EC8FF', '#2FCF74', '#FFFFFF'],
       zIndex: 65,
     });
-    sfx.pop();
-    await sleep(380);
+    boom?.();
+    await sleep(every);
   }
 }
 

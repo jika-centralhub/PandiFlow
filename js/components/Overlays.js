@@ -13,6 +13,7 @@ import { sleep } from '../lib/util.js';
 import { ROUTINES } from '../domain.js';
 import { Bonjour, FirstEveningOverlay } from './Decouverte.js';
 import { FunFact } from './ThemeAsk.js';
+import { BirthdayParty } from './Anniversaire.js';
 
 let queue = [];
 
@@ -40,6 +41,7 @@ export function OverlayHost() {
   if (overlay.type === 'bonjour') return html`<${Bonjour} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
   if (overlay.type === 'premiere') return html`<${FirstEveningOverlay} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
   if (overlay.type === 'funfact') return html`<${FunFact} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
+  if (overlay.type === 'anniversaire') return html`<${BirthdayParty} key=${overlay.key} ...${overlay.data} onClose=${closeOverlay} />`;
   return null;
 }
 

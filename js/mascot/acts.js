@@ -607,6 +607,36 @@ export const ACTS = {
     },
   },
 
+  // Joyeux anniversaire ! il danse sur la chanson (deux temps par seconde) : les hanches qui balancent,
+  // un bras levé puis l'autre, de petits pas, des confettis
+  danse: {
+    pose(t, P) {
+      const b = t * 2; // les temps
+      const sway = Math.sin(b * Math.PI);
+      const arm = Math.sin(b * Math.PI * 0.5);
+      const up = V(0.62, 1.12, 0.3), hip = V(0.5, 0.12, 0.3);
+      const pump = Math.abs(Math.sin(b * Math.PI)) * 0.06;
+      P.side = sway * 0.1;
+      P.twist = sway * 0.16;
+      P.rootX = sway * 0.05;
+      P.rootY = Math.abs(sway) * 0.035;
+      P.squash = -Math.abs(Math.cos(b * Math.PI)) * 0.03;
+      P.headZ = -sway * 0.14;
+      P.headX = -0.08 + Math.abs(Math.cos(b * Math.PI)) * 0.06;
+      P.handR.lerpVectors(hip, up, Math.max(0, arm)).add(V(0, pump, 0));
+      P.handL.lerpVectors(hip.clone().setX(-hip.x), up.clone().setX(-up.x), Math.max(0, -arm)).add(V(0, pump, 0));
+      P.poleR.set(1, -0.6, -0.2);
+      P.poleL.set(-1, -0.6, -0.2);
+      P.legR = Math.max(0, sway) * 0.22;
+      P.legL = Math.max(0, -sway) * 0.22;
+      P.energy = 0.9;
+      face(P, { open: 0.06, smile: 1, wide: 1.1, teeth: 0.4, tongue: 1, lidUp: 0.1, lidLo: 0.8 });
+      if (t % 4 < 0.05) P.cue = 'rire';
+      emit(P, { kind: 'emoji', ch: '🎉', rate: 1.1, at: [0, 1.7, 0.3], spread: 1.1, size: 0.18 });
+      emit(P, { kind: 'emoji', ch: '🎈', rate: 0.5, at: [0, 1.5, 0.3], spread: 1.2, size: 0.16 });
+    },
+  },
+
   // Pas mal ! il applaudit et hoche la tête pour encourager
   ok: {
     pose(t, P) {

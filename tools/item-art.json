@@ -629,6 +629,14 @@
       "quality": "high",
       "key": "none",
       "prompt": "A warm cozy family dining room on Friday evening for Shabbat: at the back a table with a white tablecloth, a braided challah bread under an embroidered cover, a silver cup and a vase of flowers, no candles on that table, warm golden lamplight, a window showing a soft evening sky, and a flat empty warm wooden floor in the lower part. No letters and no writing anywhere."
+    },
+    {
+      "id": "fond_anniversaire",
+      "style": "scenery",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "An uninhabited cheerful birthday party room for a child, environment only, like an empty film set waiting for its characters: soft pink and lilac walls, colorful triangle bunting garlands and curly paper streamers hanging across the top, big glossy balloon bunches in cherry red, sunny yellow, sky blue and lilac floating on both sides, sparkling confetti in the air, a few wrapped gift boxes with shiny ribbons and a small round table with a birthday cake with lit candles far on one side, warm golden party lights, and a flat empty polished wooden floor with a few scattered confetti in the lower part. Nobody in the room: no child, no animal, no character. No letters and no writing anywhere."
     }
   ]
 }

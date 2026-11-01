@@ -1,0 +1,84 @@
+/* L'anniversaire : le bandeau de la routine du soir et la fête (js/components/Anniversaire.js) */
+
+/* La date de naissance (fiche de l'enfant, assistant de démarrage) et l'âge qui en est calculé */
+.birthdate-input { display: inline-flex; align-items: center; flex-wrap: wrap; gap: calc(var(--u) * 1.6); }
+.date-input { width: auto; min-width: calc(var(--u) * 38); }
+.bd-age { padding: calc(var(--u) * .6) calc(var(--u) * 2.2); border-radius: 999px; background: #f3effd; color: var(--ink); font-weight: 700; font-size: calc(var(--u) * 3.4); white-space: nowrap; }
+.ac-age-label { font-size: calc(var(--u) * 3.2); color: var(--ink-soft); white-space: nowrap; }
+.bd-bar { box-shadow: inset 0 0 0 2px rgba(255, 143, 200, .75), 0 calc(var(--u) * 1.4) calc(var(--u) * 5) rgba(0, 0, 0, .3); }
+.bd-bar.done { background: rgba(42, 35, 80, .8); }
+.bd-ico { animation: bd-candle 1.4s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes bd-candle { 0%, 100% { transform: rotate(0) scale(1); } 30% { transform: rotate(-6deg) scale(1.06); } 60% { transform: rotate(5deg); } }
+
+/* La fête : un fond opaque (pas de flou : le téléphone chauffe moins) */
+/* (centrée par les marges auto du titre et des boutons : sur un petit écran, elle défile depuis le haut) */
+.bd-party { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  gap: calc(var(--u) * 2.4); padding: calc(var(--u) * 4); overflow: auto; color: #fff; animation: fade-in .4s ease;
+  background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--kid), transparent 55%), transparent 58%),
+    radial-gradient(circle at 18% 18%, rgba(255, 143, 200, .35), transparent 40%), radial-gradient(circle at 84% 22%, rgba(94, 200, 255, .3), transparent 42%),
+    linear-gradient(180deg, #2A1B6E, #120C3C); }
+
+/* Une guirlande de lampions qui clignotent en haut de l'écran */
+.bd-lights { position: absolute; top: 0; left: 0; right: 0; height: calc(var(--u) * 12); display: flex; justify-content: space-around; align-items: flex-start; pointer-events: none;
+  background: radial-gradient(ellipse 60% 100% at 50% -60%, transparent 70%, rgba(255, 243, 214, .5) 71%, transparent 72%); }
+.bd-lights i { width: calc(var(--u) * 2.6); height: calc(var(--u) * 3.4); margin-top: calc(var(--u) * (2 + 3 * sin(var(--i) * 0.45rad))); border-radius: 50% 50% 45% 45%;
+  background: hsl(calc(var(--i) * 47deg) 95% 65%); box-shadow: 0 0 calc(var(--u) * 2.4) hsl(calc(var(--i) * 47deg) 95% 65%);
+  animation: bd-blink 1.2s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -.37s); }
+@keyframes bd-blink { from { opacity: .35; } to { opacity: 1; } }
+
+.bd-title { font-size: calc(var(--u) * 8); line-height: 1.05; text-align: center; color: #FFE27A;
+  text-shadow: 0 calc(var(--u) * .6) 0 #C0397A, 0 calc(var(--u) * 1.6) calc(var(--u) * 4) rgba(0, 0, 0, .45);
+  animation: bd-pop .8s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes bd-pop { from { transform: scale(.4); opacity: 0; } }
+
+.bd-stage { display: flex; align-items: flex-end; justify-content: center; gap: calc(var(--u) * 3); }
+.bd-pandi { width: calc(var(--u) * 38); height: calc(var(--u) * 44); flex: none; }
+.bd-pandi .pandi3d, .bd-pandi .mascot { width: 100%; height: 100%; }
+.bd-kid { position: relative; display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * .6);
+  animation: bj-hop .7s cubic-bezier(.3, 1.6, .5, 1) both; animation-delay: calc(.4s + var(--i) * .25s); }
+.bd-kid .avatar { width: 100%; flex: 1; min-height: 0; }
+.bd-kid > span:not(.bd-crown) { font-weight: 700; font-size: calc(var(--u) * 4.4); color: var(--kid); text-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+.bd-star { width: calc(var(--u) * 28); height: calc(var(--u) * 44); }
+.bd-other { width: calc(var(--u) * 19); height: calc(var(--u) * 31); }
+.bd-crown { position: absolute; top: calc(var(--u) * -4); left: 50%; z-index: 1; font-size: calc(var(--u) * 7); transform: translateX(-50%);
+  animation: bd-crown 1s ease-in-out infinite alternate; }
+@keyframes bd-crown { from { transform: translateX(-50%) translateY(0) rotate(-8deg); } to { transform: translateX(-50%) translateY(calc(var(--u) * -1.4)) rotate(8deg); } }
+.bd-kid .pandi-counter { margin-top: calc(var(--u) * .4); }
+
+.bd-bubble { max-width: calc(var(--u) * 160); }
+.bd-party .bd-title { margin-top: auto; }
+.bd-party .sheet-actions { flex-wrap: wrap; justify-content: center; margin-bottom: auto; }
+.bd-party .btn-ghost { color: #fff; }
+
+@media (orientation: portrait) {
+  .bd-title { font-size: calc(var(--u) * 7); }
+  .bd-stage { flex-wrap: wrap; }
+  .bd-pandi { width: calc(var(--u) * 32); height: calc(var(--u) * 38); }
+  .bd-star { width: calc(var(--u) * 24); height: calc(var(--u) * 38); }
+}
+
+/* Téléphone en paysage (l'écran de la télé) : tout tient sur la hauteur, les boutons sur une ligne */
+@media (orientation: landscape) and (max-height: 520px) {
+  .bd-party { gap: calc(var(--u) * 1.6); padding: calc(var(--u) * 3); }
+  .bd-lights { height: calc(var(--u) * 8); }
+  .bd-title { font-size: calc(var(--u) * 6.4); }
+  .bd-pandi { width: calc(var(--u) * 32); height: calc(var(--u) * 36); }
+  .bd-star { width: calc(var(--u) * 24); height: calc(var(--u) * 37); }
+  .bd-other { width: calc(var(--u) * 17); height: calc(var(--u) * 27); }
+  .bd-crown { font-size: calc(var(--u) * 5.4); top: calc(var(--u) * -2.6); }
+  .bd-kid > span:not(.bd-crown) { font-size: calc(var(--u) * 3.8); }
+  .bd-bubble { padding: calc(var(--u) * 2.2) calc(var(--u) * 4); font-size: calc(var(--u) * 3.7); }
+  .bd-party .sheet-actions { gap: calc(var(--u) * 1.6); margin-top: 0; }
+  .bd-party .btn-big { padding-block: calc(var(--u) * 2.4); font-size: calc(var(--u) * 4.2); }
+}
+
+/* La boutique le jour de l'anniversaire : le cadeau à choisir dans tout le catalogue */
+.bd-gift { margin: calc(var(--u) * 1) 0 calc(var(--u) * 3); padding: calc(var(--u) * 3) calc(var(--u) * 3.4); border-radius: calc(var(--u) * 5);
+  background: linear-gradient(135deg, #FF8FC8, #8E6CFF); color: #fff; box-shadow: 0 calc(var(--u) * 1) calc(var(--u) * 4) rgba(142, 108, 255, .35); }
+.bd-gift h3 { font-size: calc(var(--u) * 4.6); }
+.bd-gift p { margin-top: calc(var(--u) * 1); font-size: calc(var(--u) * 3.5); opacity: .95; }
+.bd-got { margin: 0 0 calc(var(--u) * 3); font-weight: 600; color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bd-lights i, .bd-crown, .bd-ico { animation: none; }
+}

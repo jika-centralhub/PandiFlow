@@ -3,9 +3,9 @@ import { eveningDate, addDays, weekday, currentRoutine, routineDate, atTime, nex
 import * as cd from '../js/lib/countdown.js';
 import { sha256Bytes, hashPin } from '../js/lib/pin.js';
 import { normalizeLook, DEFAULT_LOOK, randomLook } from '../js/avatar/palette.js';
-import { getItem, offeredTo, starredFor, rayonOf } from '../js/avatar/items.js';
+import { getItem, offeredTo, starredFor, rayonOf, birthdayGifts, shopItems } from '../js/avatar/items.js';
 import { THEME_CATALOG, getTheme, giftOptions, vitrineItems, themeLooks, GIFT_MAX, waitsForTheme, funFact } from '../js/avatar/themes.js';
-import { setThemeLooks, themeLookFor } from '../js/mascot/themeLook.js';
+import { setThemeLooks, themeLookFor, BIRTHDAY_LOOK } from '../js/mascot/themeLook.js';
 import * as w from '../js/avatar/wear.js';
 import { buildFamilySeed, fitsAge, eveBefore } from '../js/lib/seed.js';
 
@@ -908,6 +908,102 @@ test('première soirée : le mot une seule fois, pour une famille venue de l’a
   ok(!d.firstEveningDue({ ...st, settings: d.mergeSettings({ firstDay: '2026-10-27', firstEvening: '2026-10-27' }) }, '2026-10-27'), 'déjà montré');
   ok(!d.firstEveningDue({ ...st, settings: d.mergeSettings({ firstDay: '2026-10-28' }) }, '2026-10-27'), 'une soirée d’avant le premier jour');
   eq([d.mergeSettings({}).firstDay, d.mergeSettings({}).greeted, d.mergeSettings({}).firstEvening], [null, null, null]);
+});
+
+// --- Âge et anniversaire -----------------------------------------------------------------------------
+const at = (iso, h = 19) => new Date(`${iso}T${String(h).padStart(2, '0')}:00:00`);
+function bdState(extra = {}) {
+  return {
+    settings: d.mergeSettings({}),
+    children: [{ id: 'a', name: 'Léa', birthdate: '2019-11-03', sex: 'fille' }, { id: 'b', name: 'Noé', age: 5 }],
+    tasks: [{ id: 's1', title: 'Dents', routine: 'soir', active: true }, { id: 'm1', title: 'Habits', routine: 'matin', active: true }],
+    childTasks: [],
+    ratings: [],
+    ledger: [],
+    owned: [],
+    ...extra,
+  };
+}
+
+test('âge : calculé depuis la date de naissance, sinon l’âge saisi ; 29 février fêté le 28 les autres années', () => {
+  eq(d.ageOn('2019-11-03', '2026-11-02'), 6);
+  eq(d.ageOn('2019-11-03', '2026-11-03'), 7);
+  eq(d.ageOn('2019-11-03', '2019-11-02'), null, 'avant la naissance');
+  eq(d.ageOf({ birthdate: '2021-06-02', age: 9 }, '2026-11-01'), 5, 'la date passe avant la colonne');
+  eq(d.ageOf({ age: 4 }), 4);
+  eq(d.ageOf({ age: null }), null);
+  eq(d.scaleOf({ birthdate: '2021-06-02' }), 'petit');
+  eq(d.scaleOf({}), 'grand');
+  eq(d.birthdayIn('2020-02-29', 2027), '2027-02-28');
+  eq(d.birthdayIn('2020-02-29', 2028), '2028-02-29');
+  eq(d.lastBirthday('2019-11-03', '2027-01-10'), '2026-11-03');
+  eq(d.lastBirthday('2019-11-03', '2019-12-01'), null, 'pas encore de premier anniversaire');
+  eq(d.nextBirthday({ birthdate: '2019-11-03' }, '2026-11-01'), { date: '2026-11-03', age: 7, days: 2 });
+  ok(d.validBirthdate('2019-11-03', '2026-11-01') && !d.validBirthdate('2027-01-01', '2026-11-01') && !d.validBirthdate('', '2026-11-01'));
+  ok(fitsAge({ minAge: 6 }, { birthdate: '2019-11-03' }) && !fitsAge({ minAge: 6 }, { birthdate: '2021-06-02' }), 'les idées de tâches suivent la date');
+});
+
+test('anniversaire : la fête le soir même, une fois par an, avec les pandi des réglages', () => {
+  const st = bdState();
+  ok(!d.birthdayNow(st.children[0], st, at('2026-11-02'))?.tonight, 'la veille : rien');
+  const b = d.birthdayNow(st.children[0], st, at('2026-11-03'));
+  ok(b.tonight && b.festive && !b.giftDue, 'le soir même : fête à lancer, fond de fête');
+  eq(d.birthdaysTonight(st, at('2026-11-03')).map((k) => k.id), ['a']);
+  const res = d.applyBirthday(st, { familyId: 'f', childId: 'a', now: at('2026-11-03') });
+  eq([res.row.id, res.row.kind, res.row.amount, res.row.evening_date, res.age], ['birthday-a-2026', 'birthday', 50, '2026-11-03', 7]);
+  const after = { ...st, ledger: res.ledger };
+  ok(d.applyBirthday(after, { familyId: 'f', childId: 'a', now: at('2026-11-03', 21) }).error, 'pas deux fois');
+  eq(d.balance('a', after), 50);
+  const b2 = d.birthdayNow(st.children[0], after, at('2026-11-03', 21));
+  ok(!b2.tonight && b2.festive && b2.giftDue && b2.fullShop, 'fête lancée : le cadeau à choisir');
+  const other = d.applyBirthday({ ...st, settings: d.mergeSettings({ birthday: { pandi: 30 } }) }, { familyId: 'f', childId: 'a', now: at('2026-11-03') });
+  eq(other.amount, 30);
+  ok(d.applyBirthday(st, { familyId: 'f', childId: 'b', now: at('2026-11-03') }).error, 'sans date de naissance : pas de fête');
+});
+
+test('anniversaire : le fond de fête jusqu’au lendemain 13 h, le cadeau attend d’être choisi', () => {
+  const st = bdState();
+  const after = { ...st, ledger: d.applyBirthday(st, { familyId: 'f', childId: 'a', now: at('2026-11-03') }).ledger };
+  const kid = st.children[0];
+  ok(d.birthdayNow(kid, after, at('2026-11-04', 2)).festive, 'après minuit, c’est encore la soirée');
+  ok(d.birthdayNow(kid, after, at('2026-11-04', 8)).festive, 'le lendemain matin');
+  const next = d.birthdayNow(kid, after, at('2026-11-04', 14));
+  ok(!next.festive && next.giftDue && next.fullShop, 'le lendemain soir : le décor revient, le cadeau attend encore');
+  const withGift = { ...after, owned: [{ child_id: 'a', item_id: 'kart', source: 'birthday', created_at: at('2026-11-04', 15).toISOString() }] };
+  const done = d.birthdayNow(kid, withGift, at('2026-11-04', 16));
+  ok(!done.giftDue && !done.fullShop && done.gift === 'kart', 'cadeau choisi : la boutique redevient normale');
+  ok(!d.birthdayNow(kid, { ...after, owned: [{ child_id: 'a', item_id: 'kart', source: 'gift', created_at: at('2026-11-04', 15).toISOString() }] }, at('2026-11-04', 16)).gift, 'un cadeau de thème ne compte pas');
+  eq(d.partyEvenings(after, at('2026-11-03', 20)), ['2026-11-03']);
+});
+
+test('anniversaire : un soir sans routine (Chabbat), la fête a lieu le soir suivant ; pas de fête après coup', () => {
+  const st = bdState();
+  const kid = st.children[0];
+  const late = d.birthdayNow(kid, st, at('2026-11-05'));
+  ok(late.tonight && late.party === '2026-11-05', 'deux soirs plus tard, sans routine entre-temps');
+  ok(!d.birthdayNow(kid, st, at('2026-11-11'))?.tonight, 'plus de 7 jours après : non');
+  const ran = { ...st, ratings: [{ child_id: 'a', task_id: 's1', evening_date: '2026-11-03', color: 'green', points: 3 }] };
+  ok(!d.birthdayNow(kid, ran, at('2026-11-05'))?.tonight, 'des routines ont eu lieu depuis : la date a été saisie après coup');
+  const morning = { ...st, ratings: [{ child_id: 'a', task_id: 'm1', evening_date: '2026-11-04', color: 'green', points: 3 }] };
+  ok(d.birthdayNow(kid, morning, at('2026-11-05')).tonight, 'une routine du matin ne compte pas');
+  ok(d.birthdayNow(kid, st, at('2026-11-03', 9)).festive, 'le matin de l’anniversaire, le fond de fête est déjà là');
+});
+
+test('anniversaire : le cadeau se choisit dans toute la boutique, sauf ce qu’il a déjà et ce qui ne s’achète pas', () => {
+  const list = birthdayGifts({ sex: 'fille' }, new Set(['kart']));
+  ok(list.length > 100, 'tout le catalogue');
+  ok(!list.some((it) => it.id === 'kart'), 'pas un objet déjà à lui');
+  ok(!list.some((it) => it.exclusive || it.slot === 'magic'), 'ni trésor de défi ni objet hors boutique');
+  ok(!list.some((it) => it.id === 'anniversaire'), 'le fond de fête n’est pas en vente');
+  ok(list.some((it) => it.price >= 500), 'même les plus chers');
+  ok(getItem('anniversaire')?.slot === 'bg' && !shopItems().some((it) => it.id === 'anniversaire'));
+});
+
+test('anniversaire : Pandi porte sa tenue de fête ce soir-là, avant celle du thème', () => {
+  setThemeLooks([{ start: '2026-11-03', end: '2026-11-03', look: BIRTHDAY_LOOK }, { start: '2026-11-01', end: '2026-11-07', look: { tete: 'antennes' } }]);
+  eq(themeLookFor('2026-11-03'), BIRTHDAY_LOOK);
+  eq(themeLookFor('2026-11-04'), { tete: 'antennes' });
+  setThemeLooks([]);
 });
 
 // --- Affichage ------------------------------------------------------------------------------------
