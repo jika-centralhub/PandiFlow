@@ -3,7 +3,8 @@
 //     télé (il faut aussi un geste pour que le téléphone ait le droit de chanter et de parler) ;
 //   - la fête : Pandi, déguisé, souhaite joyeux anniversaire et danse avec l'enfant (son frère ou sa
 //     sœur danse à côté) sur la chanson, sous les feux d'artifice ; puis les pandi d'anniversaire volent
-//     jusqu'à sa cagnotte et Pandi annonce le cadeau à choisir dans toute la boutique.
+//     jusqu'à sa cagnotte et Pandi annonce le cadeau à choisir dans toute la boutique. Sur cet écran des
+//     cadeaux, seul l'enfant fêté reste (choix des parents : que l'autre ne voie pas « +50 » chez lui).
 // Rejouée (replay), la fête ne redonne rien : la chanson, la danse et le feu d'artifice seulement.
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js';
 import { getState } from '../lib/store.js';
@@ -125,7 +126,7 @@ export function BirthdayParty({ childIds = [], gifts = null, onClose }) {
     <div class="bd-lights" aria-hidden="true">${Array.from({ length: 14 }, (_, i) => html`<i key=${i} style=${{ '--i': i }} />`)}</div>
     <h1 class="bd-title"><span aria-hidden="true">🎂</span> ${text.wish}</h1>
     <div class="bd-stage">
-      ${others.slice(0, 2).map((k, i) => html`<div key=${k.id} class="bd-kid bd-other" style=${{ '--kid': k.color, '--i': i, order: i ? 4 : 0 }}>
+      ${(phase !== 'cadeaux' || !gifts) && others.slice(0, 2).map((k, i) => html`<div key=${k.id} class="bd-kid bd-other" style=${{ '--kid': k.color, '--i': i, order: i ? 4 : 0 }}>
         <${Avatar} look=${k.look} equipped=${k.equipped} expr="joy" pose="dance" mode="full" seed=${k.id} class="overflow" />
         <span>${k.name}</span>
       </div>`)}

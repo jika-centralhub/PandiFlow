@@ -29,6 +29,7 @@ export const ART = {
   etoiles: [640, 270],
   fee: [640, 409],
   fleurs: [640, 303],
+  fond_anniversaire: [640, 960],
   fond_arcenciel: [640, 960],
   fond_caserne: [640, 960],
   fond_chabbat: [640, 960],
