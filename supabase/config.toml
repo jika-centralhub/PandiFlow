@@ -1,9 +1,10 @@
 # Réglages Supabase du projet Pandi, envoyés avec :
 #   supabase config push --project-ref kyhhkhmwdostzdaksxzw
-# Seules les propriétés déclarées ici sont modifiées sur le projet.
-# La connexion Google (identifiant et secret) se règle dans le tableau de bord
-# Supabase : Authentication > Sign In / Providers > Google. Elle n'est pas déclarée
-# ici pour que le secret ne soit jamais dans le dépôt.
+# Attention : l'outil complète ce fichier avec ses valeurs par défaut (durée de session, limites…)
+# et les envoie aussi. Seuls deux blocs restent intacts quand ils ne sont pas déclarés ici, et ils
+# se règlent dans le tableau de bord Supabase pour que leurs secrets ne soient jamais dans le dépôt :
+#   - la connexion Google : Authentication > Sign In / Providers > Google ;
+#   - l'envoi des e-mails par Brevo : Authentication > Emails > SMTP Settings.
 project_id = "pandiflow"
 
 [auth]
@@ -11,12 +12,27 @@ site_url = "https://www.pandiflow.com"
 additional_redirect_urls = ["https://www.pandiflow.com/**", "https://pandiflow.com/**", "http://localhost:8080/**"]
 minimum_password_length = 8
 
-# Connexion par e-mail et mot de passe. Pas d'e-mail de confirmation : le service d'e-mail
-# gratuit de Supabase n'écrit qu'aux membres de l'organisation. L'accès à une famille reste
-# protégé par les invitations à usage unique.
+# Connexion par e-mail et mot de passe. À l'inscription, l'adresse est confirmée par un code à
+# 6 chiffres envoyé par e-mail ; le mot de passe oublié passe aussi par un code. Pas de lien dans
+# les e-mails : sur iPhone, il s'ouvrirait dans Safari et pas dans l'icône de l'écran d'accueil.
+# Ces e-mails partent par Brevo (SMTP réglé dans le tableau de bord) : sans lui, Supabase n'écrit
+# qu'aux membres de l'organisation et refuse les modèles d'e-mails ci-dessous.
 [auth.email]
 enable_signup = true
-enable_confirmations = false
+enable_confirmations = true
+otp_length = 6
+# Durée de validité d'un code : 1 heure
+otp_expiry = 3600
+# Délai minimum entre deux e-mails à la même adresse (« Renvoyer le code »)
+max_frequency = "1m0s"
+
+[auth.email.template.confirmation]
+subject = "Ton code pour confirmer ton e-mail sur Pandi"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Ton code pour changer de mot de passe sur Pandi"
+content_path = "./supabase/templates/recovery.html"
 
 [functions.analyze-photo]
 # La fonction vérifie elle-même la session du parent

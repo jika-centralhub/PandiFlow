@@ -10,7 +10,7 @@ import { LandscapeOffer } from './components/Landscape.js';
 import { Evening } from './pages/Evening.js';
 import { ChildPage } from './pages/Child.js';
 import { ParentPage } from './pages/Parent.js';
-import { Login, NewPassword } from './pages/Login.js';
+import { Login } from './pages/Login.js';
 import { Setup } from './pages/Setup.js';
 import { Accueil } from './pages/Accueil.js';
 // La proposition d'installation du navigateur n'arrive qu'une fois au chargement : on l'écoute tout de suite
@@ -27,7 +27,6 @@ function Router() {
       <div class="sheet-actions"><button class="btn" onClick=${() => location.reload()}>Réessayer</button></div></div></div>`;
   }
   if (s.status === 'auth') return html`<${Login} />`;
-  if (s.status === 'recovery') return html`<${NewPassword} />`;
   if (s.status === 'setup') return html`<${Setup} />`;
   // L'assistant de démarrage continue après la création de la famille (sur cet appareil)
   if (inAccueil(s)) return html`<${Accueil} />`;

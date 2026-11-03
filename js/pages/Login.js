@@ -1,4 +1,7 @@
 // Connexion des parents : e-mail + mot de passe, ou compte Google quand il est activé dans Supabase.
+// Les e-mails (confirmer son adresse à l'inscription, mot de passe oublié) portent un code à 6 chiffres
+// à taper ici, pas un lien : sur iPhone, un lien s'ouvrirait dans Safari et pas dans l'icône de l'écran
+// d'accueil, qui a sa propre mémoire.
 import { html, useEffect, useState } from '../vendor/preact-htm.js';
 import * as actions from '../lib/actions.js';
 import { Pandi } from '../components/Coin.js';
@@ -26,19 +29,29 @@ const GOOGLE_G = html`<svg viewBox="0 0 48 48" width="28" height="28" aria-hidde
 // Messages de Supabase traduits pour les parents
 function frenchError(e) {
   const m = String(e?.message || '');
+  const both = `${m} ${e?.code || ''}`;
   if (/invalid login credentials/i.test(m)) return 'E-mail ou mot de passe incorrect.';
-  if (/already registered|already been registered|user_already_exists/i.test(m)) return 'Un compte existe déjà avec cet e-mail : connecte-toi.';
-  if (/password should be at least|weak.?password/i.test(m)) return 'Mot de passe trop court : 8 caractères minimum.';
-  if (/rate limit|too many|over_email_send_rate_limit/i.test(m)) return 'Trop d’essais. Patiente quelques minutes.';
+  if (/already registered|already been registered|user_already_exists/i.test(both)) return 'Un compte existe déjà avec cet e-mail : connecte-toi.';
+  if (/password should be at least|weak.?password/i.test(both)) return 'Mot de passe trop court : 8 caractères minimum.';
+  if (/different from the old password|same_password/i.test(both)) return "Choisis un mot de passe différent de l'ancien.";
+  if (/otp_expired|token has expired|invalid.*(otp|token)/i.test(both)) return 'Code incorrect ou expiré. Vérifie-le, ou demande un nouveau code.';
+  const wait = m.match(/after (\d+) seconds?/i);
+  if (wait) return `Patiente ${wait[1]} secondes avant de demander un nouveau code.`;
+  if (/rate limit|too many|over_email_send_rate_limit/i.test(both)) return 'Trop d’essais. Patiente quelques minutes.';
+  if (/error sending/i.test(m)) return "L'e-mail n'a pas pu partir. Réessaie dans un moment.";
   if (/invalid.*email|unable to validate email/i.test(m)) return 'Cette adresse e-mail ne semble pas valide.';
   if (/failed to fetch|network/i.test(m)) return 'Pas de connexion internet.';
   return m || 'Une erreur est survenue.';
 }
 
 const validEmail = (e) => /^\S+@\S+\.\S+$/.test(e.trim());
+const notConfirmed = (e) => e?.code === 'email_not_confirmed' || /email not confirmed/i.test(String(e?.message));
 
 export function Login() {
   const [mode, setMode] = useState('signin'); // signin | signup | forgot
+  // Un code attendu par e-mail : 'signup' (confirmer l'adresse) ou 'recovery' (mot de passe oublié)
+  const [pending, setPending] = useState(null);
+  const [code, setCode] = useState('');
   const [email, setEmail] = useState(localStorage.getItem('pandiflow-email') || '');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -76,29 +89,73 @@ export function Login() {
   function switchMode(m) {
     sfx.tap();
     setMode(m);
+    setPending(null);
+    setCode('');
     setError(null);
     setInfo(null);
+  }
+
+  // Un code part par e-mail : l'écran passe à sa saisie (et au nouveau mot de passe s'il est oublié)
+  function waitCode(kind, message = null) {
+    setPending(kind);
+    setCode('');
+    setPassword('');
+    setConfirm('');
+    setInfo(message);
   }
 
   async function submit(e) {
     e.preventDefault();
     setError(null);
     setInfo(null);
-    if (!validEmail(email)) return setError('Cette adresse e-mail ne semble pas valide.');
-    if (mode !== 'forgot' && password.length < 8) return setError('Mot de passe trop court : 8 caractères minimum.');
-    if (mode === 'signup' && password !== confirm) return setError('Les deux mots de passe ne sont pas identiques.');
+    if (pending) {
+      if (!/^\d{6}$/.test(code)) return setError('Le code reçu par e-mail a 6 chiffres.');
+      if (pending === 'recovery' && password.length < 8) return setError('Mot de passe trop court : 8 caractères minimum.');
+      if (pending === 'recovery' && password !== confirm) return setError('Les deux mots de passe ne sont pas identiques.');
+    } else {
+      if (!validEmail(email)) return setError('Cette adresse e-mail ne semble pas valide.');
+      if (mode !== 'forgot' && password.length < 8) return setError('Mot de passe trop court : 8 caractères minimum.');
+      if (mode === 'signup' && password !== confirm) return setError('Les deux mots de passe ne sont pas identiques.');
+    }
+    const address = email.trim();
     setBusy(true);
     try {
-      localStorage.setItem('pandiflow-email', email.trim());
-      if (mode === 'signin') await actions.signIn(email.trim(), password);
-      else if (mode === 'signup') await actions.signUp(email.trim(), password);
-      else {
-        await actions.sendPasswordReset(email.trim());
-        setInfo('Si un compte existe avec cette adresse, un e-mail avec un lien vient de partir. Ouvre-le sur cet appareil.');
+      localStorage.setItem('pandiflow-email', address);
+      if (pending === 'signup') await actions.confirmSignup(address, code);
+      else if (pending === 'recovery') await actions.resetPassword(address, code, password);
+      else if (mode === 'signin') await actions.signIn(address, password);
+      else if (mode === 'signup') {
+        if (await actions.signUp(address, password)) waitCode('signup');
+      } else {
+        await actions.sendPasswordReset(address);
+        waitCode('recovery');
       }
       sfx.sparkle();
     } catch (err) {
-      sfx.error();
+      if (!pending && mode === 'signin' && notConfirmed(err)) {
+        // Compte créé mais adresse pas encore confirmée : un nouveau code part, et on le demande
+        const sent = await actions.resendSignupCode(address).then(() => true, () => false);
+        waitCode('signup', `Ton adresse n'est pas encore confirmée${sent ? ' : un nouveau code vient de partir' : ''}.`);
+      } else {
+        sfx.error();
+        setError(frenchError(err));
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resend() {
+    sfx.tap();
+    setError(null);
+    setInfo(null);
+    setBusy(true);
+    try {
+      if (pending === 'signup') await actions.resendSignupCode(email.trim());
+      else await actions.sendPasswordReset(email.trim());
+      setCode('');
+      setInfo('Un nouveau code vient de partir.');
+    } catch (err) {
       setError(frenchError(err));
     } finally {
       setBusy(false);
@@ -115,6 +172,39 @@ export function Login() {
       setError(frenchError(err));
       setBusy(false);
     }
+  }
+
+  const errorLine = error && html`<p style="color:#b42536;font-weight:600;margin-bottom:10px">${error}</p>`;
+  const infoLine = info && html`<p style="color:#1a7a43;font-weight:600;margin-bottom:10px">${info}</p>`;
+
+  if (pending) {
+    const recovery = pending === 'recovery';
+    const address = html`<b>${email.trim()}</b>`;
+    return html`<div class="welcome page-enter">
+      <${Pandi} />
+      <form class="card sheet" onSubmit=${submit}>
+        <h2>${recovery ? 'Nouveau mot de passe' : 'Confirme ton e-mail'}</h2>
+        <p style="color:var(--ink);margin:8px 0 14px;line-height:1.4">${recovery
+          ? html`Si un compte existe avec ${address}, un code à 6 chiffres vient d'y partir. Tape-le ici, puis choisis ton nouveau mot de passe.`
+          : html`Un code à 6 chiffres a été envoyé à ${address}. Tape-le ici pour confirmer ton adresse.`}</p>
+        <div class="field"><label>Code reçu par e-mail</label>
+          <input class="input code" inputmode="numeric" autocomplete="one-time-code" maxLength="6" value=${code} onInput=${(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="••••••" /></div>
+        ${recovery && html`<div class="field"><label>Nouveau mot de passe (8 caractères minimum)</label>
+          <div style="display:flex;gap:8px">
+            <input class="input" type=${show ? 'text' : 'password'} autocomplete="new-password" value=${password} onInput=${(e) => setPassword(e.target.value)} />
+            <button type="button" class="p-btn" onClick=${() => setShow(!show)} aria-label="Afficher le mot de passe">${show ? '🙈' : '👁️'}</button>
+          </div></div>
+          <div class="field"><label>Confirme-le</label>
+          <input class="input" type=${show ? 'text' : 'password'} autocomplete="new-password" value=${confirm} onInput=${(e) => setConfirm(e.target.value)} /></div>`}
+        ${errorLine}${infoLine}
+        <button class="btn btn-green btn-big" style="width:100%" disabled=${busy}>${busy ? 'Un instant…' : recovery ? 'Changer mon mot de passe' : 'Valider'}</button>
+        <div class="sheet-actions">
+          <button type="button" class="p-btn" onClick=${() => switchMode(mode)}>← Retour</button>
+          <button type="button" class="p-btn" disabled=${busy} onClick=${resend}>Renvoyer le code</button>
+        </div>
+        <p class="hint" style="color:var(--ink-soft);margin-top:10px">Pas reçu ? Regarde dans les courriers indésirables. Le code est valable 1 heure ; seul le dernier envoyé marche.</p>
+      </form>
+    </div>`;
   }
 
   const titles = { signin: 'Se connecter', signup: 'Créer mon compte parent', forgot: 'Mot de passe oublié' };
@@ -139,10 +229,10 @@ export function Login() {
           </div></div>`}
         ${mode === 'signup' && html`<div class="field"><label>Confirme le mot de passe</label>
           <input class="input" type=${show ? 'text' : 'password'} autocomplete="new-password" value=${confirm} onInput=${(e) => setConfirm(e.target.value)} /></div>`}
-        ${error && html`<p style="color:#b42536;font-weight:600;margin-bottom:10px">${error}</p>`}
-        ${info && html`<p style="color:#1a7a43;font-weight:600;margin-bottom:10px">${info}</p>`}
+        ${mode === 'forgot' && html`<p style="color:var(--ink-soft);margin:-4px 0 12px;line-height:1.4">Pandi t'envoie un code à 6 chiffres par e-mail, à taper ici pour choisir un nouveau mot de passe.</p>`}
+        ${errorLine}${infoLine}
         <button class="btn btn-green btn-big" style="width:100%" disabled=${busy}>
-          ${busy ? 'Un instant…' : mode === 'signin' ? 'Se connecter' : mode === 'signup' ? 'Créer mon compte' : 'Recevoir le lien'}
+          ${busy ? 'Un instant…' : mode === 'signin' ? 'Se connecter' : mode === 'signup' ? 'Créer mon compte' : 'Recevoir un code'}
         </button>
       </form>
       <div class="sheet-actions">
@@ -158,40 +248,3 @@ export function Login() {
   </div>`;
 }
 
-// Retour du lien « mot de passe oublié » : choisir un nouveau mot de passe
-export function NewPassword() {
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
-
-  async function submit(e) {
-    e.preventDefault();
-    if (password.length < 8) return setError('Mot de passe trop court : 8 caractères minimum.');
-    if (password !== confirm) return setError('Les deux mots de passe ne sont pas identiques.');
-    setBusy(true);
-    setError(null);
-    try {
-      await actions.updatePassword(password);
-      sfx.sparkle();
-    } catch (err) {
-      setError(frenchError(err));
-      sfx.error();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return html`<div class="welcome page-enter">
-    <${Pandi} />
-    <form class="card sheet" onSubmit=${submit}>
-      <h2>Nouveau mot de passe</h2>
-      <div class="field"><label>Nouveau mot de passe (8 caractères minimum)</label>
-        <input class="input" type="password" autocomplete="new-password" value=${password} onInput=${(e) => setPassword(e.target.value)} /></div>
-      <div class="field"><label>Confirme-le</label>
-        <input class="input" type="password" autocomplete="new-password" value=${confirm} onInput=${(e) => setConfirm(e.target.value)} /></div>
-      ${error && html`<p style="color:#b42536;font-weight:600;margin-bottom:10px">${error}</p>`}
-      <button class="btn btn-green btn-big" style="width:100%" disabled=${busy}>${busy ? 'Un instant…' : 'Enregistrer'}</button>
-    </form>
-  </div>`;
-}

@@ -21,11 +21,10 @@ export class SupabaseRepo {
 
   // --- Compte ---------------------------------------------------------------
   async getUser() {
-    // getSession attend la fin de l'échange du code de retour (Google ou lien « mot de passe oublié »)
+    // getSession attend la fin de l'échange du code de retour de Google
     const { data } = await this.sb.auth.getSession();
     const params = new URLSearchParams(location.search);
     if (params.has('code') || params.has('error') || params.has('reset')) {
-      this.recovery = params.get('reset') === '1' && Boolean(data.session);
       history.replaceState(null, '', `${location.pathname}${location.hash || '#/soiree'}`);
     }
     return data.session?.user ?? null;
@@ -41,11 +40,16 @@ export class SupabaseRepo {
     }
   }
 
+  // Les e-mails de Pandi portent un code à 6 chiffres, à taper dans l'app, et pas de lien : sur iPhone, un
+  // lien s'ouvrirait dans Safari et pas dans l'icône de l'écran d'accueil (sa propre mémoire)
+
+  // null : le compte est créé, l'adresse attend son code de confirmation (parti par e-mail)
   async signUp(email, password) {
     const { data, error } = await this.sb.auth.signUp({ email, password });
     if (error) throw fail(error);
-    if (!data.session) throw new Error('Compte créé : connecte-toi maintenant.');
-    return data.user;
+    // Adresse déjà inscrite et confirmée : Supabase ne le dit pas, mais le compte rendu n'a aucune identité
+    if (data.user && !data.user.identities?.length) throw new Error('Un compte existe déjà avec cet e-mail : connecte-toi.');
+    return data.session ? data.user : null;
   }
 
   async signIn(email, password) {
@@ -54,15 +58,26 @@ export class SupabaseRepo {
     return data.user;
   }
 
+  // type : 'signup' (confirmer l'adresse) ou 'recovery' (mot de passe oublié) ; ouvre la session
+  async verifyCode(email, token, type) {
+    const { data, error } = await this.sb.auth.verifyOtp({ email, token, type });
+    if (error) throw fail(error);
+    return data.user;
+  }
+
+  async resendSignupCode(email) {
+    const { error } = await this.sb.auth.resend({ type: 'signup', email });
+    if (error) throw fail(error);
+  }
+
   async sendPasswordReset(email) {
-    const { error } = await this.sb.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}${location.pathname}?reset=1` });
+    const { error } = await this.sb.auth.resetPasswordForEmail(email);
     if (error) throw fail(error);
   }
 
   async updatePassword(password) {
     const { data, error } = await this.sb.auth.updateUser({ password });
     if (error) throw fail(error);
-    this.recovery = false;
     return data.user;
   }
 

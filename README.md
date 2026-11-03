@@ -67,14 +67,21 @@ Le projet Supabase **pandiflow** (région Paris, référence `kyhhkhmwdostzdaksx
 
 ### Étape A bis — Connexion des parents
 
-Chaque parent crée son compte avec **e-mail + mot de passe** (8 caractères minimum). Aucun e-mail de confirmation n'est envoyé : le service d'e-mail gratuit de Supabase n'écrit qu'aux membres de l'organisation Supabase, et l'accès à une famille est de toute façon protégé par les invitations. Le lien « Mot de passe oublié » n'arrive donc qu'aux membres de l'organisation, sauf à brancher un SMTP dans *Authentication → SMTP Settings*.
+Chaque parent crée son compte avec **e-mail + mot de passe** (8 caractères minimum), ou avec son **compte Google**. À l'inscription, Pandi envoie un **code à 6 chiffres** qui confirme l'adresse ; « Mot de passe oublié » envoie aussi un code, à taper dans l'app avec le nouveau mot de passe. Les e-mails ne portent pas de lien : sur iPhone, il s'ouvrirait dans Safari et pas dans l'icône de l'écran d'accueil, qui a sa propre mémoire. Les deux modèles d'e-mails, en français, sont dans [`supabase/templates/`](supabase/templates/).
+
+**Envoi des e-mails par Brevo** : sans serveur d'envoi à soi, Supabase n'écrit qu'aux membres de son organisation et refuse les modèles d'e-mails. L'ordre compte :
+
+1. Dans Brevo, *Senders, Domains & Dedicated IPs* : vérifier que le domaine `pandiflow.com` est authentifié (ses enregistrements DKIM sont déjà dans le DNS) et que `bonjour@pandiflow.com` peut envoyer.
+2. Dans Brevo, *SMTP & API → SMTP* : noter l'identifiant SMTP (il se termine par `@smtp-brevo.com`), puis *Generate a new SMTP key* et copier la clé (elle n'est montrée qu'une fois).
+3. Dans Supabase, [Authentication → Emails → SMTP Settings](https://supabase.com/dashboard/project/kyhhkhmwdostzdaksxzw/auth/smtp) : activer *Enable custom SMTP*, puis *Sender email* `bonjour@pandiflow.com`, *Sender name* `Pandi`, *Host* `smtp-relay.brevo.com`, *Port* `587`, *Username* l'identifiant SMTP, *Password* la clé SMTP → *Save*. La clé reste dans Supabase, jamais dans le code.
+4. Ensuite seulement : `supabase config push --project-ref kyhhkhmwdostzdaksxzw`, qui envoie les modèles en français et active la confirmation par code ([`supabase/config.toml`](supabase/config.toml)).
 
 **Inviter un autre parent** : *Espace parent → Réglages → Parents de la famille → Inviter un parent*. Le code a 8 caractères, il est valable 48 h et ne sert qu'une fois ; 5 invitations en cours et 6 parents au maximum par famille ; 10 essais ratés par heure au maximum. Seul le créateur de la famille peut retirer un parent. Ces règles sont dans [`supabase/migrations/20261020120000_invitations.sql`](supabase/migrations/20261020120000_invitations.sql).
 
 **Vérifier que les familles restent séparées** : [`supabase/tests/isolation.sql`](supabase/tests/isolation.sql) crée 5 comptes fictifs (2 familles de 2 parents, un compte sans famille) et un visiteur non connecté, puis vérifie table par table que personne ne lit, ne modifie ni n'efface les données d'une autre famille, que les invitations ne servent qu'une fois et qu'un parent retiré perd l'accès. Tout est annulé à la fin : rien n'est écrit dans la base. Le rapport (une ligne OK ou ÉCHEC par vérification) s'affiche dans le message d'erreur final :
 `supabase db query --linked --project-ref kyhhkhmwdostzdaksxzw --file supabase/tests/isolation.sql`
 
-**Connexion avec Google (facultatif)** : le bouton « Continuer avec Google » apparaît tout seul dès que le fournisseur Google est activé dans Supabase.
+**Connexion avec Google** : le bouton « Continuer avec Google » apparaît tout seul dès que le fournisseur Google est activé dans Supabase. Google affiche alors « pour continuer vers kyhhkhmwdostzdaksxzw.supabase.co » (un nom à soi demande le domaine personnalisé payant de Supabase). Un parent déjà inscrit avec la même adresse Gmail retrouve son compte : Supabase relie les deux.
 
 1. Dans la [console Google Cloud](https://console.cloud.google.com/projectcreate), créer un projet `Pandi` (avec un compte Google personnel).
 2. **Google Auth Platform → Get started** : nom de l'app `Pandi`, ton e-mail d'assistance, audience **External**, ton e-mail de contact.
@@ -129,10 +136,9 @@ La propagation prend de quelques minutes à quelques heures. Ensuite, https://ww
 
 ### Étape E — Sur le téléphone et la télé
 
-1. Ouvrir https://www.pandiflow.com sur le téléphone, créer son compte parent (ou **Continuer avec Google** si activé), puis créer la famille.
-2. L'installer comme une app : *Ajouter à l'écran d'accueil* (Safari) ou *Installer l'application* (Chrome).
-3. Dans *Espace parent → Réglages → Parents de la famille*, créer une invitation et l'envoyer. Le second parent crée son propre compte et choisit **Rejoindre une famille** avec ce code.
-   Sur iPhone, connecte-toi dans Safari **avant** d'ajouter l'app à l'écran d'accueil : la connexion Google peut s'ouvrir hors de l'app installée.
+1. Ouvrir https://www.pandiflow.com sur le téléphone. Sur iPhone, la page propose d'abord d'ajouter Pandi à l'écran d'accueil, puis de créer son compte **depuis l'icône** : l'icône a sa propre mémoire, une connexion faite dans Safari ne la suit pas.
+2. Créer son compte parent (ou **Continuer avec Google**), taper le code reçu par e-mail, puis suivre l'assistant de démarrage. Sur Android, sa dernière étape installe l'app (*Installer Pandi*).
+3. Dans *Espace parent → Réglages → Parents de la famille*, créer une invitation et l'envoyer. Le second parent crée son propre compte, touche **J'ai un code** et entre ce code.
 4. Le soir : tenir le téléphone en **paysage**, toucher ⛶ pour le plein écran, puis dupliquer l'écran sur la télé (*Smart View* / *Caster l'écran* sur Android, *Recopie de l'écran* AirPlay sur iPhone). L'écran reste allumé tant que la soirée est ouverte.
 
 ---

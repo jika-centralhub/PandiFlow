@@ -34,8 +34,6 @@ export async function boot() {
       loadOutbox();
       const user = await repo.getUser();
       if (!user) return setState({ status: 'auth' });
-      // Retour du lien « mot de passe oublié » : on choisit d'abord un nouveau mot de passe
-      if (repo.recovery) return setState({ status: 'recovery', user });
       return afterLogin(user);
     }
     repo = new LocalRepo();
@@ -823,19 +821,32 @@ export async function signInWithGoogle() {
 
 export const googleEnabled = () => (repo?.googleEnabled ? repo.googleEnabled() : Promise.resolve(false));
 
+// Vrai si l'adresse doit d'abord être confirmée par le code envoyé par e-mail
 export async function signUp(email, password) {
-  await afterLogin(await repo.signUp(email, password));
+  const user = await repo.signUp(email, password);
+  if (!user) return true;
+  await afterLogin(user);
+  return false;
 }
 
 export async function signIn(email, password) {
   await afterLogin(await repo.signIn(email, password));
 }
 
+export async function confirmSignup(email, code) {
+  await afterLogin(await repo.verifyCode(email, code, 'signup'));
+}
+
+export const resendSignupCode = (email) => repo.resendSignupCode(email);
+
 export async function sendPasswordReset(email) {
   await repo.sendPasswordReset(email);
 }
 
-export async function updatePassword(password) {
+// Mot de passe oublié : le code reçu par e-mail ouvre la session, puis le nouveau mot de passe est
+// enregistré. Un code ne sert qu'une fois : après un refus du mot de passe, la session est déjà ouverte.
+export async function resetPassword(email, code, password) {
+  if (!(await repo.getUser())) await repo.verifyCode(email, code, 'recovery');
   await afterLogin(await repo.updatePassword(password));
 }
 
