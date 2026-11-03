@@ -8,6 +8,7 @@ import { html, useEffect, useState } from '../vendor/preact-htm.js';
 import { useStore, inAccueil, visitPending } from '../lib/store.js';
 import { sfx } from '../lib/sounds.js';
 import { isPhone, isPortrait, isFullscreen, canFullscreen, isInstalled, enterLandscape } from '../lib/device.js';
+import { installState } from '../lib/install.js';
 
 const LATER = 'pandiflow-paysage-plus-tard';
 
@@ -31,8 +32,9 @@ export function LandscapeOffer() {
     };
   }, []);
 
-  // Pas pendant la création de la famille (des formulaires, le téléphone en hauteur) ni pendant la visite
-  if (later || s.status === 'loading' || s.status === 'setup' || inAccueil(s) || visitPending(s) || !isPhone()) return null;
+  // Pas avant d'être dans la famille (connexion, création : des formulaires, le téléphone en hauteur ; sur
+  // iPhone, la page de connexion propose déjà l'icône), ni pendant l'assistant ou la visite
+  if (later || s.status !== 'ready' || inAccueil(s) || visitPending(s) || !isPhone()) return null;
   const full = isFullscreen() || isInstalled();
   const portrait = isPortrait();
   if (full && !portrait) return null;
@@ -55,7 +57,10 @@ export function LandscapeOffer() {
     // iPhone dans Safari : seule l'app ouverte depuis l'écran d'accueil s'affiche sans les barres
     icon = '📲';
     title = 'Plein écran sur iPhone';
-    text = html`Touche <b>Partager</b> ⬆️ puis <b>« Sur l'écran d'accueil »</b>, ouvre Pandi depuis son icône${portrait ? ' et tourne le téléphone' : ''}.`;
+    // L'icône déjà ajoutée (« C'est fait ») : on ne redemande pas de l'ajouter, on y renvoie
+    text = installState() === 'done'
+      ? html`Pandi est sur ton écran d'accueil : ouvre-le depuis son icône${portrait ? ' et tourne le téléphone' : ''}.`
+      : html`Touche <b>Partager</b> ⬆️ puis <b>« Sur l'écran d'accueil »</b>, ouvre Pandi depuis son icône${portrait ? ' et tourne le téléphone' : ''}.`;
     action = null;
   } else if (portrait && (stuck || (full && !(canFullscreen() && screen.orientation?.lock)))) {
     icon = '🔄';

@@ -22,7 +22,7 @@ import { COLOR_META, PETIT_AGE, activeChildren, scaleOf, pointsFor, weeklyStones
 import { DEFAULT_TASKS, EXTRA_TASKS, DEFAULT_MORNING_TASKS, fitsAge } from '../lib/seed.js';
 import { WEEKDAYS_SHORT } from '../lib/dates.js';
 import { canFullscreen, isInstalled } from '../lib/device.js';
-import { useInstallState } from '../lib/install.js';
+import { useInstallState, markInstalled, isIOS } from '../lib/install.js';
 import { sfx } from '../lib/sounds.js';
 
 const STEPS = ['comment', 'enfants', 'routines', 'code', 'perso', 'notes', 'coffre', 'parent', 'tele', 'app'];
@@ -393,7 +393,7 @@ function StepParent({ s }) {
         </div>`
       : html`<div class="sheet-actions" style="justify-content:flex-start"><button class="btn btn-blue" disabled=${busy} onClick=${create}>${busy ? 'Création…' : '+ Créer une invitation'}</button></div>`}
     ${error && html`<p class="ac-error">${error}</p>`}
-    <p class="hint">Il crée son compte sur Pandi, puis choisit « Rejoindre une famille » avec ce code. Donne-lui aussi le code parent.${s.mode === 'demo' ? " En démo, l'invitation est factice." : ''} Plus tard : Espace parent → Réglages → Parents de la famille.</p>
+    <p class="hint">Il crée son compte sur Pandi, puis touche « J'ai un code » et entre ce code. Donne-lui aussi le code parent.${s.mode === 'demo' ? " En démo, l'invitation est factice." : ''} Plus tard : Espace parent → Réglages → Parents de la famille.</p>
     <${Actions} back=${() => go('coffre')} skip=${inv ? null : () => go('tele')} skipLabel="Plus tard" next=${inv ? () => go('tele') : null} />`;
 }
 
@@ -453,18 +453,23 @@ function StepPerso({ kids }) {
 function StepApp() {
   const state = useInstallState();
   const done = state === 'app' || state === 'done';
-  // Sur iPhone et sur Android sans bouton, on ne sait pas si c'est fait : « C'est fait » et « Plus tard » mènent à la fin
+  // Sur iPhone et sur Android sans bouton, on ne peut pas le savoir : « C'est fait » est retenu sur parole
+  // (la fin et les Réglages ne redemandent plus), « Plus tard » mène à la fin sans rien retenir
   const guided = state === 'ios' || state === 'android';
   return html`
     <h1>Pandi sur l'écran d'accueil</h1>
     <p class="ac-text">Avec son icône, Pandi s'ouvre comme une vraie app : d'un geste, en plein écran, sans les barres du navigateur. C'est le mieux pour la télé.</p>
     <${InstallHelp} state=${state} />
     <${Actions} back=${() => go('tele')} skip=${done || state === 'computer' ? null : () => go('pret')} skipLabel="Plus tard"
-      next=${done || guided || state === 'computer' ? () => go('pret') : null} nextLabel=${guided ? "C'est fait" : 'Continuer'} />`;
+      next=${done || guided || state === 'computer' ? () => { if (guided) markInstalled(); go('pret'); } : null} nextLabel=${guided ? "C'est fait" : 'Continuer'} />`;
 }
 
 function StepPret({ s, kids }) {
-  const installed = ['app', 'done'].includes(useInstallState());
+  const state = useInstallState();
+  const installed = state === 'app' || state === 'done';
+  // L'icône ajoutée sur iPhone a sa propre mémoire : la suite (connexion, visite de l'écran) se passe là-bas,
+  // pas dans le navigateur
+  const toIcon = state === 'done' && isIOS() && s.mode === 'cloud';
   const portraits = kids.filter((k) => k.look?.portrait).length;
   const count = (routine) => s.tasks.filter((t) => t.active !== false && routineOf(t) === routine).length;
   const evening = count('soir');
@@ -473,7 +478,7 @@ function StepPret({ s, kids }) {
   const finish = () => {
     sfx.fanfare();
     actions.accueilStep(null);
-    actions.startDecouverte();
+    actions.startDecouverte({ here: !toIcon });
     navigate('soiree', { replace: true });
   };
   return html`
@@ -488,8 +493,10 @@ function StepPret({ s, kids }) {
         <div class="meta">${s.settings.pinHash ? 'Pour noter et changer les réglages' : 'Il sera demandé à la première note'}</div></div></div>
       <div class="row"><span class="emoji">🧰</span><div class="grow"><div class="title">${t.reward}</div><div class="meta">Au bout du coffre de l'équipe : ${t.goal} pierres</div></div></div>
       <div class="row"><span class="emoji">📲</span><div class="grow"><div class="title">${installed ? "Pandi est sur l'écran d'accueil" : "L'écran d'accueil : pas encore"}</div>
-        <div class="meta">${installed ? "Il s'ouvre d'un geste, en plein écran" : "Plus tard : ⚙️ Espace parent → Réglages → « L'app sur l'écran d'accueil »"}</div></div></div>
+        <div class="meta">${toIcon ? 'Ouvre-le depuis son icône (reconnecte-toi la première fois)' : installed ? "Il s'ouvre d'un geste, en plein écran" : "Plus tard : ⚙️ Espace parent → Réglages → « L'app sur l'écran d'accueil »"}</div></div></div>
     </div>
-    <p class="ac-text"><b>Ce soir</b> : ouvre Pandi au début de la routine et mets-le sur la télé. Touche la carte d'une tâche pour la noter. Tout se change ensuite dans ⚙️ Espace parent.</p>
-    <${Actions} back=${() => go('app')} next=${finish} nextLabel="Commencer 🎉" />`;
+    ${toIcon
+      ? html`<p class="ac-text"><b>Maintenant</b> : ouvre Pandi depuis son icône sur l'écran d'accueil et reconnecte-toi avec ton e-mail. Je t'y montre l'écran de la soirée. <b>Ce soir</b>, c'est par l'icône que tu ouvres Pandi et que tu le mets sur la télé.</p>`
+      : html`<p class="ac-text"><b>Ce soir</b> : ouvre Pandi au début de la routine et mets-le sur la télé. Touche la carte d'une tâche pour la noter. Tout se change ensuite dans ⚙️ Espace parent.</p>`}
+    <${Actions} back=${() => go('app')} next=${finish} nextLabel=${toIcon ? 'Terminer' : 'Commencer 🎉'} />`;
 }

@@ -878,10 +878,12 @@ export async function createFamily({ name, children, routines = null }) {
 
 // --- Premiers pas, après l'assistant : la visite de l'écran (sur cet appareil), le bonjour de Pandi
 // aux enfants et le mot de la première soirée (une fois pour la famille) ---------------------------
-export function startDecouverte() {
+// here false : la visite se fera dans l'icône de l'iPhone (sa propre mémoire), pas dans ce navigateur
+export function startDecouverte({ here = true } = {}) {
   const s = getState();
   if (!s.family) return;
-  setVisite(s.family.id);
+  if (here) setVisite(s.family.id);
+  else setVisiteVue(s.family.id);
   if (!s.settings.firstDay) updateSettings({ firstDay: eveningDate() });
 }
 export function endVisit() {

@@ -2,10 +2,19 @@
 import { html, useEffect, useState } from '../vendor/preact-htm.js';
 import * as actions from '../lib/actions.js';
 import { Pandi } from '../components/Coin.js';
+import { InstallHelp } from '../components/Install.js';
+import { isIOS } from '../lib/install.js';
+import { isInstalled } from '../lib/device.js';
 import { sfx } from '../lib/sounds.js';
 
 // Message d'erreur éventuel renvoyé par Google dans l'adresse (?error_description=…)
 const returnedError = new URLSearchParams(location.search).get('error_description');
+
+// Sur iPhone et iPad, l'icône de l'écran d'accueil a sa propre mémoire : une connexion faite dans le
+// navigateur ne la suit pas. On propose donc l'icône d'abord : une seule connexion, et l'assistant de
+// démarrage puis la visite se font là où Pandi servira le soir.
+const SANS_ICONE = 'pandiflow-sans-icone';
+const iconFirst = () => !returnedError && isIOS() && !isInstalled() && localStorage.getItem(SANS_ICONE) !== '1';
 
 const GOOGLE_G = html`<svg viewBox="0 0 48 48" width="28" height="28" aria-hidden="true">
   <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
@@ -38,10 +47,31 @@ export function Login() {
   const [error, setError] = useState(returnedError ? 'La connexion Google a été annulée ou refusée. Réessaie.' : null);
   const [info, setInfo] = useState(null);
   const [google, setGoogle] = useState(false);
+  const [icon, setIcon] = useState(iconFirst);
 
   useEffect(() => {
     actions.googleEnabled().then(setGoogle);
   }, []);
+
+  if (icon) {
+    const withoutIcon = () => {
+      sfx.tap();
+      localStorage.setItem(SANS_ICONE, '1');
+      setIcon(false);
+    };
+    return html`<div class="welcome page-enter">
+      <${Pandi} />
+      <div class="card sheet">
+        <h1 style="color:var(--ink)">Bienvenue dans Pandi !</h1>
+        <p class="lead" style="color:var(--ink-soft)">Sur iPhone, commence par mettre Pandi sur l'écran d'accueil : il s'ouvrira en plein écran, et tu n'auras à te connecter qu'une fois.</p>
+        <${InstallHelp} state="ios" then=${html`Ouvre Pandi depuis sa nouvelle icône : c'est là que tu <b>crées ton compte</b>, ou que tu te connectes.`} />
+        <div class="sheet-actions">
+          <button class="p-btn" onClick=${withoutIcon}>Continuer sans l'icône</button>
+          <a class="p-btn" href="?demo=1#/soiree">Essayer en mode démo</a>
+        </div>
+      </div>
+    </div>`;
+  }
 
   function switchMode(m) {
     sfx.tap();

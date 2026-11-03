@@ -5,7 +5,8 @@ import { useEffect, useState } from '../vendor/preact-htm.js';
 import { isInstalled } from './device.js';
 
 let deferred = null;
-// Installée depuis ce navigateur (gardé : le navigateur ne le redit pas après un rechargement)
+// Installée depuis ce navigateur, ou ajoutée d'après le parent (« C'est fait ») ; gardé : le navigateur
+// ne le redit pas après un rechargement, et l'iPhone ne le dit jamais
 const KEY = 'pandiflow-installee';
 let installed = localStorage.getItem(KEY) === '1';
 const remember = (on) => {
@@ -52,6 +53,12 @@ export async function promptInstall() {
   if (choice?.outcome === 'accepted') remember(true);
   notify();
   return installed;
+}
+
+// Le parent dit avoir ajouté l'icône (iPhone, ou Android sans bouton) : la page ne peut pas le vérifier
+export function markInstalled() {
+  remember(true);
+  notify();
 }
 
 // L'état d'installation, tenu à jour (l'événement du navigateur peut arriver après l'affichage)

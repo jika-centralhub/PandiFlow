@@ -15,7 +15,7 @@ const fmtDay = (iso) => (iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 
 
 // Envoie l'invitation par le partage du téléphone (SMS, WhatsApp…), sinon la copie
 export async function shareInvite(inv) {
-  const text = `Rejoins notre famille sur Pandi 🐼 : va sur ${SITE}, crée ton compte parent, puis choisis « Rejoindre une famille » avec le code ${fmtCode(inv.code)} (valable 48 h, une seule fois).`;
+  const text = `Rejoins notre famille sur Pandi 🐼 : va sur ${SITE}, crée ton compte parent, puis touche « J'ai un code » et entre le code ${fmtCode(inv.code)} (valable 48 h, une seule fois). Sur iPhone, ajoute d'abord Pandi à l'écran d'accueil (Partager ⬆️ puis « Sur l'écran d'accueil ») et crée ton compte depuis son icône.`;
   try {
     if (navigator.share) await navigator.share({ title: 'Invitation Pandi', text });
     else {
@@ -124,7 +124,7 @@ export function FamilyMembers() {
       <button class="btn btn-blue" disabled=${busy || members.length >= MAX_PARENTS} onClick=${invite}>+ Inviter un parent</button>
     </div>
     <p class="hint" style="margin-top:8px">
-      L'autre parent crée son compte sur Pandi, puis choisit « Rejoindre une famille » avec le code.
+      L'autre parent crée son compte sur Pandi, puis touche « J'ai un code » et entre le code.
       Un code ne sert qu'une fois et expire au bout de 48 h ; ${MAX_PARENTS} parents au maximum par famille.
       Seul le créateur de la famille peut retirer un parent.
     </p>
