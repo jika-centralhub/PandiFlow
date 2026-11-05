@@ -11,7 +11,6 @@ import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, 
 import { routineDate, currentRoutine, addDays, formatLong, eveningDate } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { Modal, Logo } from '../components/ui.js';
-import { Pandi } from '../components/Coin.js';
 import { Pandi3D, has3D } from '../components/Pandi3D.js';
 import { pandiFor, storyIndex } from '../mascot/tasks.js';
 import { showOverlay, GiftBox } from '../components/Overlays.js';
@@ -19,14 +18,15 @@ import { TimerRing, TimerPicker, TimerStage, TimerResult, timerView, useClock } 
 import { DepartureBar } from '../components/Departure.js';
 import { CalmCorner } from '../components/CalmCorner.js';
 import { TeamPill, TeamSheet } from '../components/Team.js';
-import { Visite, GreetBar, FirstEveningCard } from '../components/Decouverte.js';
+import { Visite, GreetBar } from '../components/Decouverte.js';
 import { ThemeAsk, FunFactBar } from '../components/ThemeAsk.js';
 import { BirthdayBar } from '../components/Anniversaire.js';
+import { Chambre } from '../components/Chambre.js';
 import { funFact } from '../avatar/themes.js';
 import { flyCoins, burst, replay } from '../anim/fx.js';
 import { sfx, setSoftSound } from '../lib/sounds.js';
 import { navigate } from '../router.js';
-import { keepScreenOn, releaseScreen, toggleFullscreen, isFullscreen } from '../lib/device.js';
+import { keepScreenOn, toggleFullscreen, isFullscreen } from '../lib/device.js';
 
 // Matin ou soir : la routine change toute seule (à 4 h et à 13 h), on n'affiche que celle du moment
 export function TopBar({ onCalm, chest = null }) {
@@ -280,22 +280,6 @@ function TeamCardSheet({ kids, current, onPick, onClose }) {
   <//>`;
 }
 
-// Tout le monde a dit bonne nuit : la télé s'endort avec Pandi. On touche l'écran pour la réveiller.
-function NightScreen({ kids, onWake, mot = null, onMotClose }) {
-  useEffect(() => {
-    releaseScreen();
-    return () => keepScreenOn();
-  }, []);
-  const names = kids.map((k) => k.name).join(', ').replace(/, ([^,]*)$/, ' et $1');
-  return html`<div class="night-screen" role="dialog" aria-label="Bonne nuit" onClick=${onWake}>
-    <div class="ns-stars" aria-hidden="true">${Array.from({ length: 28 }, (_, i) => html`<i key=${i} style=${{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 70}%`, animationDelay: `${(i % 7) * 0.6}s` }} />`)}</div>
-    <div class="ns-pandi">${has3D() ? html`<${Pandi3D} act="endormi" framing="auto" base="full" fps=${12} />` : html`<${Pandi} mood="happy" wave=${false} />`}</div>
-    <div class="ns-text">Bonne nuit ${names} 🌙</div>
-    <div class="ns-hint">Touche l'écran pour réveiller Pandi</div>
-    ${mot && html`<div class="ns-mot" onClick=${(e) => { e.stopPropagation(); onMotClose(); }}><${FirstEveningCard} date=${mot} onClose=${onMotClose} /></div>`}
-  </div>`;
-}
-
 // Routine choisie à la main : on la garde en revenant de l'espace parent ou du coin d'un enfant,
 // jusqu'au prochain changement automatique (13 h ou 4 h).
 let manualRoutine = null; // { routine, auto }
@@ -303,6 +287,16 @@ const startRoutine = () => (manualRoutine && manualRoutine.auto === currentRouti
 
 // Les enfants qui ont dit bonne nuit, par soirée (gardé si on passe par l'espace parent)
 const asleepByDate = {};
+
+// Le matin où Pandi a été réveillé sur cet appareil (il dort dans son lit à la première ouverture du matin)
+const WOKE_KEY = 'pandiflow-reveil';
+const readWoke = () => {
+  try {
+    return localStorage.getItem(WOKE_KEY);
+  } catch {
+    return null;
+  }
+};
 
 // « Plus tard » sur le bonjour de Pandi : on le repropose au prochain lancement de l'app
 let greetLater = false;
@@ -335,6 +329,7 @@ export function Evening() {
   const [firstMot, setFirstMot] = useState(null); // la soirée dont le mot de première soirée est montré la nuit
   const [later, setLater] = useState(greetLater);
   const [askLater, setAskLater] = useState(themeLater);
+  const [woke, setWoke] = useState(readWoke);
   const [, setTick] = useState(0); // redessine chaque minute : un paquet de Pandi arrive à son heure
   const cards = useRef({});
   const heads = useRef({});
@@ -491,11 +486,19 @@ export function Evening() {
     await showOverlay('surprise', { childId: child.id, card: gift.card, team: Boolean(gift.surprise.team), soft: doux });
   }
 
+  // L'écran de nuit : on le touche pour revenir à la routine du soir
   function wake() {
-    sfx.tap();
     asleepByDate[date] = [];
     setAsleep([]);
     setNightScreen(false);
+  }
+
+  // Le matin : les enfants ont réveillé Pandi, la routine du matin commence
+  function awake() {
+    try {
+      localStorage.setItem(WOKE_KEY, today);
+    } catch {}
+    setWoke(today);
   }
 
   async function pickTeamCard(level) {
@@ -610,10 +613,13 @@ export function Evening() {
     .map((t) => ({ timer: t, child: kids.find((k) => k.id === t.childId), task: s.tasks.find((x) => x.id === t.taskId) }))
     .filter((o) => o.child && o.task);
   const teamCard = evening && kids.length > 1 ? teamCardLevel(findTeamCard(s.ledger, date)) : null;
+  // Pandi dort encore dans son lit : la première ouverture de ce matin sur cet appareil
+  const morningBed = routine === 'matin' && date === today && kids.length > 0 && !visitPending(s) && woke !== today;
+  const bedroom = nightScreen || morningBed;
   const visiting = visitPending(s) && kids.length > 0 && !nightScreen;
   const showGreet = Boolean(s.settings.firstDay && !s.settings.greeted) && !visitPending(s) && !later && kids.length > 0 && date === today;
   // Le thème programmé par les parents commence quand les enfants ont dit oui
-  const proposed = date === today && kids.length > 0 && !visiting && !nightScreen ? pendingThemeEntry(s.settings, date) : null;
+  const proposed = date === today && kids.length > 0 && !visiting && !bedroom ? pendingThemeEntry(s.settings, date) : null;
   const asking = proposed && askLater !== proposed.id ? proposed : null;
   // L'anniversaire d'un enfant ce soir : la fête à lancer, ou à rejouer une fois lancée
   const birthdays = evening && date === today && !visiting && !nightScreen ? kids.map((k) => ({ k, b: birthdayNow(k, s) })).filter(({ b }) => b?.party === date) : [];
@@ -667,7 +673,7 @@ export function Evening() {
             cards=${cards}
             onOpen=${(task) => openTask(child, task)}
             onTimer=${(task) => { sfx.tap(); setPicker({ childId: child.id, taskId: task.id }); }}
-            paused=${Boolean(stageTimer) || nightScreen}
+            paused=${Boolean(stageTimer) || bedroom}
             doux=${doux}
           />
         </section>`;
@@ -704,7 +710,8 @@ export function Evening() {
     ${calm && html`<${CalmCorner} kids=${kids} onClose=${() => setCalm(false)} />`}
     ${team && html`<${TeamSheet} onClose=${() => setTeam(false)} />`}
     ${teamCardOpen && html`<${TeamCardSheet} kids=${kids} current=${teamCard} onPick=${pickTeamCard} onClose=${() => setTeamCardOpen(false)} />`}
-    ${nightScreen && html`<${NightScreen} kids=${withTasks} onWake=${wake} mot=${firstMot} onMotClose=${() => { sfx.tap(); setFirstMot(null); }} />`}
+    ${bedroom && html`<${Chambre} mode=${morningBed ? 'matin' : 'soir'} kids=${morningBed ? kids : withTasks} onExit=${wake} onAwake=${awake}
+      mot=${morningBed ? null : firstMot} onMotClose=${() => { sfx.tap(); setFirstMot(null); }} />`}
     ${visiting && html`<${Visite} kids=${kids} onDone=${() => actions.endVisit()} />`}
     ${asking && html`<${ThemeAsk} key=${asking.id} entry=${asking} kids=${kids} onLater=${() => { themeLater = asking.id; setAskLater(asking.id); }} />`}
   </div>`;

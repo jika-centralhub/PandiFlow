@@ -22,7 +22,7 @@ const hideAll = (P, w = 1) => Object.keys(P.hide).forEach((k) => (P.hide[k] = w)
 
 export function basePose() {
   return {
-    rootY: 0, rootX: 0, turn: 0, lean: 0,
+    rootY: 0, rootX: 0, rootZ: 0, pitch: 0, turn: 0, lean: 0,
     bend: 0, side: 0, twist: 0, squash: 0,
     headX: -0.04, headY: 0, headZ: 0,
     handR: V(0.5, 0.1, 0.22), handL: V(-0.5, 0.1, 0.22),
@@ -61,6 +61,52 @@ function proud(P, w = 1) {
   P.handL.lerp(V(-0.52, 0.02, 0.12), w);
   P.poleR.lerp(V(1, 0.3, -1), w);
   P.poleL.lerp(V(-1, 0.3, -1), w);
+}
+
+// --- La chambre ---
+// Le lit est posé au sol un peu en arrière ; à côté, la place où Pandi se tient debout.
+// Couché, son bassin repose sur le matelas et son dos sur le gros oreiller (pitch : il bascule en arrière).
+const BEDPOS = [0, 0, -0.55];
+const SIDE = { x: 1.35, z: 0.3 };
+const INBED = { x: 0, y: 0.8, z: -0.13, pitch: -1.2 };
+
+// k : 0 debout à côté du lit -> 1 couché ; arc : le saut ; pitch : couché (INBED) ou assis (-0,3)
+function inBed(P, k, arc = 0, pitch = INBED.pitch) {
+  const p = lerp(0, pitch, k);
+  const px = lerp(SIDE.x, INBED.x, k), py = lerp(0.52, INBED.y, k) + arc, pz = lerp(SIDE.z, INBED.z, k);
+  // la racine est sous ses pieds : on la place pour que le bassin soit là où on le veut
+  P.rootX = px;
+  P.rootY = py - 0.52 * Math.cos(p);
+  P.rootZ = pz - 0.52 * Math.sin(p);
+  P.pitch = p;
+  // les jambes restent allongées, un peu enfoncées dans le matelas moelleux
+  P.legR = P.legL = clamp(-Math.PI / 2 - p + 0.3, -1.6, 0) * k;
+  // pointes de pied tendues : les pieds restent sous la couette
+  P.toeR = P.toeL = 1.2 * k;
+  // la tête se redresse sur l'oreiller : il regarde vers nous
+  P.headX += 0.32 * k;
+  // couché : ni lunettes ni cape (elle passerait à travers le matelas)
+  P.hide.yeux = P.hide.dos = k > 0.5 ? 1 : 0;
+}
+const bed = (P, spec) => prop(P, 'lit', { at: 'ground', pos: BEDPOS, ...spec });
+// le bonnet de nuit ; couché (lie), il bascule vers l'avant pour qu'on le voie
+function nightcap(P, s = 1, lie = 1) {
+  P.hide.tete = s > 0.3 ? 1 : 0;
+  prop(P, 'bonnetNuit', { at: 'head', s, pos: [0.03 * lie, -0.03 * lie, 0.04 * lie], rot: [0.45 * lie, 0, -0.3 * lie] });
+}
+// Il dort (w : 0 -> 1) : les yeux fermés, la tête penchée sur l'oreiller, les mains sur le ventre ;
+// zz : les 💤 qui s'envolent
+function sleeping(t, P, w = 1, zz = 1) {
+  if (w <= 0) return;
+  const br = Math.sin(t * 1.1);
+  P.squash += br * 0.025 * w;
+  P.headZ += (0.16 + br * 0.015) * w;
+  face(P, { lidUp: 1, lidLo: 0.75, open: 0.02 + 0.01 * br, round: 0.5, smile: 0.7, teeth: 0 }, w);
+  P.handR.lerp(V(0.2, 0.18, 0.54), w);
+  P.handL.lerp(V(-0.2, 0.24, 0.54), w);
+  P.poleR.lerp(V(1, -0.5, 0.1), w);
+  P.poleL.lerp(V(-1, -0.5, 0.1), w);
+  emit(P, { kind: 'emoji', ch: '💤', rate: 0.55 * w * zz, at: [0.4, 1.25, 0.45], size: 0.2 });
 }
 
 export const ACTS = {
@@ -427,6 +473,103 @@ export const ACTS = {
       face(P, { open: 0.1 * yawn, round: yawn, lidUp: Math.max(0.35, yawn * 0.95, doze), lidLo: 0.35 + doze * 0.4, smile: 0.6 });
       emit(P, { kind: 'emoji', ch: '💤', rate: doze * 0.6, at: [0.4, 1.55, 0.3], size: 0.2 });
       if (t > 0.4 && t < 0.5) P.cue = 'baille';
+    },
+  },
+
+  // --- La chambre : Pandi dans son lit (écran de nuit, réveil du matin) ---
+  // Le soir : il bâille à côté de son lit, saute dedans, remonte sa couette et s'endort
+  coucher: {
+    frame: 'lit',
+    pose(t, P) {
+      const hop = ramp(t, 2.4, 3.4);
+      const cover = 0.15 + 0.85 * ramp(t, 3.5, 4.6);
+      inBed(P, hop, Math.sin(clamp((t - 2.4) / 1, 0, 1) * Math.PI) * 0.35);
+      P.turn = -0.35 * (1 - hop) + Math.sin(clamp((t - 2.4) / 1, 0, 1) * Math.PI) * -0.4;
+      bed(P, { cover, body: cover });
+      nightcap(P, 1, hop);
+      // debout : un grand bâillement, il se frotte un œil
+      const yawn = win(t, 0.3, 2.1, 0.5);
+      P.headX -= 0.2 * yawn;
+      face(P, { open: 0.1 * yawn, round: yawn, lidUp: Math.max(0.4, yawn * 0.95), lidLo: 0.4, smile: 0.6 }, 1 - hop);
+      const rub = win(t, 1.3, 2.2, 0.2);
+      P.handL.lerp(V(-0.12, 0.88 + Math.sin(t * 22) * 0.02, 0.62), rub);
+      P.poleL.lerp(V(-1, -1, -0.2), rub);
+      if (t > 0.4 && t < 0.5) P.cue = 'baille';
+      if (t > 2.4 && t < 2.5) P.cue = 'hop';
+      // il tire la couette jusqu'au ventre, puis il s'endort
+      const pull = win(t, 3.4, 4.8, 0.3);
+      for (const [h, sx] of [[P.handR, 1], [P.handL, -1]]) h.lerp(V(0.24 * sx, -0.1 + 0.3 * ramp(t, 3.5, 4.6), 0.55), pull);
+      sleeping(t, P, ramp(t, 4.4, 5.6));
+      if (t > 6 && (t - 6) % 5 < 0.1) P.cue = 'ronfle';
+    },
+  },
+
+  // Il dort dans son lit. ctx.tickle (0 -> 1) : on lui gratte le ventre, il rit en dormant et gigote
+  auLit: {
+    frame: 'litProche',
+    pose(t, P, ctx) {
+      const k = clamp(ctx.tickle || 0, 0, 1);
+      inBed(P, 1);
+      bed(P, { cover: 1, body: 1, wob: k });
+      nightcap(P);
+      sleeping(t, P, 1, 1 - k);
+      if (t % 5 < 0.1 && k < 0.05) P.cue = 'ronfle';
+      // les chatouilles : il se tortille, rit les yeux fermés, protège son ventre
+      if (k > 0) {
+        P.side += Math.sin(t * 9) * 0.07 * k;
+        P.twist = Math.sin(t * 7) * 0.12 * k;
+        P.headZ += Math.sin(t * 8.3) * 0.12 * k;
+        P.headY = Math.sin(t * 5.1) * 0.15 * k;
+        face(P, { smile: 1.1, open: 0.05 + 0.05 * Math.abs(Math.sin(t * 16)), teeth: 0.6, lidUp: 0.92, lidLo: 0.85 }, k);
+        P.handR.lerp(V(0.36, 0.25 + Math.sin(t * 11) * 0.06, 0.5), k);
+        P.handL.lerp(V(-0.36, 0.25 + Math.sin(t * 10) * 0.06, 0.5), k);
+        P.legR = P.legL = P.legR + Math.sin(t * 12) * 0.12 * k;
+        emit(P, { kind: 'emoji', ch: '✨', rate: k * 3, at: [0, 0.15, 0.7], spread: 0.6, size: 0.14 });
+      }
+    },
+  },
+
+  // Le matin : il ouvre les yeux en riant, s'assoit, s'étire, rejette sa couette et saute du lit
+  reveil: {
+    frame: 'lit',
+    pose(t, P) {
+      const out = ramp(t, 3.1, 4.0);
+      const arc = Math.sin(clamp((t - 3.1) / 0.9, 0, 1) * Math.PI) * 0.4;
+      inBed(P, 1 - out, arc, lerp(INBED.pitch, -0.3, ramp(t, 0.9, 1.7)));
+      P.turn = -0.35 * out + arc * -0.6;
+      const cover = 1 - 0.85 * ramp(t, 2.7, 3.1);
+      bed(P, { cover, body: cover });
+      // le bonnet de nuit s'envole, l'accessoire du jour revient
+      const cap = 1 - ramp(t, 3.4, 3.8);
+      if (cap > 0.02) nightcap(P, cap, 1 - out);
+      // les yeux s'ouvrent d'un coup, et il éclate de rire
+      const laugh = win(t, 0.3, 1.6, 0.25);
+      face(P, { lidUp: 0, lidLo: 0.3, round: 0.8, open: 0.06 });
+      face(P, { open: 0.09 + Math.abs(Math.sin(t * 15)) * 0.04, smile: 1.2, teeth: 1, round: 0, lidLo: 0.75 }, laugh);
+      P.squash += Math.abs(Math.sin(t * 15)) * 0.04 * laugh;
+      for (const [h, sx] of [[P.handR, 1], [P.handL, -1]]) h.lerp(V(0.3 * sx, 0.12, 0.55), laugh);
+      if (t < 0.1) P.cue = 'oh';
+      if (t > 0.35 && t < 0.45) P.cue = 'rire';
+      // grand étirement en bâillant
+      const st = win(t, 1.6, 2.8, 0.35);
+      P.handR.lerp(V(0.62, 1.2, 0.2), st);
+      P.handL.lerp(V(-0.62, 1.2, 0.2), st);
+      P.poleR.lerp(V(1, -1, 0), st);
+      P.poleL.lerp(V(-1, -1, 0), st);
+      P.headX -= 0.18 * st;
+      face(P, { open: 0.1, round: 1, lidUp: 0.9, lidLo: 0.5, teeth: 0 }, st);
+      if (t > 1.7 && t < 1.8) P.cue = 'baille';
+      if (t > 3.1 && t < 3.2) P.cue = 'hop';
+      // debout ! il atterrit et fait coucou
+      const land = win(t, 3.95, 4.3, 0.12);
+      P.squash -= 0.08 * land;
+      const hi = ramp(t, 4.1, 4.4);
+      if (hi > 0) {
+        face(P, { open: 0.06, smile: 1, tongue: 0.6, lidLo: 0.7, lidUp: 0, round: 0, teeth: 0 }, hi);
+        wave(P, t, hi);
+        P.rootY += Math.abs(Math.sin((t - 4.1) * TAU * 0.8)) * 0.06 * hi;
+      }
+      if (t > 4.15 && t < 4.25) P.cue = 'tada';
     },
   },
 

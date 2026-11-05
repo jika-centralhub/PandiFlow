@@ -1,7 +1,7 @@
 // Les objets que Pandi utilise pendant les tâches (cuillère, éponge, livre, sac, peigne…) et les petits
 // effets qui vont avec (bulles de savon, emojis qui s'envolent : 💤 ✨ 💖 💦).
 // Un objet tenu en main a son origine à la prise et son axe principal suivant +x.
-import { THREE, smoothNormals } from './pandi3d.js';
+import { THREE, smoothNormals, blobTexture } from './pandi3d.js';
 import { mat, plastic, gold, m, group, lathe, stripes, bend, place, starShape } from './gear.js';
 import { getAccessory } from './gear.js';
 
@@ -323,7 +323,184 @@ const BUILD = {
   lunettesLecture(occ) {
     return getAccessory('lunettes').build(occ);
   },
+  // Le lit de Pandi (posé au sol, centré, la tête vers le fond) : bambou doré, matelas, gros oreiller
+  // et couette bleu nuit étoilée. cover (0 -> 1) : la couette pliée au pied -> remontée jusqu'au ventre ;
+  // body (0 -> 1) : la bosse du corps sous la couette ; wob : il gigote dessous (chatouilles).
+  lit(occ) {
+    return buildBed(occ);
+  },
 };
+
+// --- Le lit -------------------------------------------------------------------------------------
+
+const BED = { L: 2.6, W: 1.9, top: 0.56, duvet: 1.0, foot: 1.23 };
+
+// Bambou doré : des nœuds tous les 0,4 (les UV de chaque tige sont étirés à sa longueur)
+const bambooTex = () => canvasTex('bambou', (g, S) => {
+  const gr = g.createLinearGradient(0, 0, S, 0);
+  gr.addColorStop(0, '#C9A956');
+  gr.addColorStop(0.5, '#E6CF85');
+  gr.addColorStop(1, '#C9A956');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, S, S);
+  g.globalAlpha = 0.18;
+  for (let i = 0; i < 18; i++) {
+    g.fillStyle = i % 2 ? '#FFF3C4' : '#A8873E';
+    g.fillRect((i * 53) % S, 0, 2 + (i % 3), S);
+  }
+  g.globalAlpha = 1;
+  // le nœud : un anneau sombre puis un bourrelet clair
+  g.fillStyle = '#8F6E2E';
+  g.fillRect(0, S * 0.9, S, S * 0.04);
+  g.fillStyle = '#F3E2A6';
+  g.fillRect(0, S * 0.94, S, S * 0.03);
+}, 128);
+
+function bambooGeo(r, len) {
+  return memo(`bamb${r},${len}`, () => {
+    const geo = new THREE.CylinderGeometry(r, r * 1.04, len, 16, 1);
+    const uv = geo.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setY(i, (uv.getY(i) * len) / 0.4);
+    return geo;
+  });
+}
+
+// Couette : une surface drapée sur le matelas (dessus, pans qui tombent sur les côtés et au pied).
+// u : en travers, v : du bord du haut (0) au pied (1) ; lift décolle le revers du drap au-dessus.
+function duvetPoint(u, v, body, lift = 0) {
+  const hw = BED.W / 2 + 0.03, a = (u - 0.5) * 2, edge = 0.8;
+  const s = Math.max(0, (Math.abs(a) - edge) / (1 - edge));
+  const bend = Math.sin(Math.min(1, s * 3) * Math.PI / 2);
+  let x = Math.abs(a) <= edge ? (a / edge) * hw : Math.sign(a) * (hw + 0.06 * bend);
+  const xb = Math.abs(a) <= edge ? x : Math.sign(a) * hw;
+  const bump = body * (0.74 - 0.42 * v) * Math.exp(-((xb / 0.52) ** 2)) * Math.min(1, (1 - v) * 6);
+  let y = 0.07 + bump - 0.24 * s - 0.05 * (1 - Math.cos(Math.min(1, s * 3) * Math.PI / 2));
+  let z = -BED.duvet * (1 - v);
+  // le pied : la couette tombe par-dessus le bout du matelas
+  if (v > 0.9) {
+    const w = (v - 0.9) / 0.1;
+    y -= 0.24 * w + 0.03 * (1 - Math.cos(Math.min(1, w * 3) * Math.PI / 2));
+    z += 0.06 * Math.sin(Math.min(1, w * 3) * Math.PI / 2);
+  }
+  // le bord du haut s'arrondit (épaisseur de la couette)
+  if (v < 0.04) y -= 0.05 * (1 - v / 0.04) ** 2;
+  return [x, y + lift, z];
+}
+
+function duvetGeo(key, v0, v1, lift, NU = 30, NV = 26, uvScale = [2.2, 2.6]) {
+  return memo(key, () => {
+    const pos = [], bodyPos = [], uv = [], idx = [];
+    for (let j = 0; j <= NV; j++) {
+      const v = v0 + ((v1 - v0) * j) / NV;
+      for (let i = 0; i <= NU; i++) {
+        const u = i / NU;
+        pos.push(...duvetPoint(u, v, 0, lift));
+        bodyPos.push(...duvetPoint(u, v, 1, lift));
+        uv.push(u * uvScale[0], (1 - v) * uvScale[1]);
+      }
+    }
+    for (let j = 0; j < NV; j++) for (let i = 0; i < NU; i++) {
+      const a = j * (NU + 1) + i, b = a + 1, c = a + NU + 1, d = c + 1;
+      idx.push(a, c, b, b, c, d);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setIndex(idx);
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geo.computeVertexNormals();
+    // la bosse du corps est une cible de morphing (normales comprises)
+    const tmp = new THREE.BufferGeometry();
+    tmp.setIndex(idx);
+    tmp.setAttribute('position', new THREE.Float32BufferAttribute(bodyPos, 3));
+    tmp.computeVertexNormals();
+    geo.morphAttributes.position = [tmp.attributes.position];
+    geo.morphAttributes.normal = [tmp.attributes.normal];
+    return geo;
+  });
+}
+
+const duvetTex = () => canvasTex('couette', (g, S) => {
+  g.fillStyle = '#34478F';
+  g.fillRect(0, 0, S, S);
+  // fines rayures matelassées
+  g.strokeStyle = 'rgba(255,255,255,.07)';
+  g.lineWidth = S / 64;
+  for (let i = 0; i < 4; i++) {
+    g.beginPath();
+    g.moveTo(0, ((i + 0.5) * S) / 4);
+    g.lineTo(S, ((i + 0.5) * S) / 4);
+    g.stroke();
+  }
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  const pts = [[0.18, 0.2, 1], [0.62, 0.12, 0.7], [0.4, 0.45, 0.85], [0.85, 0.42, 1], [0.12, 0.7, 0.75], [0.6, 0.78, 1], [0.88, 0.9, 0.65], [0.32, 0.95, 0.6]];
+  for (const [x, y, k] of pts) {
+    g.fillStyle = '#FFD86B';
+    g.font = `${(S / 7) * k}px sans-serif`;
+    g.fillText('★', x * S, y * S);
+  }
+  g.fillStyle = '#FFF1B8';
+  g.beginPath();
+  g.arc(0.78 * S, 0.65 * S, S * 0.05, 0, TAU);
+  g.fill();
+  g.fillStyle = '#34478F';
+  g.beginPath();
+  g.arc(0.8 * S, 0.63 * S, S * 0.045, 0, TAU);
+  g.fill();
+}, 256);
+
+function buildBed(occ) {
+  const { L, W, top } = BED;
+  const bamboo = mat(occ, '#FFFFFF', { map: bambooTex(), roughness: 0.55, clearcoat: 0.3, clearcoatRoughness: 0.4 });
+  const leaf = mat(occ, '#74C05A', { roughness: 0.6, side: THREE.DoubleSide });
+  const cloth = { roughness: 0.92, sheen: 1, sheenRoughness: 0.5, sheenColor: new THREE.Color('#ffffff') };
+  const g = new THREE.Group();
+  const pole = (x, z, len, r = 0.06) => g.add(m(bambooGeo(r, len), bamboo, [x, len / 2, z]));
+  const rail = (y, z, len, r = 0.045) => g.add(m(bambooGeo(r, len), bamboo, [0, y, z], [0, 0, Math.PI / 2]));
+  // tête de lit en arc, pied de lit bas, longerons et pieds
+  const xs = [-0.88, -0.44, 0, 0.44, 0.88];
+  const head = [1.28, 1.46, 1.6, 1.46, 1.28], foot = [0.76, 0.82, 0.86, 0.82, 0.76];
+  xs.forEach((x, i) => {
+    pole(x, -L / 2, head[i]);
+    pole(x, L / 2, foot[i], 0.055);
+  });
+  rail(0.84, -L / 2 + 0.01, W + 0.06);
+  rail(1.2, -L / 2 + 0.01, W - 0.3);
+  rail(0.68, L / 2 - 0.01, W + 0.04);
+  for (const sx of [-1, 1]) g.add(m(bambooGeo(0.05, L), bamboo, [sx * (W / 2 - 0.02), 0.3, 0], [Math.PI / 2, 0, 0]));
+  // deux feuilles de bambou en haut de la tête de lit
+  const leafGeo = memo('bedLeaf', () => new THREE.SphereGeometry(1, 12, 6).scale(0.2, 0.012, 0.06).translate(0.19, 0, 0));
+  g.add(m(leafGeo, leaf, [0, 1.6, -L / 2], [0.3, 0.2, 0.7]));
+  g.add(m(leafGeo, leaf, [0, 1.58, -L / 2], [-0.2, 2.6, 0.5]));
+  g.add(m(leafGeo, leaf, [-0.44, 1.46, -L / 2], [0.1, 2.9, 0.35]));
+  // matelas, drap et gros oreiller
+  g.add(m(roundBox(W - 0.1, 0.27, L - 0.12, 0.3), mat(occ, '#F7F3FF', cloth), [0, top - 0.13, 0]));
+  g.add(m(roundBox(1.25, 0.3, 0.6, 0.42), mat(occ, '#E4EAFF', cloth), [0, top + 0.2, -L / 2 + 0.38], [-0.62, 0, 0]));
+  // la couette (pivot au pied du lit) et son revers de drap blanc
+  const duvet = new THREE.Group();
+  duvet.position.set(0, top, BED.foot);
+  const quilt = m(duvetGeo('couette', 0, 1, 0), mat(occ, '#FFFFFF', { ...cloth, map: duvetTex(), side: THREE.DoubleSide }));
+  const fold = m(duvetGeo('revers', 0, 0.12, 0.012, 30, 6, [1, 1]), mat(occ, '#FFFFFF', { ...cloth, side: THREE.DoubleSide }));
+  quilt.morphTargetInfluences = [0];
+  fold.morphTargetInfluences = [0];
+  duvet.add(quilt, fold);
+  g.add(duvet);
+  // ombre douce sous le lit
+  const shadow = new THREE.Mesh(
+    memo('bedShadow', () => new THREE.PlaneGeometry(W + 0.9, L + 0.8).rotateX(-Math.PI / 2)),
+    new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, opacity: 0.42, depthWrite: false, color: '#2A1E3A' }),
+  );
+  shadow.position.y = 0.005;
+  g.add(shadow);
+  g.userData.update = (dt, spec, time) => {
+    const cover = spec.cover ?? 1, wob = spec.wob || 0;
+    duvet.scale.set(1, 1 + (1 - cover) * 0.9 + Math.sin(time * 11) * 0.05 * wob, 0.22 + 0.78 * cover);
+    duvet.rotation.z = Math.sin(time * 13) * 0.015 * wob;
+    const body = (spec.body ?? 1) * cover + Math.sin(time * 9) * 0.12 * wob;
+    quilt.morphTargetInfluences[0] = fold.morphTargetInfluences[0] = Math.max(0, body);
+  };
+  return g;
+}
 
 export function makeProp(name, occ, opts) {
   const build = BUILD[name];

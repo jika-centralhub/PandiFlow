@@ -8,7 +8,7 @@ import { makeProp, createFx } from './props.js';
 
 export { ACTS };
 
-const NUM = ['rootY', 'rootX', 'turn', 'lean', 'bend', 'side', 'twist', 'squash', 'headX', 'headY', 'headZ', 'legR', 'legL', 'toeR', 'toeL', 'brush', 'foam', 'energy', 'tuftFlat', 'tuftScale'];
+const NUM = ['rootY', 'rootX', 'rootZ', 'pitch', 'turn', 'lean', 'bend', 'side', 'twist', 'squash', 'headX', 'headY', 'headZ', 'legR', 'legL', 'toeR', 'toeL', 'brush', 'foam', 'energy', 'tuftFlat', 'tuftScale'];
 const VEC = ['handR', 'handL', 'poleR', 'poleL', 'contact', 'handle'];
 const SLOTS = ['tete', 'yeux', 'cou', 'dos'];
 
@@ -99,8 +99,9 @@ export class PandiActor {
     P.squash += Math.sin(this.time * 2.3) * 0.008; // il respire
 
     // corps
-    rig.root.position.set(P.rootX, P.rootY, 0);
-    rig.root.rotation.set(0, P.turn, P.lean);
+    // pitch : il bascule en arrière autour de ses pieds (couché dans son lit)
+    rig.root.position.set(P.rootX, P.rootY, P.rootZ);
+    rig.root.rotation.set(P.pitch, P.turn, P.lean);
     rig.torso.rotation.set(P.bend, P.twist, P.side);
     rig.torso.scale.set(1 - P.squash * 0.6, 1 + P.squash, 1 - P.squash * 0.6);
     rig.neck.rotation.set(P.headX * 0.4, P.headY * 0.3, P.headZ * 0.3);
@@ -265,7 +266,8 @@ function blend(a, b, w) {
   for (const k of SLOTS) P.hide[k] = lerp(a.hide[k], b.hide[k], w);
   // les objets de l'ancien numéro rapetissent, ceux du nouveau grandissent
   for (const [n, s] of Object.entries(a.props)) P.props[n] = { ...s, s: (s.s ?? 1) * (1 - w) };
-  for (const [n, s] of Object.entries(b.props)) P.props[n] = a.props[n] ? { ...s, s: Math.max((s.s ?? 1) * w, (a.props[n].s ?? 1) * (1 - w)) } : { ...s, s: (s.s ?? 1) * w };
+  // (un objet des deux numéros, comme le lit, garde sa taille)
+  for (const [n, s] of Object.entries(b.props)) P.props[n] = a.props[n] ? { ...s, s: lerp(a.props[n].s ?? 1, s.s ?? 1, w) } : { ...s, s: (s.s ?? 1) * w };
   P.emit = b.emit;
   P.cue = b.cue;
   return P;

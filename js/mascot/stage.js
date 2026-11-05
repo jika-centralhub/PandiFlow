@@ -127,9 +127,13 @@ function release(s) {
 }
 
 // Cadrages : tout Pandi (avec chapeau et bras levés), ou le haut du corps
+// lit : la chambre vue d'un peu plus haut (up : la caméra monte et regarde vers le bas), avec la place
+// à côté du lit ; litProche : le lit seul, quand Pandi dort
 const FRAMES = {
   full: { y: 1.22, h: 3.1 },
   bust: { y: 1.5, h: 2.0 },
+  lit: { x: 0.3, y: 1.08, h: 3.25, w: 4.4, up: 2.4 },
+  litProche: { x: 0, y: 1.02, h: 2.6, w: 2.7, up: 2.4 },
 };
 
 function makeScene(env) {
@@ -166,6 +170,7 @@ function frame(view, dt) {
   c.h += (want.h - c.h) * k;
   c.x += ((want.x || 0) - c.x) * k;
   c.w += ((want.w || want.h * 0.78) - c.w) * k;
+  c.up = (c.up || 0) + ((want.up || 0) - (c.up || 0)) * k;
   const f = c;
   const aspect = w / h;
   const dist = 7.5;
@@ -174,7 +179,7 @@ function frame(view, dt) {
   camera.aspect = aspect;
   camera.userData.h = h; // taille des particules (feu du dragon)
   camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(vh / 2 / dist));
-  camera.position.set(f.x, f.y + 0.15, dist);
+  camera.position.set(f.x, f.y + 0.15 + f.up, dist);
   camera.lookAt(f.x, f.y, 0);
   camera.updateProjectionMatrix();
   return [w, h];
@@ -205,6 +210,9 @@ function drawAll(dt, steps = 1) {
       v.actor.update(v.still ? 0 : step, v.camera);
       v.cast?.update(v.still ? 0 : step, v.camera);
     }
+    // l'ombre suit Pandi quand il se déplace (à côté de son lit…)
+    v.shadow.position.x = v.actor.rig.root.position.x;
+    v.shadow.position.z = v.actor.rig.root.position.z;
     v.shadow.scale.setScalar(1 - Math.min(0.45, v.actor.rig.root.position.y * 1.2));
     v.shadow.material.opacity = 0.34 * (1 - Math.min(0.6, v.actor.rig.root.position.y * 1.5));
     v.surface.renderer.render(v.scene, v.camera);
@@ -292,6 +300,13 @@ export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', bas
     play: (name, c) => actor.play(name, c),
     set: (c) => actor.setContext(c),
     setFraming: (f) => (view.framing = f),
+    // Où se trouve à l'écran un point du buste de Pandi (en pixels CSS dans son canvas), ex. son ventre
+    screenOf(off) {
+      if (!view.cam) return null;
+      const r = view.canvas.getBoundingClientRect();
+      const p = actor.rig.torso.localToWorld(new THREE.Vector3(...off)).project(view.camera);
+      return { x: ((p.x + 1) / 2) * r.width, y: ((1 - p.y) / 2) * r.height, w: r.width, h: r.height };
+    },
     setActive: (on) => (view.active = on),
     setCue: (fn) => (actor.onCue = fn),
     // une image (animations réduites : Pandi reste immobile mais garde sa pose)

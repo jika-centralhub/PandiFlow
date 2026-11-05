@@ -324,6 +324,14 @@ const VOICE = {
     [1900, 2500, 2200].forEach((f, i) => tone(f, { at: 0.05 + i * 0.07, dur: 0.06, slide: -600, type: 'sine', vol: 0.06 }));
   },
   mmf: () => [210, 190].forEach((f, i) => tone(f, { at: i * 0.18, dur: 0.14, type: 'sine', vol: 0.16 })),
+  // il ronfle tout doucement dans son lit (on inspire… on souffle avec un petit sifflet)
+  ronfle: () => {
+    noise({ dur: 1.1, vol: 0.045, freq: 160, q: 0.7, attack: 0.5 });
+    tone(95, { dur: 1.0, attack: 0.45, type: 'sawtooth', vol: 0.018, slide: 25 });
+    tone(1250, { at: 1.35, dur: 0.6, attack: 0.15, type: 'sine', vol: 0.03, slide: -350 });
+  },
+  // un petit rire étouffé quand on le chatouille (il dort encore)
+  hihi: () => [1050, 980].forEach((f, i) => tone(f + Math.random() * 80, { at: i * 0.08, dur: 0.06, slide: 70, type: 'triangle', vol: 0.11 })),
   pop: () => tone(300, { dur: 0.09, slide: 900, type: 'sine', vol: 0.22 }),
   panier: () => [660, 990, 1320].forEach((f, i) => tone(f, { at: i * 0.07, dur: 0.12, type: 'triangle', vol: 0.15 })),
   boing: () => {

@@ -304,3 +304,38 @@
 .ns-hint { font-size: calc(var(--u) * 3.4); opacity: .45; }
 /* au bout de 30 s, il ne reste presque qu'un écran noir (la télé peut s'éteindre) */
 @keyframes ns-dim { to { opacity: .18; } }
+
+/* ----- La chambre de Pandi (Chambre.js) : le soir il se couche, le matin on le réveille ----- */
+.chambre { gap: calc(var(--u) * 1.5); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+.chambre .ch-scene { position: relative; z-index: 1; width: min(96vw, calc(var(--u) * 118)); height: calc(var(--u) * 72); }
+.chambre .ch-pandi { display: block; width: 100%; height: 100%; }
+.chambre :is(.ns-text, .ns-hint) { position: relative; z-index: 1; }
+.ch-sky { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+/* le matin : l'aube, Pandi dort encore ; quand il se réveille, le jour se lève */
+.chambre.matin { animation: none; cursor: default; color: #fff;
+  background: linear-gradient(180deg, #17123f 0%, #352a7a 42%, #87599c 74%, #e2988a 92%, #f6c27f 100%); }
+.chambre.matin :is(.ns-pandi, .ns-text) { animation: none; opacity: 1; }
+.chambre.matin .ns-stars i { opacity: .1; }
+.chambre.matin .ns-stars { transition: opacity 1.5s ease; }
+.chambre.matin .ch-sky { background: linear-gradient(180deg, #7cc8ff 0%, #b9e3ff 45%, #ffeab9 85%, #ffd27a 100%); transition: opacity 2.6s ease .6s; }
+.chambre.matin.eveil .ch-sky { opacity: 1; }
+.chambre.matin.eveil .ns-stars { opacity: 0; }
+.ch-sun { position: absolute; left: 80%; bottom: 0; width: calc(var(--u) * 24); aspect-ratio: 1; border-radius: 50%; pointer-events: none; opacity: .55;
+  background: radial-gradient(circle, #fff7cc 0 38%, #ffd45c 60%, rgba(255, 196, 64, 0) 71%); transform: translate(-50%, 55%);
+  transition: transform 3s cubic-bezier(.2, .8, .3, 1) .4s, opacity 2s ease .4s; }
+.chambre.eveil .ch-sun { transform: translate(-50%, -120%); opacity: 1; }
+.chambre.matin .ns-text { font-size: calc(var(--u) * 6); transition: color 1.5s ease 1s; }
+.chambre.matin.eveil .ns-text { color: #3B2A86; }
+.ch-bonjour { display: inline-block; animation: ch-pop .6s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes ch-pop { from { transform: scale(.3); opacity: 0; } }
+.chambre.matin .ns-hint { font-size: calc(var(--u) * 4); font-weight: 700; opacity: .92; color: #FFE7A3; }
+/* la petite main qui gratte le ventre de Pandi (placée sur son ventre par Chambre.js) */
+.ch-hand { position: fixed; left: 50%; top: 50%; z-index: 3; pointer-events: none; opacity: 0; transition: opacity .6s ease; font-size: calc(var(--u) * 9); line-height: 1; }
+.ch-hand.on { opacity: 1; }
+.ch-hand span { display: inline-block; transform: translate(-50%, 0); animation: ch-rub .9s ease-in-out infinite; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .35)); }
+@keyframes ch-rub { 0%, 100% { transform: translate(-85%, 0) rotate(-14deg); } 50% { transform: translate(-15%, 0) rotate(14deg); } }
+.chambre.leaving { opacity: 0; transition: opacity .6s ease; }
+.ch-flat { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+.ch-flat .mascot { width: auto; height: 80%; }
+.ch-zz { position: absolute; right: 32%; top: 6%; font-size: calc(var(--u) * 8); animation: ns-twinkle 3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .ch-hand span { animation: none; } }
