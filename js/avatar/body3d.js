@@ -167,11 +167,11 @@ export function Body3D({ id, pic, geo, img, shirt, sleeve, gloves, costume, outf
             <g clip-path=${`url(#${id}-b3f${a.key})`}>${stack(a.key)}</g>
           </g>`)}`
         : stack('all')}
-      <g transform=${geo.torso}>
+      ${!cut && html`<g transform=${geo.torso}>
         ${costume?.collar?.(ctx)}
         ${neckItem && html`<g class="av-neck">${neckItem.render(ctx)}</g>`}
         ${costume?.over && html`<g class="av-costume-over">${costume.over(ctx)}</g>`}
-      </g>
+      </g>`}
     </g>
   </g>`;
 }

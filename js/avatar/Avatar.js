@@ -341,6 +341,8 @@ export function Avatar({ look: rawLook, equipped = {}, expr = 'happy', mode = 'f
     crown: pic ? pic.crown : hair.crown,
     hatScale: pic ? pic.hatScale : hair.hatScale || 1,
     in3d: Boolean(pic),
+    // personnage 3D entier (tête et haut du corps en image) : les cols des costumes suivent son t-shirt
+    body3d: Boolean(geo),
     child: seed,
     hairFill: `url(#${id}-hair)`,
     hairLine: shade(hairColor, -0.35),

@@ -221,7 +221,9 @@ function kit({ id, name, shirt, sleeve = shirt, collar, trim, number, pattern = 
       ${pattern}
       <text x="100" y="242" text-anchor="middle" font-size="24" font-weight="700" font-family="Fredoka, sans-serif" fill=${number} stroke=${shade(number, -0.35)} stroke-width="0.8">10</text>
     </g>`,
-    collar: ({ skin }) => html`<path d="M86 181 Q100 196 114 181" fill=${shade(skin, -0.06)} stroke=${collar} stroke-width="4" />`,
+    // Col en V, la peau du cou dedans. Pas sur un personnage 3D : son t-shirt a déjà son encolure (la peau
+    // dessinée y faisait une tache plate sous le menton, et le liseré un « sourire » blanc)
+    collar: ({ skin, body3d }) => (body3d ? null : html`<path d="M86 181 Q100 196 114 181" fill=${shade(skin, -0.06)} stroke=${collar} stroke-width="4" />`),
     sleeves: cuff(trim, 226, 6),
     prop: () => ball(),
   };
@@ -749,7 +751,7 @@ const wonderWoman = {
     ${[[64, 252], [84, 260], [116, 260], [136, 252], [100, 250]].map(([x, y]) => html`<path key=${x} d=${starPath(x, y, 4)} fill="#FFFFFF" />`)}
     <rect x="40" y="234" width="120" height="6" fill=${`url(#${id}-ww)`} />
   </g>`,
-  collar: ({ skin }) => html`<path d="M86 181 Q100 196 114 181" fill=${shade(skin, -0.06)} stroke="none" />`,
+  collar: ({ skin, body3d }) => (body3d ? null : html`<path d="M86 181 Q100 196 114 181" fill=${shade(skin, -0.06)} stroke="none" />`),
   sleeves: ({ skin }, x) => html`<g><rect x=${x} y="188" width="20" height="46" rx="10" fill=${skin} stroke=${shade(skin, -0.2)} stroke-width="1.2" />
     <rect x=${x - 0.5} y="212" width="21" height="13" rx="3" fill="#D4DAE4" stroke="#8A93A6" stroke-width="1.2" /></g>`,
   hat: ({ id }) => html`<g>
