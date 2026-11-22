@@ -24,14 +24,16 @@ export function has3D() {
 }
 
 // act : le numéro (voir js/mascot/acts.js) ; ctx : ses réglages (zone des dents, tempo, variante…)
-// framing : 'full', 'bust' ou 'auto' ; sound : Pandi fait ses petits bruits ; active : false = en pause
-export function Pandi3D({ act = 'idle', ctx = {}, framing = 'full', base = 'bust', class: cls = '', fps = 0, sound = false, active = true, brushColor, label = 'Pandi le panda' }) {
+// framing : 'full', 'bust' ou 'auto' ; sound : Pandi fait ses petits bruits ; active : false = en pause ;
+// fps : images par seconde (0 = celles de l'écran), modifiable à tout moment ; maxDpr : définition maximale
+export function Pandi3D({ act = 'idle', ctx = {}, framing = 'full', base = 'bust', class: cls = '', fps = 0, maxDpr = 0, sound = false, active = true, brushColor, label = 'Pandi le panda' }) {
   const ref = useRef(null);
   const ctl = useRef(null);
   const [ready, setReady] = useState(false);
   const voice = useRef(sound);
   voice.current = sound;
   const ctxKey = JSON.stringify(ctx);
+  const stillRef = useRef(false);
   const className = `pandi3d ${cls}`.trim();
 
   useEffect(() => {
@@ -40,8 +42,9 @@ export function Pandi3D({ act = 'idle', ctx = {}, framing = 'full', base = 'bust
       .then((m) => {
         if (!alive || !ref.current) return;
         const still = prefersReducedMotion();
+        stillRef.current = still;
         ctl.current = m.mountPandi(ref.current, {
-          act, ctx, framing, base, brushColor, still, fps: still ? 4 : fps, className, label,
+          act, ctx, framing, base, brushColor, still, fps: still ? 4 : fps, maxDpr, className, label,
           date: eveningDate(),
           onCue: (cue) => voice.current && pandiVoice(cue),
           // apparition en douceur une fois la première image dessinée (canvas.pandi3d.ready, app.css)
@@ -65,6 +68,9 @@ export function Pandi3D({ act = 'idle', ctx = {}, framing = 'full', base = 'bust
   useEffect(() => {
     ctl.current?.setFraming(framing);
   }, [framing, ready]);
+  useEffect(() => {
+    ctl.current?.setFps(stillRef.current ? 4 : fps);
+  }, [fps, ready]);
   useEffect(() => {
     const c = ctl.current?.canvas;
     if (c) c.className = `${className}${c.classList.contains('ready') ? ' ready' : ''}`;

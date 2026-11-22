@@ -52,16 +52,27 @@ export function TopBar({ onCalm, chest = null }) {
 const doneClass = (r) => (!r ? '' : r.color === 'pause' ? 'pause' : 'done');
 
 // Une carte du carrousel. d = écart avec la carte du centre (0 = au centre, -1 à gauche, 1 à droite…)
-// Sur la carte du milieu, Pandi fait la tâche avec l'enfant (ou réagit à la note)
+// Sur la carte du milieu, Pandi fait la tâche avec l'enfant (ou réagit à la note).
+// Pour ménager le téléphone (il chauffait) : 15 images par seconde au repos, 30 quand Pandi réagit à une
+// note (quelques secondes) ou suit un minuteur, et une définition limitée (CARD_DPR).
+const CARD_DPR = 1.5;
+const REACT_MS = 4500;
 function CardPandi({ task, rating, view, color, active, night }) {
   const prev = useRef(rating);
   const [voice, setVoice] = useState(false);
+  const [react, setReact] = useState(false);
   useEffect(() => {
-    if (rating && rating !== prev.current) setVoice(true);
+    const changed = rating && rating !== prev.current;
     prev.current = rating;
+    if (!changed) return;
+    setVoice(true);
+    setReact(true);
+    const t = setTimeout(() => setReact(false), REACT_MS);
+    return () => clearTimeout(t);
   }, [rating]);
   const { act, ctx } = pandiFor(task, { rating, timer: view, night });
-  return html`<div class="cr-pandi"><${Pandi3D} act=${act} ctx=${{ ...ctx, color }} framing="auto" fps=${30} sound=${voice} active=${active} brushColor=${color} /></div>`;
+  const fps = react || (view && view.look !== 'paused') ? 30 : 15;
+  return html`<div class="cr-pandi"><${Pandi3D} act=${act} ctx=${{ ...ctx, color }} framing="auto" fps=${fps} maxDpr=${CARD_DPR} sound=${voice} active=${active} brushColor=${color} /></div>`;
 }
 
 function TaskCard({ task, index, total, d, rating, timer, canTime, cardRef, onClick, onTimer, color, pandiActive, night }) {
@@ -110,7 +121,7 @@ function NightCard({ child, index, total, d, ready, asleep, cardRef, onClick, pa
     onKeyDown=${(e) => (e.key === 'Enter' || e.key === ' ') && onClick(e)}>
     <div class=${`cr-emoji-wrap ${withPandi ? 'has-pandi' : ''}`}>
       ${withPandi
-        ? html`<div class="cr-pandi"><${Pandi3D} act="endormi" framing="auto" fps=${20} active=${pandiActive} brushColor=${child.color} /></div><span class="cr-badge">🌙</span>`
+        ? html`<div class="cr-pandi"><${Pandi3D} act="endormi" framing="auto" fps=${15} maxDpr=${CARD_DPR} active=${pandiActive} brushColor=${child.color} /></div><span class="cr-badge">🌙</span>`
         : html`<span class="cr-emoji">${asleep ? '😴' : '🌙'}</span>`}
     </div>
     <div class="cr-title">${asleep ? `Bonne nuit ${child.name} !` : 'Bonne nuit Pandi'}</div>
@@ -573,6 +584,9 @@ export function Evening() {
 
   async function pick(child, task, color) {
     closeRating();
+    // la carte notée reste au centre le temps que Pandi réagisse (la première de la soirée glissait tout de
+    // suite : sans tâche choisie, le centre est la première tâche pas encore notée)
+    setFocus((f) => ({ ...f, [child.id]: task.id }));
     const res = actions.rate(child.id, task.id, date, color);
     if (!color) {
       sfx.pop();

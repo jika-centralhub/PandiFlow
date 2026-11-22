@@ -200,7 +200,7 @@ function drawAll(dt, steps = 1) {
     // il réapparaît après avoir prêté sa surface : il en reprend une et se dessine tout de suite
     const back = !v.surface;
     if (back) attach(v, acquire(v));
-    // les petits Pandi des cartes se contentent de 30 images par seconde
+    // les petits Pandi des cartes se contentent de 15 images par seconde au repos, 30 quand ils réagissent
     v.acc += dt * steps;
     if (!back && v.fps && steps === 1 && v.acc < 1 / v.fps - 0.004) continue;
     const step = v.acc / steps;
@@ -300,6 +300,8 @@ export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', bas
     play: (name, c) => actor.play(name, c),
     set: (c) => actor.setContext(c),
     setFraming: (f) => (view.framing = f),
+    // images par seconde (0 : à chaque image de l'écran) ; les cartes ralentissent au repos (Evening.js)
+    setFps: (n) => (view.fps = n),
     // Où se trouve à l'écran un point du buste de Pandi (en pixels CSS dans son canvas), ex. son ventre
     screenOf(off) {
       if (!view.cam) return null;
