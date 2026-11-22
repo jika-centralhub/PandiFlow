@@ -97,7 +97,8 @@ export function initSky(root) {
 
   function loop(t) {
     raf = requestAnimationFrame(loop);
-    if (document.hidden || prefersReducedMotion()) return;
+    // covered : le décor d'un thème cache le ciel (ThemeBackdrop dans js/pages/Evening.js)
+    if (document.hidden || prefersReducedMotion() || root.classList.contains('covered')) return;
     if (t - last < 40) return; // ~25 images/s suffisent pour des étoiles
     last = t;
     if (!shooting && Math.random() < 0.004) {

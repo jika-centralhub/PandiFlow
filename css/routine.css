@@ -339,3 +339,45 @@
 .ch-flat .mascot { width: auto; height: 80%; }
 .ch-zz { position: absolute; right: 32%; top: 6%; font-size: calc(var(--u) * 8); animation: ns-twinkle 3s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .ch-hand span { animation: none; } }
+
+/* ===== Le bandeau de l'enfant (js/components/KidBanner.js) : son décor derrière l'avatar et le prénom, son
+   véhicule et son compagnon en grand. Images fixes ; seul transform bouge (le téléphone ne redessine rien). */
+.kid-head.rich { position: relative; isolation: isolate; overflow: hidden; min-height: calc(var(--u) * 17);
+  margin: calc(var(--u) * -2.4) calc(var(--u) * -2.4) calc(var(--u) * 1.2); padding: calc(var(--u) * 1.6) calc(var(--u) * 2.4);
+  border-radius: var(--radius) var(--radius) calc(var(--radius) * .45) calc(var(--radius) * .45); }
+.kh-scene { position: absolute; inset: 0; z-index: -1; background-size: cover; background-position: center 66%; background-repeat: no-repeat; }
+/* un voile pour lire le prénom (plus sombre à gauche), un peu plus sombre le soir */
+.kh-scene::after { content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(14, 10, 50, .62), rgba(14, 10, 50, .22) 48%, rgba(14, 10, 50, 0) 75%), linear-gradient(0deg, rgba(14, 10, 50, .18), rgba(14, 10, 50, .18)); }
+.routine-matin .kh-scene::after { background: linear-gradient(90deg, rgba(14, 10, 50, .5), rgba(14, 10, 50, .12) 48%, rgba(14, 10, 50, 0) 75%); }
+.kh-stuff { margin-left: auto; align-self: stretch; display: flex; align-items: flex-end; gap: calc(var(--u) * .8); margin-bottom: calc(var(--u) * -1.6); }
+.kh-veh, .kh-pet { position: relative; display: block; padding: 0; border: 0; background: none; cursor: pointer; transform-origin: 50% 100%; -webkit-tap-highlight-color: transparent; }
+.kh-veh::after, .kh-pet::after { content: ''; position: absolute; z-index: -1; left: 14%; right: 14%; bottom: calc(var(--u) * .3); height: calc(var(--u) * 1.6);
+  border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, .38), rgba(0, 0, 0, 0)); }
+.kh-veh.sky::after { left: 30%; right: 30%; opacity: .5; }
+.kh-veh img, .kh-pet img { display: block; width: auto; object-fit: contain; transform-origin: 50% 100%; pointer-events: none; user-select: none; }
+.kh-veh img { height: calc(var(--u) * 15); max-width: calc(var(--u) * 30); animation: kh-bob 1.7s ease-in-out var(--d, 0s) infinite; }
+.kh-veh.sky img { height: calc(var(--u) * 14); margin-bottom: calc(var(--u) * 2); animation: kh-hover 3.2s ease-in-out var(--d, 0s) infinite; }
+.kh-pet img { height: calc(var(--u) * 12.5); animation: kh-hop 3.6s ease-in-out calc(var(--d, 0s) - .9s) infinite; }
+@keyframes kh-bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3%) rotate(-1.4deg); } }
+@keyframes kh-hover { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-9%) rotate(1.5deg); } }
+/* le compagnon respire, puis fait un petit bond de temps en temps */
+@keyframes kh-hop {
+  0%, 60%, 100% { transform: translateY(0) scale(1, 1); }
+  30% { transform: translateY(0) scale(1.025, .975); }
+  68% { transform: translateY(0) scale(1.08, .9); }
+  78% { transform: translateY(-20%) scale(.95, 1.06); }
+  88% { transform: translateY(0) scale(1.05, .95); }
+}
+.evening.soir-doux .kh-stuff img { animation-duration: 3.4s; }
+.evening.soir-doux .kh-pet img { animation-duration: 7.2s; }
+.kid-col.asleep .kh-stuff img { animation-play-state: paused; }
+
+/* Pendant un thème : son décor remplit le fond de l'écran de la routine, sous un voile de nuit */
+.theme-backdrop { position: fixed; inset: 0; z-index: -1; pointer-events: none; background-size: cover; background-position: center 42%; background-repeat: no-repeat; }
+.theme-backdrop::after { content: ''; position: absolute; inset: 0; transition: opacity 3s ease;
+  background: linear-gradient(180deg, rgba(16, 12, 58, .62) 0%, rgba(16, 12, 58, .36) 45%, rgba(16, 12, 58, .66) 100%); }
+.routine-matin .theme-backdrop::after { background: linear-gradient(180deg, rgba(16, 12, 58, .28) 0%, rgba(16, 12, 58, .12) 45%, rgba(16, 12, 58, .4) 100%); }
+.evening.soir-doux .theme-backdrop::after { background: rgba(10, 8, 36, .74); }
+#sky.covered > * { display: none; }
+@media (prefers-reduced-motion: reduce) { .kh-stuff img { animation: none; } }
