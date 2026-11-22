@@ -4,12 +4,12 @@ description: "Ajoute à Pandi un ou plusieurs objets en 3D façon Pixar, dans le
 ---
 
 Tu ajoutes des objets 3D façon film d'animation (Pixar) à Pandi, l'app familiale de routine du soir de
-l'utilisateur (dossier du projet : `C:\Users\jacob.kashani\OneDrive - Accenture\Documents\PandiFlow`).
+l'utilisateur (dossier du projet : `C:\Users\jacob.kashani\OneDrive - Accenture\Documents\Projets\Perso\PandiFlow`).
 Parle-lui en français, simplement : c'est un parent, pas un développeur. Tutoie-le, comme dans l'app.
 
 ## Avant tout
 
-1. Lis la mémoire du projet : `C:\Users\jacob.kashani\.claude\projects\C--Users-jacob-kashani-OneDrive---Accenture-Documents-PandiFlow\memory\pandiflow-project.md`
+1. Lis la mémoire du projet : `C:\Users\jacob.kashani\.claude\projects\C--Users-jacob-kashani-OneDrive---Accenture-Documents-Projets-Perso-PandiFlow\memory\pandiflow-project.md`
    (paragraphes « Pixar items » et « Prototype shipped »). Ce qui y est décidé ne se redemande pas.
 2. Lis le code actuel (il bouge, d'autres sessions y travaillent) : `tools/item-art.json`, `js/avatar/art.js`
    (champs de placement), `js/avatar/art-place.js` (placements validés), `js/avatar/art-list.js`, et le
@@ -89,7 +89,7 @@ classificateur de permissions t'interdit de la déployer : c'est l'utilisateur q
 3. Donne à l'utilisateur, chacune dans son propre bloc `powershell`, la commande de déploiement affichée par
    `spec` :
    ```powershell
-   & "$env:LOCALAPPDATA\supabase-cli\supabase.exe" functions deploy make-item-art --project-ref kyhhkhmwdostzdaksxzw --no-verify-jwt --use-api --workdir "C:\Users\jacob.kashani\OneDrive - Accenture\Documents\PandiFlow"
+   & "$env:LOCALAPPDATA\supabase-cli\supabase.exe" functions deploy make-item-art --project-ref kyhhkhmwdostzdaksxzw --no-verify-jwt --use-api --workdir "C:\Users\jacob.kashani\OneDrive - Accenture\Documents\Projets\Perso\PandiFlow"
    ```
    puis la page à ouvrir dans son Chrome, où il est connecté à Pandi :
    `http://localhost:8080/tests/local/item-art.html?only=<id1>,<id2>` et le bouton « Créer les images »
