@@ -542,26 +542,19 @@ function place(obj, pos, rot, s = 1) {
 }
 
 export const getAccessory = (id) => ACCESSORIES.find((a) => a.id === id);
-// Le tirage du jour ignore les tenues des thèmes (elles ne sortent que pendant leur thème)
-const bySlot = (slot) => ACCESSORIES.filter((a) => a.slot === slot && !a.theme);
+// (le tirage du jour ignore les tenues des thèmes : elles ne sortent que pendant leur thème)
 
-// Le « Pandi du jour » : même tirage pour une même date, sur tous les écrans.
-// Il porte toujours quelque chose sur la tête, souvent au cou, parfois des lunettes ou une cape.
+// Le « Pandi du jour » : même tirage pour une même date, sur tous les écrans. Un seul accessoire, tiré
+// parmi tous (chapeau, lunettes, cou ou dos), pour que Pandi reste lisible sur les cartes.
 // Pendant un thème de la boutique, Pandi porte la tenue du thème (js/mascot/themeLook.js).
 export function dailyLook(dateISO) {
   const themed = themeLookFor(dateISO);
   if (themed) return { tete: null, yeux: null, cou: null, dos: null, ...themed };
   let s = hashString(`pandi:${dateISO}`) || 1;
   const rnd = () => ((s = Math.imul(s ^ (s >>> 15), 2246822519) >>> 0), (s ^= s >>> 13), (s >>> 0) / 4294967296);
-  const one = (slot) => {
-    const list = bySlot(slot);
-    return list[Math.floor(rnd() * list.length)].id;
-  };
-  const look = { tete: one('tete'), yeux: null, cou: null, dos: null };
-  if (rnd() < 0.45) look.yeux = one('yeux');
-  if (rnd() < 0.75) look.cou = one('cou');
-  if (rnd() < 0.35) look.dos = one('dos');
-  return look;
+  const list = ACCESSORIES.filter((a) => !a.theme);
+  const one = list[Math.floor(rnd() * list.length)];
+  return { tete: null, yeux: null, cou: null, dos: null, [one.slot]: one.id };
 }
 
 // Habille Pandi : renvoie ce qu'il faut animer et cacher selon les tâches (bonnet de douche, lunettes de lecture…)

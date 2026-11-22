@@ -28,22 +28,22 @@ import { KidStuff, sceneOf } from '../components/KidBanner.js';
 import { flyCoins, burst, replay } from '../anim/fx.js';
 import { sfx, setSoftSound } from '../lib/sounds.js';
 import { navigate } from '../router.js';
-import { keepScreenOn, toggleFullscreen, isFullscreen } from '../lib/device.js';
+import { keepScreenOn } from '../lib/device.js';
 
-// Matin ou soir : la routine change toute seule (à 4 h et à 13 h), on n'affiche que celle du moment
+// Matin ou soir : la routine change toute seule (à 4 h et à 13 h), on n'affiche que celle du moment.
+// Au centre, deux bulles : le coffre de l'équipe et le coin calme. Le son se règle dans Espace parent →
+// Réglages → Sur cet appareil ; le plein écran, sur téléphone, par le bandeau du bas (Landscape.js).
 export function TopBar({ onCalm, chest = null }) {
   const s = useStore();
-  const [fs, setFs] = useState(isFullscreen());
   return html`<header class="topbar">
     <div class="brand"><${Logo} /> <span>Pandi</span></div>
     ${s.mode === 'demo' && html`<span class="mode-badge">Démo</span>`}
     ${s.mode === 'cloud' && html`<span class=${`sync-dot ${s.pendingOps ? 'busy' : ''}`} title=${s.pendingOps ? 'Synchronisation…' : 'Synchronisé'} />`}
     <div class="spacer" />
-    ${chest}
-    <div class="spacer" />
-    <button class="icon-btn calm-btn" aria-label="Coin calme : apaiser une émotion" title="Coin calme" onClick=${() => { sfx.sparkle(); onCalm(); }}>🌈</button>
-    <button class="icon-btn" aria-label=${s.prefs.sound ? 'Couper le son' : 'Activer le son'} onClick=${() => setPrefs({ sound: !s.prefs.sound })}>${s.prefs.sound ? '🔊' : '🔇'}</button>
-    <button class="icon-btn fs-btn" aria-label="Plein écran" onClick=${async () => setFs(await toggleFullscreen())}>${fs ? '🗗' : '⛶'}</button>
+    <div class="top-bubbles">
+      ${chest && html`<div class="tb-bubble tb-chest">${chest}</div>`}
+      <button class="tb-bubble calm-btn" aria-label="Coin calme : apaiser une émotion" title="Coin calme" onClick=${() => { sfx.sparkle(); onCalm(); }}><span>🌈</span></button>
+    </div>
     <button class="icon-btn" aria-label="Espace parent" onClick=${() => navigate('parent')}>⚙️</button>
   </header>`;
 }
@@ -82,7 +82,6 @@ function TaskCard({ task, index, total, d, rating, timer, canTime, cardRef, onCl
     onClick=${onClick}
     onKeyDown=${(e) => (e.key === 'Enter' || e.key === ' ') && onClick(e)}
   >
-    <span class="cr-step">${index + 1} / ${total}</span>
     <div class=${`cr-emoji-wrap ${withPandi ? 'has-pandi' : ''}`}>
       ${v && html`<${TimerRing} progress=${v.progress} />`}
       ${withPandi
@@ -93,10 +92,8 @@ function TaskCard({ task, index, total, d, rating, timer, canTime, cardRef, onCl
     <div class="cr-title">${task.title}</div>
     ${v
       ? html`<div class="cr-clock">${v.look === 'paused' ? '⏸ ' : ''}${over ? 'On finit 🙂' : v.clock}</div>`
-      : rating
-        ? html`<div class="cr-status">${rating.color === 'pause' ? 'Pas ce soir' : 'Fait ✓'}</div>`
-        : d === 0 && html`<div class="cr-hint">Touche la carte pour noter</div>`}
-    ${canTime && !rating && !timer && d === 0 && html`<button class="cr-timer-btn" onClick=${(e) => { e.stopPropagation(); onTimer(); }}>⏱️ Minuteur</button>`}
+      : rating && html`<div class="cr-status">${rating.color === 'pause' ? 'Pas ce soir' : 'Fait ✓'}</div>`}
+    ${canTime && !rating && !timer && d === 0 && html`<button class="cr-timer-btn" aria-label="Lancer le minuteur" title="Minuteur" onClick=${(e) => { e.stopPropagation(); onTimer(); }}>⏱️</button>`}
     ${rating && html`<span class="tile-badge" key=${doneClass(rating)}>${rating.color === 'pause' ? '⏸️' : '✓'}</span>`}
   </div>`;
 }
@@ -111,7 +108,6 @@ function NightCard({ child, index, total, d, ready, asleep, cardRef, onClick, pa
   return html`<div class=${cls} role="button" tabIndex=${d === 0 ? 0 : -1} aria-label=${asleep ? `Pandi dort. Bonne nuit ${child.name} !` : 'Bonne nuit Pandi'}
     style=${{ '--d': d, '--ad': Math.min(ad, 3), zIndex: 10 - ad }} ref=${cardRef} onClick=${onClick}
     onKeyDown=${(e) => (e.key === 'Enter' || e.key === ' ') && onClick(e)}>
-    <span class="cr-step">${index + 1} / ${total}</span>
     <div class=${`cr-emoji-wrap ${withPandi ? 'has-pandi' : ''}`}>
       ${withPandi
         ? html`<div class="cr-pandi"><${Pandi3D} act="endormi" framing="auto" fps=${20} active=${pandiActive} brushColor=${child.color} /></div><span class="cr-badge">🌙</span>`

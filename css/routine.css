@@ -44,25 +44,29 @@
 .cr-card.deflate { animation: tile-deflate .7s ease-in-out; }
 .cr-step { position: absolute; top: 3.6cqh; left: 50%; transform: translateX(-50%); font-size: 4.4cqh; font-weight: 700; opacity: .55; letter-spacing: .04em; }
 /* Pandi sort du rond de la carte du milieu ; l'emoji de la tâche devient une pastille */
-.cr-emoji-wrap.has-pandi { width: 40cqh; height: 40cqh; margin-top: 9cqh; }
+/* (plus de compteur « 6 / 9 » ni de « Touche la carte pour noter » : Pandi et le titre prennent la place) */
+.cr-emoji-wrap.has-pandi { width: 47cqh; height: 47cqh; margin-top: 10cqh; }
 .cr-pandi { position: absolute; left: 50%; bottom: -3%; width: 120%; height: 138%; transform: translateX(-50%); pointer-events: none; z-index: 1; }
 .cr-pandi .pandi3d { width: 100%; height: 100%; }
 .cr-badge { position: absolute; right: -10%; bottom: -6%; z-index: 2; width: 14cqh; height: 14cqh; border-radius: 50%; display: grid; place-items: center; font-size: 8.4cqh; line-height: 1;
   background: #fff; box-shadow: 0 .8cqh 0 rgba(42, 35, 80, .14), 0 0 0 .7cqh color-mix(in srgb, var(--kid), #fff 40%); }
 .cr-card .cr-step { z-index: 3; }
-.cr-emoji-wrap { position: relative; width: 36cqh; height: 36cqh; border-radius: 50%; display: grid; place-items: center; flex: none;
+.cr-emoji-wrap { position: relative; width: 42cqh; height: 42cqh; border-radius: 50%; display: grid; place-items: center; flex: none;
   background: radial-gradient(circle at 40% 35%, #fff, color-mix(in srgb, var(--kid), #fff 70%)); box-shadow: inset 0 -1.2cqh 0 rgba(42, 35, 80, .08); }
 .cr-card.done .cr-emoji-wrap, .cr-card.pause .cr-emoji-wrap { background: rgba(255, 255, 255, .55); }
 .cr-emoji { font-size: 22cqh; line-height: 1; filter: drop-shadow(0 1cqh 0 rgba(0, 0, 0, .12)); }
 .cr-card.center .cr-emoji { animation: emoji-bounce 1.8s ease-in-out infinite; }
-.cr-title { font-size: 7.4cqh; font-weight: 700; line-height: 1.05; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.cr-title { font-size: 8.4cqh; font-weight: 700; line-height: 1.05; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .cr-status { font-size: 5cqh; font-weight: 700; opacity: .85; }
 .cr-hint { font-size: 4.2cqh; font-weight: 600; color: var(--ink-soft); animation: hint-blink 2.6s ease-in-out infinite; }
 @keyframes hint-blink { 50% { opacity: .45; } }
-.cr-timer-btn { display: inline-flex; align-items: center; gap: 1cqh; padding: 1.6cqh 4cqh; border-radius: 999px; font-weight: 700; font-size: 4.6cqh; color: #fff;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--kid), #fff 15%), color-mix(in srgb, var(--kid), #000 12%)); box-shadow: 0 1.2cqh 0 color-mix(in srgb, var(--kid), #000 32%);
-  text-shadow: 0 1px 0 rgba(0, 0, 0, .25); transition: transform .15s cubic-bezier(.3, 1.6, .5, 1); animation: fade-up .5s ease .2s both; }
-.cr-timer-btn:active { transform: translateY(.8cqh) scale(.96); box-shadow: 0 .3cqh 0 color-mix(in srgb, var(--kid), #000 32%); }
+/* Le minuteur : une bulle en haut à droite de la carte du milieu, sans texte */
+.cr-timer-btn { position: absolute; top: 3.4cqh; right: 3.4cqh; z-index: 4; width: 15cqh; height: 15cqh; border-radius: 50%; display: grid; place-items: center; padding: 0; font-size: 8.4cqh; line-height: 1;
+  background: radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--kid), #fff 55%), color-mix(in srgb, var(--kid), #fff 10%) 60%, color-mix(in srgb, var(--kid), #000 10%));
+  box-shadow: 0 1cqh 0 color-mix(in srgb, var(--kid), #000 32%), inset 0 0 0 .6cqh rgba(255, 255, 255, .55);
+  transition: transform .15s cubic-bezier(.3, 1.6, .5, 1); animation: fade-up .5s ease .2s both; }
+.cr-timer-btn::after { content: ''; position: absolute; left: 20%; top: 12%; width: 28%; height: 16%; border-radius: 50%; background: rgba(255, 255, 255, .65); transform: rotate(-30deg); pointer-events: none; }
+.cr-timer-btn:active { transform: translateY(.8cqh) scale(.92); box-shadow: 0 .3cqh 0 color-mix(in srgb, var(--kid), #000 32%), inset 0 0 0 .6cqh rgba(255, 255, 255, .55); }
 .cr-card .tile-badge { top: -2cqh; right: -1cqh; width: 15cqh; height: 15cqh; font-size: 9cqh; }
 .cr-arrow { position: absolute; top: 50%; z-index: 20; width: calc(var(--u) * 8.4); height: calc(var(--u) * 8.4); margin-top: calc(var(--u) * -4.2); border-radius: 50%; display: grid; place-items: center;
   font-size: calc(var(--u) * 6); line-height: 1; font-weight: 700; background: rgba(255, 255, 255, .28); box-shadow: inset 0 0 0 2px var(--line); transition: opacity .3s, transform .15s; }
@@ -395,3 +399,22 @@
 @media (prefers-reduced-motion: reduce) { .kh-stuff img { animation: none; } }
 /* l'enfant qui a dit bonne nuit dort dans son bandeau : il respire plus lentement */
 .kid-col.asleep .kid-avatar.bust .avatar, .kid-col.asleep .kid-avatar.bust .av-char { animation-duration: 6.5s; }
+
+/* ===== Le coffre de l'équipe et le coin calme : deux bulles qui flottent au centre, en haut de l'écran de la
+   routine (TopBar dans js/pages/Evening.js). Seul transform bouge. */
+.top-bubbles { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: calc(var(--u) * 3.2); z-index: 1; }
+.tb-bubble { position: relative; flex: none; width: calc(var(--u) * 12.5); height: calc(var(--u) * 12.5); border-radius: 50%; display: grid; place-items: center; padding: 0; border: 0; cursor: pointer;
+  background: radial-gradient(circle at 34% 28%, rgba(255, 255, 255, .42), rgba(255, 255, 255, .1) 36%, rgba(190, 170, 255, .1) 64%, rgba(255, 255, 255, .26) 100%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .5), inset 0 calc(var(--u) * -1.4) calc(var(--u) * 2.6) rgba(150, 120, 255, .28), 0 calc(var(--u) * 1.2) calc(var(--u) * 3) rgba(5, 3, 30, .32);
+  animation: tb-float 4.6s ease-in-out infinite; -webkit-tap-highlight-color: transparent; }
+/* le reflet de la bulle */
+.tb-bubble::after { content: ''; position: absolute; left: 20%; top: 13%; width: 26%; height: 15%; border-radius: 50%; background: rgba(255, 255, 255, .72); transform: rotate(-30deg); pointer-events: none; }
+.tb-bubble:active { scale: .9; }
+@keyframes tb-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--u) * -.9)); } }
+.topbar .tb-chest .team-chest { width: 84%; margin: 0; }
+/* le coin calme : une bulle irisée, qui flotte à contretemps du coffre */
+.tb-bubble.calm-btn { font-size: calc(var(--u) * 6.4); animation: tb-float 4.6s ease-in-out -2.3s infinite;
+  background: radial-gradient(circle at 34% 28%, rgba(255, 255, 255, .45), rgba(255, 182, 224, .22) 36%, rgba(140, 210, 255, .22) 66%, rgba(255, 255, 255, .3) 100%); }
+.tb-bubble.calm-btn span { line-height: 1; }
+.evening.soir-doux .tb-bubble { animation-duration: 8s; }
+@media (prefers-reduced-motion: reduce) { .tb-bubble { animation: none; } }
