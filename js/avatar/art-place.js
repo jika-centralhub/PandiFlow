@@ -128,7 +128,7 @@ export const PLACE = {
   tandem: { cx: 105, bottom: 178, w: 160, shadow: 66, cls: 'veh-bob' },
   bus_fratrie: { cx: 117, bottom: 178, w: 200, shadow: 86, cls: 'veh-bob', ride: { hips: [98, 124], s: 0.12, front: 118 } },
   licorne: { cx: 105, bottom: 178, h: 112, shadow: 48, cls: 'veh-bob', ride: { hips: [95, 119], s: 0.21, front: 120 } },
-  sous_marin: { cx: 112, bottom: 178, w: 180, shadow: 74, cls: 'veh-bob', ride: { hips: [112, 150], s: 0.17, win: { cx: 112, cy: 130, rx: 20, ry: 20 } } },
+  sous_marin: { cx: 112, bottom: 178, w: 180, shadow: 74, cls: 'veh-bob', ride: { hips: [133, 151], s: 0.17, win: { cx: 133, cy: 130, rx: 17, ry: 16 } } },
 
   // --- Accessoires ---
   ballon_foot: { cx: 40, bottom: 178, w: 27, shadow: 13, cls: 'ball-bounce' },
@@ -193,15 +193,16 @@ export const PLACE = {
   etoiles: { cx: 100, bottom: 128, w: 104 },
   masque: { cx: 100, bottom: 128, w: 132 },
   moustache: { cx: 100, bottom: 143, w: 80 },
-  masque_plongee: { cx: 106, bottom: 130, w: 140 },
+  // le hublot (au milieu de l'image, le tuba dépasse en haut et en bas) centré sur les yeux
+  masque_plongee: { cx: 104, bottom: 176, w: 130 },
 
   // --- Autour du cou (encolure à y ≈ 183) ---
   noeud: { cx: 100, bottom: 200, w: 46 },
   medaille: { cx: 100, bottom: 236, h: 60 },
   medaille_equipe: { cx: 100, bottom: 236, h: 60 },
   // Épinglés sur la poitrine, côté cœur
-  etoile_sherif: { cx: 78, bottom: 229, w: 30 },
-  insigne: { cx: 78, bottom: 232, w: 26 },
+  etoile_sherif: { cx: 84, bottom: 230, w: 34 },
+  insigne: { cx: 84, bottom: 232, w: 30 },
 
   // --- Dans le dos (derrière le buste) ---
   fee: { cx: 100, bottom: 236, w: 196 },
