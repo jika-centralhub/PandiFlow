@@ -149,7 +149,8 @@ export function normalizeLook(input) {
 // versions ne montrent que la tête (happy, joy, encourage) ; les nouvelles montrent aussi le haut du corps,
 // avec les repères du nez, de la bouche, du buste et des bras (BODY_MARKS) : happy et encourage mains sur
 // les hanches, joy bras levés, dance.
-export const PORTRAIT_EXPRS = ['happy', 'joy', 'encourage', 'dance'];
+// baille et dort : le soir, sur l'écran de la routine (créées d'elles-mêmes au lancement si elles manquent)
+export const PORTRAIT_EXPRS = ['happy', 'joy', 'encourage', 'dance', 'baille', 'dort'];
 export const PORTRAIT_MARKS = ['eyeLeftX', 'eyeLeftY', 'eyeRightX', 'eyeRightY', 'chinY', 'topY', 'headLeftX', 'headRightX'];
 export const BODY_MARKS = [
   'noseY', 'mouthY', 'collarX', 'collarY',

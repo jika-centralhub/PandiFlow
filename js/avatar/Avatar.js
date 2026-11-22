@@ -14,7 +14,7 @@ import { usePortrait, portraitPath, loadPortrait, hasBody } from '../lib/portrai
 let instance = 0;
 
 // Expression de l'avatar -> visage 3D correspondant
-const PORTRAIT_FOR = { neutral: 'happy', happy: 'happy', joy: 'joy', encourage: 'encourage', focus: 'encourage' };
+const PORTRAIT_FOR = { neutral: 'happy', happy: 'happy', joy: 'joy', encourage: 'encourage', focus: 'encourage', yawn: 'baille', sleep: 'dort' };
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 // Image du personnage 3D pour une expression et une pose. Avec le haut du corps : happy et encourage
@@ -22,6 +22,8 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 function portraitKey(portrait, expr, pose, head) {
   const has = (k) => Boolean(portrait.exprs[k]);
   if (!portrait.body) return has(PORTRAIT_FOR[expr]) ? PORTRAIT_FOR[expr] : 'happy';
+  // le soir : il bâille, puis dort (sans ces images, il garde son sourire)
+  if (expr === 'yawn' || expr === 'sleep') return has(PORTRAIT_FOR[expr]) ? PORTRAIT_FOR[expr] : 'happy';
   if (!head && pose === 'dance' && has('dance')) return 'dance';
   if ((pose === 'cheer' || pose === 'dance' || (head && expr === 'joy')) && has('joy')) return 'joy';
   if ((expr === 'encourage' || expr === 'focus') && has('encourage')) return 'encourage';
@@ -128,7 +130,8 @@ const BROWS = {
 const BROW_WIDTH = { fin: 2.6, moyen: 3.8, epais: 5.4 };
 
 // Expressions : ce que le visage fait selon la dernière note.
-// neutral (doux sourire), happy (sourire ouvert), joy (ravi), encourage (orange), focus (rouge : déterminé, jamais triste)
+// neutral (doux sourire), happy (sourire ouvert), joy (ravi), encourage (orange), focus (rouge : déterminé, jamais triste),
+// yawn (il bâille, le soir), sleep (il dort, yeux fermés)
 function Mouth({ expr, look, skin }) {
   const lip = '#7A3440';
   const inside = '#8A2E3B';
@@ -151,6 +154,13 @@ function Mouth({ expr, look, skin }) {
       </g>`;
     case 'encourage':
       return html`<path class="av-mouth" d="M90 136 Q100 143 110 135" stroke=${lip} stroke-width="3.2" fill="none" stroke-linecap="round" />`;
+    case 'yawn':
+      return html`<g class="av-mouth">
+        <ellipse cx="100" cy="139" rx="8.5" ry="11" fill=${inside} stroke=${lip} stroke-width="1.6" />
+        <ellipse cx="100" cy="145" rx="5.5" ry="4" fill="#FF7D8A" />
+      </g>`;
+    case 'sleep':
+      return html`<path class="av-mouth" d="M93 137 Q100 141.5 107 137" stroke=${lip} stroke-width="2.8" fill="none" stroke-linecap="round" />`;
     case 'focus':
       return html`<g class="av-mouth"><path d="M91 139 Q100 135.5 109 139" stroke=${lip} stroke-width="3.2" fill="none" stroke-linecap="round" />
         <ellipse cx="114" cy="134" rx="4" ry="3" fill=${shade(skin, -0.06)} opacity="0.8" /></g>`;
@@ -163,6 +173,16 @@ function Eye({ cx, cy, shape, irisId, clipId, expr, side, lid }) {
   const e = EYES[shape] || EYES.rond;
   if (expr === 'joy') {
     return html`<path d=${`M${cx - 11} ${cy + 3} Q${cx} ${cy - 10} ${cx + 11} ${cy + 3}`} stroke="#3A2A2A" stroke-width="3.6" fill="none" stroke-linecap="round" />`;
+  }
+  // yeux fermés : plissés pour bâiller, paisibles (avec les cils) pour dormir
+  if (expr === 'yawn') {
+    return html`<path d=${`M${cx - 11} ${cy - 1} Q${cx} ${cy + 5} ${cx + 11} ${cy - 1}`} stroke="#3A2A2A" stroke-width="3.6" fill="none" stroke-linecap="round" />`;
+  }
+  if (expr === 'sleep') {
+    return html`<g stroke="#3A2A2A" stroke-linecap="round" fill="none">
+      <path d=${`M${cx - 10} ${cy + 1} Q${cx} ${cy + 7} ${cx + 10} ${cy + 1}`} stroke-width="3" />
+      <path d=${`M${cx - 6} ${cy + 5} l-1.6 3 M${cx} ${cy + 6} v3.4 M${cx + 6} ${cy + 5} l1.6 3`} stroke-width="1.6" />
+    </g>`;
   }
   const lidY = shape === 'amande' ? cy - e.ry + 1 : cy - e.ry + 0.5;
   return html`<g>
@@ -255,7 +275,7 @@ export const COVERED_BY_SKIN = ['back', 'outfit', 'neck', 'face', 'hat'];
 /**
  * <Avatar look equipped expr mode tryOn />
  *  - mode : 'full' (personnage entier avec fond), 'bust' (sans fond), 'head' (tête seule)
- *  - expr : neutral | happy | joy | encourage | focus
+ *  - expr : neutral | happy | joy | encourage | focus | yawn | sleep
  *  - tryOn : { slot, itemId } pour essayer un objet en boutique
  *  - pose : idle | dance | cheer (bras levés)
  *  - nest : { x, y, w, h } pour se dessiner à l'intérieur d'une autre image SVG (la scène de l'enfant)

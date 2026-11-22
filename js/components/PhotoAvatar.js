@@ -1,5 +1,5 @@
 // Photo -> avatar : Claude règle le personnage dessiné (Edge Function analyze-photo) et OpenAI crée
-// le personnage façon film d'animation 3D, tête et haut du corps, en 4 poses (Edge Function make-portrait).
+// le personnage façon film d'animation 3D, tête et haut du corps, en 6 poses (Edge Function make-portrait).
 // Un enfant qui a déjà un visage 3D (tête seule) peut recevoir son corps sans nouvelle photo.
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js';
 import { useStore } from '../lib/store.js';
@@ -24,12 +24,14 @@ const MESSAGES = [
   'Presque fini…',
 ];
 
-// Les 4 poses créées, et comment l'avatar les montre
+// Les 6 poses créées, et comment l'avatar les montre
 const FACES = [
   { expr: 'happy', label: 'Sourire', emoji: '😊', show: { expr: 'happy', pose: 'idle' } },
   { expr: 'encourage', label: 'Courage', emoji: '💪', show: { expr: 'encourage', pose: 'idle' } },
   { expr: 'joy', label: 'Bravo', emoji: '🙌', show: { expr: 'joy', pose: 'cheer' } },
   { expr: 'dance', label: 'Danse', emoji: '💃', show: { expr: 'joy', pose: 'dance' } },
+  { expr: 'baille', label: 'Bâille', emoji: '🥱', show: { expr: 'yawn', pose: 'idle' } },
+  { expr: 'dort', label: 'Dort', emoji: '😴', show: { expr: 'sleep', pose: 'idle' } },
 ];
 
 export function PhotoAvatar({ child, onClose, onEdit }) {
@@ -117,8 +119,8 @@ export function PhotoAvatar({ child, onClose, onEdit }) {
       ${step === 'consent' && html`
         <h2>Avatar magique 📸</h2>
         <div class="consent">
-          <p>La photo de ${child.name} est envoyée une seule fois à deux IA : Claude (Anthropic) repère sa coiffure, ses couleurs et ses lunettes, et OpenAI crée son personnage façon film d'animation 3D (visage et haut du corps), en 4 poses.</p>
-          <p style="margin-top:8px"><strong>La photo n'est jamais enregistrée</strong> : Pandi ne garde que le personnage créé (les 4 images, visibles seulement par votre famille), que tu peux remplacer ou retirer quand tu veux.</p>
+          <p>La photo de ${child.name} est envoyée une seule fois à deux IA : Claude (Anthropic) repère sa coiffure, ses couleurs et ses lunettes, et OpenAI crée son personnage façon film d'animation 3D (visage et haut du corps), en 6 poses.</p>
+          <p style="margin-top:8px"><strong>La photo n'est jamais enregistrée</strong> : Pandi ne garde que le personnage créé (les 6 images, visibles seulement par votre famille), que tu peux remplacer ou retirer quand tu veux.</p>
           <label><input type="checkbox" checked=${agree} onChange=${(e) => setAgree(e.target.checked)} /> Je suis parent de ${child.name} et j'accepte l'envoi de la photo à Claude et à OpenAI.</label>
         </div>
         <div class="sheet-actions">

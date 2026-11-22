@@ -729,13 +729,13 @@ export async function analyzePhoto(childId, imageBase64, mediaType = 'image/jpeg
 
 export const canMakePortrait = () => getState().mode === 'cloud';
 
-// Personnage 3D (tête et haut du corps) en 4 poses : d'abord le sourire mains sur les hanches, à partir
+// Personnage 3D (tête et haut du corps) en 6 poses : d'abord le sourire mains sur les hanches, à partir
 // de la photo ({ image, mediaType }) ou du visage 3D seul d'une ancienne version ({ fromFace: version }),
-// puis l'encouragement, le bravo et la danse à partir de ce sourire (même personnage).
+// puis l'encouragement, le bravo, la danse, le bâillement et le sommeil à partir de ce sourire (même personnage).
 // onFace(expr, url) à chaque image prête. Renvoie le portrait à ranger dans le look ; seul le sourire
 // est indispensable. missing : poses qui n'ont pas pu être créées ({ expr, message }) ; l'app les crée
 // d'elle-même à un prochain lancement (completePoses).
-const POSES = ['encourage', 'joy', 'dance'];
+const POSES = ['encourage', 'joy', 'dance', 'baille', 'dort'];
 export async function makePortrait(childId, source, onFace) {
   const face = async (expr, body) => {
     const res = await repo.makePortrait({ childId, expr, ...body });

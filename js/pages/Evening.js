@@ -306,6 +306,9 @@ let greetLater = false;
 let themeLater = null;
 
 // Prochaine tâche sans note après celle du centre (on boucle au début si besoin)
+// Un moment de l'avatar de l'enfant dans son bandeau (voir setMood dans Evening)
+const mood = (expr, ms, pose = 'idle') => ({ expr, pose, ms });
+
 // Pendant un thème, son décor remplit le fond de l'écran de la routine (assombri, voir css/routine.css) :
 // le ciel animé, caché dessous, s'arrête (js/anim/sky.js ne dessine plus quand #sky a la classe covered)
 function ThemeBackdrop({ scene }) {
@@ -348,6 +351,7 @@ export function Evening() {
   const cards = useRef({});
   const heads = useRef({});
   const moodTimers = useRef({});
+  const moodsRef = useRef({});
   const lastAuto = useRef(currentRoutine());
   const routineRef = useRef(routine);
   routineRef.current = routine;
@@ -417,6 +421,20 @@ export function Evening() {
       setSoftSound(false);
     };
   }, [doux]);
+
+  // Soirée douce : l'avatar de chaque enfant pas encore couché bâille de temps en temps (une première fois
+  // peu après l'histoire, puis toutes les 25 à 45 s, chacun à son rythme), sauf s'il est déjà en train de réagir
+  const yawners = doux ? withTasks.filter((k) => !asleep.includes(k.id)).map((k) => k.id) : [];
+  useEffect(() => {
+    const timers = [];
+    const plan = (id, ms) => timers.push(setTimeout(() => {
+      if (!moodsRef.current[id]) setMood(id, [mood('yawn', 2600)]);
+      plan(id, 25000 + Math.random() * 20000);
+    }, ms));
+    yawners.forEach((id, i) => plan(id, 4000 + i * 3500 + Math.random() * 3000));
+    return () => timers.forEach(clearTimeout);
+  }, [yawners.join()]);
+  useEffect(() => () => Object.values(moodTimers.current).forEach(clearTimeout), []);
 
   // Une tâche notée (ici ou par l'autre parent) n'a plus besoin de son minuteur
   useEffect(() => {
@@ -525,10 +543,17 @@ export function Evening() {
     } else sfx.pop();
   }
 
-  function setMood(childId, expr, ms) {
+  // L'avatar de l'enfant dans son bandeau joue une petite suite de moments ({ expr, pose, ms }), puis
+  // revient au repos : son sourire, ou ses yeux fermés une fois qu'il a dit bonne nuit à Pandi
+  function setMood(childId, steps) {
     clearTimeout(moodTimers.current[childId]);
-    setMoods((m) => ({ ...m, [childId]: expr }));
-    moodTimers.current[childId] = setTimeout(() => setMoods((m) => ({ ...m, [childId]: undefined })), ms);
+    const run = (i) => {
+      const step = steps[i];
+      moodsRef.current = { ...moodsRef.current, [childId]: step };
+      setMoods((m) => ({ ...m, [childId]: step }));
+      if (step) moodTimers.current[childId] = setTimeout(() => run(i + 1), step.ms);
+    };
+    run(0);
   }
 
   function closeRating() {
@@ -561,23 +586,26 @@ export function Evening() {
     const head = heads.current[child.id];
     const points = pointsFor(color, s.settings, child);
 
-    // Le positif se voit, le négatif se dit (par le parent, pas par l'écran)
+    // Le positif se voit, le négatif se dit (par le parent, pas par l'écran). L'avatar se réjouit des
+    // pandi reçus, puis encourage l'enfant pour la tâche suivante (rien après la dernière : il dansera)
+    const next = res.becameComplete ? [] : [mood('encourage', 2400)];
     if (color === 'green') {
       sfx.green();
       replay(card, 'pop', 700);
       burst(card, { count: doux ? 6 : 14 });
       replay(head?.querySelector('.avatar'), 'av-jump', 900);
-      setMood(child.id, 'joy', 2800);
+      setMood(child.id, [mood('joy', 2600, 'cheer'), ...next]);
     } else if (color === 'orange') {
       sfx.orange();
       replay(card, 'pop', 700);
       burst(card, { count: 5, chars: ['👍', '✨'], spread: 90 });
-      setMood(child.id, 'happy', 2200);
+      setMood(child.id, [mood('happy', 1800), ...next]);
     } else if (color === 'red') {
       sfx.pop();
-      setMood(child.id, 'encourage', 1800);
+      setMood(child.id, [mood('encourage', 2600)]);
     } else {
       sfx.pause();
+      setMood(child.id, next);
     }
 
     // La carte suivante glisse au centre pendant que les pièces volent
@@ -598,6 +626,8 @@ export function Evening() {
 
     if (res.becameComplete) {
       await showOverlay('celebrate', { childId: child.id, routine, soft: evening });
+      // Toutes ses tâches sont faites : il danse (le soir doux, un bravo plus calme)
+      setMood(child.id, [doux ? mood('joy', 3200, 'cheer') : mood('joy', 5200, 'dance')]);
     }
     for (const c of res.unlocked) {
       await showOverlay('reveal', { childId: child.id, itemId: c.reward_item, challengeTitle: c.title });
@@ -666,7 +696,8 @@ export function Evening() {
           <div class=${`kid-head banner ${scene ? 'has-scene' : ''}`}>
             ${scene && html`<span class="kh-scene" aria-hidden="true" style=${{ backgroundImage: `url("${artSrc(scene.img)}")`, backgroundPosition: `center ${scene.y}` }}></span>`}
             <button class="kid-avatar bust" ref=${(n) => (heads.current[child.id] = n)} onClick=${() => navigate(`enfant/${child.id}`)} aria-label=${`Le coin de ${child.name}`}>
-              <${Avatar} look=${child.look} equipped=${{ ...child.equipped, pet: null }} expr=${moods[child.id] || 'happy'} mode="bust" seed=${child.id} />
+              <${Avatar} look=${child.look} equipped=${{ ...child.equipped, pet: null }} expr=${moods[child.id]?.expr || (night?.asleep ? 'sleep' : 'happy')}
+                pose=${moods[child.id]?.pose || 'idle'} mode="bust" seed=${child.id} />
             </button>
             <div class="kid-info">
               <span class="kid-name">${child.name}</span>

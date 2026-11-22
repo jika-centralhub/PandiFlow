@@ -7,12 +7,12 @@
 // Si OpenAI refuse la photo, Claude la décrit et OpenAI dessine d'après ce texte seul.
 // Chaque demande est notée dans public.portrait_runs (durée, modèle, erreur ; jamais d'image).
 //
-// Requête : { app, childId, expr: "happy" | "encourage" | "joy" | "dance", image?, mediaType?, version?, fromFace?, marksOnly? }
+// Requête : { app, childId, expr: "happy" | "encourage" | "joy" | "dance" | "baille" | "dort", image?, mediaType?, version?, fromFace?, marksOnly? }
 //   app : version de l'app (les apps d'avant la v1.4 ne l'envoient pas et sont priées de se mettre à jour)
 //   happy : mains sur les hanches et sourire, crée une nouvelle version, à partir de la photo
 //           (image en base64 + mediaType) ou, avec fromFace, du visage 3D seul d'une version plus ancienne
-//   encourage (repos), joy (bras levés, « bravo »), dance : à partir du « happy » de cette version,
-//           pour garder le même personnage
+//   encourage (repos), joy (bras levés, « bravo »), dance, baille (il bâille) et dort (yeux fermés, le soir) :
+//           à partir du « happy » de cette version, pour garder le même personnage
 //   marksOnly (avec version) : Claude relit seulement les repères d'une image déjà créée (rien n'est
 //           créé ni décompté), pour les personnages enregistrés sans eux par une ancienne version de l'app
 // Réponse : { version, base, expr, marks, image } (image = le personnage en webp, base64 ; absente avec marksOnly)
@@ -26,14 +26,14 @@ const IMAGE_MODELS = ["gpt-image-2.5-sunburst", "gpt-image-2", "gpt-image-1.5"];
 // Une image prend ~20 s en « medium » : « high » tient encore largement dans les 150 s
 const IMAGE_QUALITY = "high";
 const CLAUDE_MODEL = "claude-opus-5-5";
-const DAILY_IMAGES = 12; // 3 séances photo (4 poses) par enfant et par jour
+const DAILY_IMAGES = 12; // 2 séances photo (6 poses) par enfant et par jour
 const MAX_IMAGE_BASE64 = 7_000_000; // ~5 Mo
 const BUCKET = "portraits";
 const BUDGET_MS = 140_000; // la fonction est coupée à 150 s
 // Format portrait : la tête et le haut du corps, bras levés compris
 const SIZE = "1024x1536";
 
-const EXPRS = ["happy", "encourage", "joy", "dance"] as const;
+const EXPRS = ["happy", "encourage", "joy", "dance", "baille", "dort"] as const;
 type Expr = (typeof EXPRS)[number];
 
 // Le rendu visé : les enfants des films Pixar (Coco, Ratatouille)
@@ -76,6 +76,13 @@ const PROMPTS: Record<Exclude<Expr, "happy">, string> = {
     "eyebrows slightly lowered in concentration, kind and motivated eyes.",
   joy: SAME_CHARACTER + `Change the pose and the expression. ${POSES.cheer} ${LAUGH} Both arms and hands stay entirely inside the image.`,
   dance: SAME_CHARACTER + `Change the pose and the expression. ${POSES.dance} ${LAUGH} Both arms and hands stay entirely inside the image.`,
+  // Le soir : il bâille, puis il dort debout (mêmes bras que le sourire, pour garder les repères du corps)
+  baille:
+    SAME_CHARACTER + "Keep the same pose, with the hands on the hips, and the head at the same position. " +
+    "Change only the facial expression: a big sleepy yawn, the mouth wide open in a round O, the eyes squeezed shut, the eyebrows raised, a sleepy and cute look.",
+  dort:
+    SAME_CHARACTER + "Keep the same pose, with the hands on the hips, and the head at the same position. " +
+    "Change only the facial expression: peacefully asleep, both eyes gently closed with the eyelashes showing, a small relaxed smile with the mouth closed, rosy cheeks.",
 };
 // Enfant qui a déjà un visage 3D (ancienne version, tête seule) : on lui crée le corps à partir de ce visage
 const FROM_FACE =
@@ -114,8 +121,8 @@ const MARKS_PROMPT = `Cette image montre un personnage de film d'animation 3D (l
 Donne ces repères en pourcentage de la largeur (x) ou de la hauteur (y) de l'image, de 0 (bord gauche ou haut) à 100 (bord droit ou bas).
 « Left » désigne toujours le côté gauche de l'image et « Right » le côté droit, quel que soit le bras du personnage.
 Visage :
-- eyeLeftX, eyeLeftY : le centre de la pupille de l'œil situé du côté gauche de l'image ;
-- eyeRightX, eyeRightY : le centre de la pupille de l'œil situé du côté droit de l'image ;
+- eyeLeftX, eyeLeftY : le centre de la pupille de l'œil situé du côté gauche de l'image (le milieu de l'œil s'il est fermé) ;
+- eyeRightX, eyeRightY : le centre de la pupille de l'œil situé du côté droit de l'image (le milieu de l'œil s'il est fermé) ;
 - noseY : le bas du nez (sous les narines) ; mouthY : le milieu de la bouche ;
 - chinY : le bas du menton ;
 - topY : le point le plus haut de la tête, cheveux compris ;
@@ -217,7 +224,7 @@ Deno.serve(async (req) => {
   if (quotaError) return fail("La magie n'a pas marché cette fois-ci. Réessaie dans un instant.", 500, `quota: ${quotaError.message}`);
   if (!allowed) {
     await log(false, { detail: `limite du jour atteinte (${DAILY_IMAGES} images)` });
-    return reply({ error: "3 séances photo par jour au maximum. On réessaie demain !" }, 429);
+    return reply({ error: "2 séances photo par jour au maximum. On réessaie demain !" }, 429);
   }
   const refund = () => admin.rpc("refund_portrait_quota", { p_child: child.id });
 
