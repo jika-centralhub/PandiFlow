@@ -60,11 +60,10 @@ h1, h2, h3, p { margin: 0; }
 .sky-moon { position: absolute; top: 7%; right: 9%; width: calc(var(--u) * 13); height: calc(var(--u) * 13); border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #fffbe6, #ffe9a6 60%, #f5cf6a);
   box-shadow: 0 0 calc(var(--u) * 8) rgba(255, 233, 166, .55), 0 0 calc(var(--u) * 20) rgba(255, 233, 166, .25);
-  animation: moon-glow 6s ease-in-out infinite; }
+  /* halo fixe : animer box-shadow faisait redessiner la lune à chaque image */ }
 .sky-moon::before, .sky-moon::after { content: ''; position: absolute; border-radius: 50%; background: rgba(230, 196, 110, .35); }
 .sky-moon::before { width: 22%; height: 22%; top: 28%; left: 52%; }
 .sky-moon::after { width: 14%; height: 14%; top: 60%; left: 30%; }
-@keyframes moon-glow { 50% { box-shadow: 0 0 calc(var(--u) * 11) rgba(255, 233, 166, .7), 0 0 calc(var(--u) * 26) rgba(255, 233, 166, .3); } }
 .sky-cloud { position: absolute; height: calc(var(--u) * 7); border-radius: 999px; background: rgba(255, 255, 255, .07); animation: cloud linear infinite; }
 .sky-cloud::before, .sky-cloud::after { content: ''; position: absolute; background: inherit; border-radius: 50%; }
 .sky-cloud::before { width: 45%; height: 160%; left: 15%; bottom: 30%; }

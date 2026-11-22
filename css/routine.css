@@ -231,9 +231,8 @@
 #sky canvas { transition: opacity 1.6s ease; }
 #sky.morning canvas { opacity: 0; }
 .sky-moon { transition: background 1.6s, box-shadow 1.6s, transform 1.6s; }
-#sky.morning .sky-moon { background: radial-gradient(circle at 40% 40%, #fffbe0, #ffe066 55%, #ffb627); box-shadow: 0 0 calc(var(--u) * 10) rgba(255, 214, 90, .8), 0 0 calc(var(--u) * 30) rgba(255, 190, 70, .45); animation: sun-glow 5s ease-in-out infinite; }
+#sky.morning .sky-moon { background: radial-gradient(circle at 40% 40%, #fffbe0, #ffe066 55%, #ffb627); box-shadow: 0 0 calc(var(--u) * 10) rgba(255, 214, 90, .8), 0 0 calc(var(--u) * 30) rgba(255, 190, 70, .45); }
 #sky.morning .sky-moon::before, #sky.morning .sky-moon::after { opacity: 0; }
-@keyframes sun-glow { 50% { box-shadow: 0 0 calc(var(--u) * 14) rgba(255, 214, 90, .95), 0 0 calc(var(--u) * 38) rgba(255, 190, 70, .55); transform: scale(1.04); } }
 #sky.morning .sky-cloud { background: rgba(255, 255, 255, .55); }
 .sky-hills path { transition: fill 1.6s; }
 #sky.morning .sky-hills path:first-child { fill: #4fae6a; }
@@ -436,3 +435,10 @@
 .tb-bubble.calm-btn span { line-height: 1; }
 .evening.soir-doux .tb-bubble { animation-duration: 8s; }
 @media (prefers-reduced-motion: reduce) { .tb-bubble { animation: none; } }
+
+/* Le buste du bandeau respire d'un bloc, comme les personnages 3D (transform sur le <svg> : la carte graphique
+   le fait bouger sans rien redessiner). Ses animations internes (respiration, balancement, clignement des
+   avatars dessinés) faisaient redessiner les deux bustes 60 fois par seconde, soit les trois quarts du dessin
+   de l'écran. En réaction (bravo, danse), les bras bougent toujours. */
+.kid-avatar.bust .avatar.pose-idle .av-char, .kid-avatar.bust .avatar.pose-idle .av-head, .kid-avatar.bust .avatar .av-eyes { animation: none; }
+.kid-avatar.bust svg.avatar.pose-idle { transform-origin: 50% 100%; animation: av-breathe 3.6s ease-in-out infinite; }
