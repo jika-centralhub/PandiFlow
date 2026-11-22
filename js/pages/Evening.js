@@ -24,7 +24,7 @@ import { BirthdayBar } from '../components/Anniversaire.js';
 import { Chambre } from '../components/Chambre.js';
 import { funFact, getTheme } from '../avatar/themes.js';
 import { hasArt, artSrc } from '../avatar/art.js';
-import { KidStuff, sceneOf, hasStuff } from '../components/KidBanner.js';
+import { KidStuff, sceneOf } from '../components/KidBanner.js';
 import { flyCoins, burst, replay } from '../anim/fx.js';
 import { sfx, setSoftSound } from '../lib/sounds.js';
 import { navigate } from '../router.js';
@@ -663,10 +663,10 @@ export function Evening() {
         const gift = date === today && !night?.asleep ? pendingSurprise(s.settings, child.id, Date.now()) : null;
         const promise = !gift && date === today ? promiseFor(s.settings, child.id, Date.now()) : null;
         return html`<section key=${child.id} class=${`kid-col ${prog.complete ? 'done' : ''} ${night?.asleep ? 'asleep' : ''}`} style=${{ '--kid': child.color }}>
-          <div class=${`kid-head ${scene || hasStuff(child) ? 'rich' : ''} ${scene ? 'has-scene' : ''}`}>
+          <div class=${`kid-head banner ${scene ? 'has-scene' : ''}`}>
             ${scene && html`<span class="kh-scene" aria-hidden="true" style=${{ backgroundImage: `url("${artSrc(scene.img)}")`, backgroundPosition: `center ${scene.y}` }}></span>`}
-            <button class="kid-avatar" ref=${(n) => (heads.current[child.id] = n)} onClick=${() => navigate(`enfant/${child.id}`)} aria-label=${`Le coin de ${child.name}`}>
-              <${Avatar} look=${child.look} equipped=${child.equipped} expr=${moods[child.id] || 'happy'} mode="head" seed=${child.id} />
+            <button class="kid-avatar bust" ref=${(n) => (heads.current[child.id] = n)} onClick=${() => navigate(`enfant/${child.id}`)} aria-label=${`Le coin de ${child.name}`}>
+              <${Avatar} look=${child.look} equipped=${{ ...child.equipped, pet: null }} expr=${moods[child.id] || 'happy'} mode="bust" seed=${child.id} />
             </button>
             <div class="kid-info">
               <span class="kid-name">${child.name}</span>

@@ -342,7 +342,7 @@
 
 /* ===== Le bandeau de l'enfant (js/components/KidBanner.js) : son décor derrière l'avatar et le prénom, son
    véhicule et son compagnon en grand. Images fixes ; seul transform bouge (le téléphone ne redessine rien). */
-.kid-head.rich { position: relative; isolation: isolate; overflow: hidden; min-height: calc(var(--u) * 17);
+.kid-head.banner { position: relative; isolation: isolate; overflow: hidden; min-height: calc(var(--u) * 20);
   margin: calc(var(--u) * -2.4) calc(var(--u) * -2.4) calc(var(--u) * 1.2); padding: calc(var(--u) * 1.6) calc(var(--u) * 2.4);
   border-radius: var(--radius) var(--radius) calc(var(--radius) * .45) calc(var(--radius) * .45); }
 .kh-scene { position: absolute; inset: 0; z-index: -1; background-size: cover; background-position: center 66%; background-repeat: no-repeat; }
@@ -350,6 +350,13 @@
 .kh-scene::after { content: ''; position: absolute; inset: 0;
   background: linear-gradient(90deg, rgba(14, 10, 50, .62), rgba(14, 10, 50, .22) 48%, rgba(14, 10, 50, 0) 75%), linear-gradient(0deg, rgba(14, 10, 50, .18), rgba(14, 10, 50, .18)); }
 .routine-matin .kh-scene::after { background: linear-gradient(90deg, rgba(14, 10, 50, .5), rgba(14, 10, 50, .12) 48%, rgba(14, 10, 50, 0) 75%); }
+/* l'enfant en buste, en grand, posé au bas du bandeau (tête, tenue, chapeau, lunettes) ; on montre de
+   y = -30 à 210 dans le repère de l'avatar (-20 -44 240 298) : la tête et le haut du corps */
+.kid-avatar.bust { align-self: flex-end; width: calc(var(--u) * 20); height: calc(var(--u) * 20); margin: calc(var(--u) * -1.6) 0 calc(var(--u) * -1.6) calc(var(--u) * -1.4);
+  border-radius: 0; background: none; box-shadow: none; overflow: hidden; }
+.kid-avatar.bust::before { content: ''; position: absolute; z-index: -1; left: 6%; right: 6%; bottom: -18%; height: 78%; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--kid-l), transparent 25%), color-mix(in srgb, var(--kid), transparent 100%)); }
+.kid-avatar.bust .avatar { display: block; width: 100%; height: auto; margin: calc(var(--u) * -20 * 14 / 240) 0 0; }
 .kh-stuff { margin-left: auto; align-self: stretch; display: flex; align-items: flex-end; gap: calc(var(--u) * .8); margin-bottom: calc(var(--u) * -1.6); }
 .kh-veh, .kh-pet { position: relative; display: block; padding: 0; border: 0; background: none; cursor: pointer; transform-origin: 50% 100%; -webkit-tap-highlight-color: transparent; }
 .kh-veh::after, .kh-pet::after { content: ''; position: absolute; z-index: -1; left: 14%; right: 14%; bottom: calc(var(--u) * .3); height: calc(var(--u) * 1.6);
