@@ -20,6 +20,7 @@
 // Les maillots reprennent les couleurs des équipes, sans logo officiel.
 import { html } from '../vendor/preact-htm.js';
 import { starPath, mirror, grad, GOLD, SILVER, sparkle } from './draw.js';
+import { artSrc, artSize } from './art.js';
 import { shade } from '../lib/util.js';
 
 // --- Pièces réutilisées ---------------------------------------------------------------
@@ -61,7 +62,20 @@ const pentagon = (cx, cy, R) =>
     const a = ((i * 72 - 90) * Math.PI) / 180;
     return `${i ? 'L' : 'M'}${(cx + R * Math.cos(a)).toFixed(1)} ${(cy + R * Math.sin(a)).toFixed(1)}`;
   }).join(' ') + ' Z';
-const ball = (cx = 16, cy = 224, r = 13) => html`<g class="spin-slow" style="animation-duration:6s">
+// Le ballon des maillots de foot : l'image 3D du ballon de la boutique (style Pixar), immobile (une
+// animation dans le dessin de l'enfant l'obligerait à être redessiné à chaque image) ; le dessin plat ne
+// sert que si l'image manque
+const ball = (cx = 16, cy = 224, r = 13) => {
+  const size = artSize('ballon_foot');
+  if (!size) return drawnBall(cx, cy, r);
+  const w = 2.3 * r;
+  const h = (w * size[1]) / size[0];
+  return html`<g>
+    <ellipse cx=${cx} cy=${cy + h / 2 - 0.6} rx=${w * 0.36} ry="2" fill="#000" opacity="0.16" />
+    <image href=${artSrc('ballon_foot')} x=${(cx - w / 2).toFixed(2)} y=${(cy - h / 2).toFixed(2)} width=${w.toFixed(2)} height=${h.toFixed(2)} />
+  </g>`;
+};
+const drawnBall = (cx, cy, r) => html`<g>
   <circle cx=${cx} cy=${cy} r=${r} fill="#fff" stroke="#2B2B33" stroke-width="1.8" />
   <path d=${pentagon(cx, cy, r * 0.42)} fill="#2B2B33" />
   ${[0, 72, 144, 216, 288].map((a) => {
