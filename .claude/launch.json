@@ -4,8 +4,46 @@
     {
       "name": "pandiflow",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["tools/devserver.py"],
+      "runtimeArgs": [
+        "tools/devserver.py"
+      ],
       "port": 8080
+    },
+    {
+      "name": "pandi3d",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "tools/devserver.py",
+        "8093"
+      ],
+      "port": 8093
+    },
+    {
+      "name": "pilotage",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "tools/devserver.py",
+        "8097"
+      ],
+      "port": 8097
+    },
+    {
+      "name": "anniversaire",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "tools/devserver.py",
+        "8101"
+      ],
+      "port": 8101
+    },
+    {
+      "name": "video",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "video/serve.py",
+        "8095"
+      ],
+      "port": 8095
     }
   ]
 }
