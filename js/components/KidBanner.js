@@ -1,7 +1,8 @@
 // Le bandeau de chaque enfant sur l'écran de la routine : son décor derrière l'avatar et le prénom, et son
-// véhicule et son compagnon en grand, qui bougent (seulement les objets qui ont leur image 3D). Seul
-// transform est animé, sur des images HTML : le téléphone le fait sans redessiner (voir css/routine.css).
-// Toucher le véhicule le fait partir et revenir, toucher le compagnon le fait sauter, chacun avec son bruit.
+// véhicule et son compagnon en grand, qui se baladent d'un bout à l'autre du bandeau (seulement les objets
+// qui ont leur image 3D). Seul transform est animé, sur des images HTML : le téléphone le fait sans
+// redessiner (voir css/routine.css). Trois couches : le bouton se balade, son .kh-act joue le geste au
+// toucher (le véhicule fonce, le compagnon saute, chacun avec son bruit), l'image respire ou rebondit.
 import { html } from '../vendor/preact-htm.js';
 import { getItem } from '../avatar/items.js';
 import { hasArt, artSrc } from '../avatar/art.js';
@@ -52,7 +53,7 @@ const HOP = [
 
 function play(e, frames, duration) {
   e.stopPropagation();
-  const el = e.currentTarget;
+  const el = e.currentTarget.querySelector('.kh-act');
   if (el.getAnimations?.().length) return;
   el.animate?.(frames, { duration, easing: 'ease-in-out' });
 }
@@ -65,15 +66,15 @@ export function KidStuff({ child, index = 0 }) {
   if (!vImg && !pImg) return null;
   const sky = veh?.zone === 'sky';
   // les deux colonnes ne bougent pas en même temps
-  const delay = { '--d': `${-index * 1.3}s` };
+  const delay = { '--d': `${-index * 1.3}s`, '--w': `${-index * 7}s` };
   return html`<div class="kh-stuff" style=${delay}>
     ${vImg && html`<button class=${`kh-veh ${sky ? 'sky' : ''}`} aria-label=${veh.name}
       onClick=${(e) => { garageSfx[veh.sound]?.(); play(e, sky ? FLY : DRIVE, sky ? 2200 : 2400); }}>
-      <img src=${artSrc(vImg)} alt="" draggable="false" />
+      <span class="kh-act"><img src=${artSrc(vImg)} alt="" draggable="false" /></span>
     </button>`}
     ${pImg && html`<button class="kh-pet" aria-label=${pet.name}
       onClick=${(e) => { sfx.pop?.(); play(e, HOP, 900); }}>
-      <img src=${artSrc(pImg)} alt="" draggable="false" />
+      <span class="kh-act"><img src=${artSrc(pImg)} alt="" draggable="false" /></span>
     </button>`}
   </div>`;
 }
