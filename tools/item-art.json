@@ -110,6 +110,13 @@
       "prompt": "A small cute wooden sailboat for a child seen exactly from the side, facing right, floating upright: a rounded polished wooden hull with an open cockpit where a child could sit (empty), a tall mast with a big white mainsail and a pink front sail, a little red pennant at the top of the mast. No water, no waves, the boat alone."
     },
     {
+      "id": "sous_marin",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cute chunky toy-like submarine for a child seen exactly from the side, facing right: a round glossy tangerine-orange body with two turquoise-blue stripes, a short rounded tower on top with a little periscope, a small golden propeller at the back, two little side fins, and in the middle of its side a big round porthole with a thick polished silver rim and no glass, through which a small empty seat inside is visible (nobody in it). No water, no bubbles. No writing on it."
+    },
+    {
       "id": "avion",
       "size": "1536x1024",
       "quality": "high",
@@ -229,6 +236,55 @@
       "quality": "high",
       "key": "green",
       "prompt": "A pair of chunky toy walkie-talkies standing upright side by side, seen from the front: the left one lavender-purple and the right one bubblegum-pink, each with a short black antenna, a small light-blue screen and a speaker grille."
+    },
+    {
+      "id": "baguette",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's toy magic wand standing upright on a small round base, seen from the front: a slim glossy midnight-blue wand with a white tip and a thin golden spiral around it, topped by a shiny golden five-pointed star, standing in a small round plum-purple velvet base with a golden rim. No sparkles, no glow, no smoke."
+    },
+    {
+      "id": "chaudron",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cute chunky toy-like witch's cauldron for a child, seen from the front with a slight three-quarter angle: a round pot-bellied dark plum-purple cast-iron cauldron with a thick rim, three short stubby legs and two small ring handles, filled to the brim with a glossy bright violet potion with a few round bubbles on its surface, a little golden star painted on the front. No smoke, no steam, no flame and no fire under it."
+    },
+    {
+      "id": "epee_bouclier",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's wooden toy knight set standing upright, seen from the front: a round royal-blue wooden shield with a polished golden rim and a raised golden star in the middle, and beside it a toy sword with a silver-painted wooden blade, a golden cross-guard and a red leather-wrapped handle, the sword leaning against the shield. No writing on it."
+    },
+    {
+      "id": "lasso",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A cowboy's toy lasso seen from the front: a neat round coil of honey-colored braided rope standing on its edge, its free end forming a smaller open loop with a little knot that hangs down at the side."
+    },
+    {
+      "id": "ustensiles",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's toy baking set standing together, seen from the front with a slight three-quarter angle: a glossy sky-blue mixing bowl with a shiny silver whisk sticking out of it, a honey-colored wooden rolling pin leaning against the bowl, and a small red wooden spoon beside it."
+    },
+    {
+      "id": "gateau_etages",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A three-tier celebration cake on a white cake stand, seen from the front: a vanilla-cream bottom tier, a chocolate middle tier and a raspberry-red top tier, soft white cream drips and piped borders, a few shiny red strawberries without leaves on top. No candles. No writing on it."
+    },
+    {
+      "id": "extincteur",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A small child's toy fire extinguisher standing upright, seen from the front with a slight three-quarter angle: a glossy cherry-red cylinder, a black handle and lever on top, a round silver pressure gauge, a short black hose with a black nozzle hanging down along its side. No spray. No writing on it."
     },
     {
       "id": "cabane",
@@ -385,6 +441,41 @@
       "prompt": "A unicorn horn headband for a child seen straight from the front: a tall golden-pastel spiral horn standing upright on a thin headband, with three small flowers at its base in lilac, sky blue and pink."
     },
     {
+      "id": "casque_chevalier",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's toy knight helmet seen straight from the front at eye level, as if worn: a polished silver rounded dome that covers only the top of the head down to the forehead, a raised golden band along its lower edge and a golden ridge over the top, a big fluffy cherry-red plume on top. Open helmet: no visor, no face guard, no cheek guards, nothing below the forehead."
+    },
+    {
+      "id": "chapeau_cowboy",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's cowboy hat seen straight from the front at eye level, as if worn: soft caramel-brown felt, a pinched crown with a dent on top, a wide brim curled up on both sides, a dark chocolate-brown leather band with a small silver buckle."
+    },
+    {
+      "id": "toque",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's chef's hat (toque) seen straight from the front at eye level, as if worn: a tall puffy pleated soft white cotton hat, rounded and billowing at the top, on a smooth white band."
+    },
+    {
+      "id": "casquette_police",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's police officer peaked cap seen straight from the front at eye level, as if worn: a navy-blue crown, a glossy black visor, a light-blue band, a shiny golden star badge on the front. No writing on it."
+    },
+    {
+      "id": "casque_pompier",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's toy firefighter helmet seen straight from the front at eye level, as if worn: glossy cherry-red with a raised ridge over the top, a brim that is wider at the back, a shiny golden shield badge on the front with a small raised ladder on it. No visor. No writing on it."
+    },
+    {
       "id": "soleil",
       "size": "1536x1024",
       "quality": "high",
@@ -404,6 +495,13 @@
       "quality": "high",
       "key": "green",
       "prompt": "A child's superhero eye mask seen straight from the front: a royal-blue fabric domino mask with two almond-shaped eye holes (the background visible through them) and small pointed tips on both sides."
+    },
+    {
+      "id": "masque_plongee",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "magenta",
+      "prompt": "A child's diving mask with a snorkel, seen straight from the front at eye level as if worn: a soft bright tangerine-orange silicone frame around one wide rounded lens of pale sky-blue tinted glass with a soft white reflection (the glass is opaque, nothing is seen through it), a sunny-yellow snorkel tube attached on the right side of the mask and rising straight up above it, with an orange tip; the strap is hidden behind (no pink)."
     },
     {
       "id": "etoiles",
@@ -441,6 +539,20 @@
       "prompt": "A gold medal hanging from a lavender-purple ribbon with a thin pink stripe, seen from the front as if worn around the neck: the ribbon forms a V from the top down to the medal, a round shiny gold medal with a raised pink heart in the middle."
     },
     {
+      "id": "etoile_sherif",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's toy sheriff badge seen straight from the front: a shiny polished gold five-pointed star with a small round ball at the tip of each of its five points, a raised round circle in the middle with a smaller star inside it. No writing, no letters."
+    },
+    {
+      "id": "insigne",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's toy police badge seen straight from the front: a shiny polished gold shield-shaped badge with a royal-blue enamel center, a small raised golden star in the middle and little decorative rivets around the edge. No writing, no letters, no numbers."
+    },
+    {
       "id": "fee",
       "size": "1536x1024",
       "quality": "high",
@@ -460,6 +572,13 @@
       "quality": "high",
       "key": "green",
       "prompt": "A child's toy jetpack seen from the front, as if worn on the back: two chunky rounded silver rocket tanks, one on each side, with red bands, connected by grey straps in the middle, nozzles at the bottom with no flame and no smoke."
+    },
+    {
+      "id": "bouteille_plongee",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's toy scuba diving set seen from the front, as if worn on the back: two chunky rounded glossy sunny-yellow air tanks, one on each side, with silver valves on top, joined in the middle by black straps, a black hose curling from one valve. No bubbles, no water."
     },
     {
       "id": "chaton",
@@ -499,6 +618,38 @@
       "quality": "high",
       "key": "green",
       "prompt": "A small cute round companion robot standing, seen from the front: a rounded light-silver head with a dark navy visor face showing two glowing cyan eyes and a cyan smile, a short antenna with a red light, a small round silver body with a yellow button.",
+      "style": "creature"
+    },
+    {
+      "id": "hibou",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "An adorable chubby baby owl sitting, seen from the front: fluffy caramel-brown and cream feathers, a round cream face with two huge round amber eyes, small pointed ear tufts, a tiny orange beak, little orange feet, its small wings folded at its sides.",
+      "style": "creature"
+    },
+    {
+      "id": "tortue",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "magenta",
+      "prompt": "An adorable chubby baby sea turtle resting on the ground, seen from the front with a slight three-quarter angle and its head raised towards the viewer: a shiny caramel-and-gold domed shell with soft hexagon patterns, soft sea-green skin, big shiny eyes, a happy smile, one front flipper raised as if waving (no pink).",
+      "style": "creature"
+    },
+    {
+      "id": "chien_policier",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "An adorable chubby German shepherd puppy sitting, seen from the front: soft tan and black fur, big pointy ears, big shiny eyes, a black nose, a little navy-blue vest with a small golden star on its chest. No writing.",
+      "style": "creature"
+    },
+    {
+      "id": "dalmatien",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "An adorable chubby Dalmatian puppy sitting, seen from the front: white fur with round black spots, black-spotted floppy ears, big shiny eyes, a black nose, a red collar with a small round golden tag. No writing.",
       "style": "creature"
     },
     {
@@ -666,6 +817,30 @@
       "quality": "high",
       "key": "none",
       "prompt": "An uninhabited cheerful birthday party room for a child, environment only, like an empty film set waiting for its characters: soft pink and lilac walls, colorful triangle bunting garlands and curly paper streamers hanging across the top, big glossy balloon bunches in cherry red, sunny yellow, sky blue and lilac floating on both sides, sparkling confetti in the air, a few wrapped gift boxes with shiny ribbons and a small round table with a birthday cake with lit candles far on one side, warm golden party lights, and a flat empty polished wooden floor with a few scattered confetti in the lower part. Nobody in the room: no child, no animal, no character. No letters and no writing anywhere."
+    },
+    {
+      "id": "fond_chateau_fort",
+      "style": "scenery",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "The sunny courtyard of a friendly toy-like medieval castle for children, environment only, like an empty film set waiting for its characters: chunky rounded light-grey stone walls with crenellations, two round towers with pointed royal-blue roofs and plain red and yellow pennant flags (no symbols), a big arched wooden gate open at the back, two striped tournament tents, a blue sky with puffy clouds, and a flat empty light sandy courtyard ground in the lower part. No knights, no horses, no people."
+    },
+    {
+      "id": "fond_farwest",
+      "style": "scenery",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A sunny friendly toy-like Wild West town street for children, environment only, like an empty film set waiting for its characters: wooden storefronts with covered porches on both sides, a saloon with little swinging doors, wooden barrels and a water trough, a chubby round cactus, red rock mesas far away under a big blue sky, and a flat empty sandy dirt street in the lower part. No writing on the buildings, no horses, no people."
+    },
+    {
+      "id": "fond_cuisine",
+      "style": "scenery",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A warm cozy toy-like restaurant kitchen for children, environment only, like an empty film set waiting for its characters: cream and sky-blue checkered tiles on the walls, a big round-bellied cherry-red oven at the back, shiny copper pots and pans hanging from a rack, wooden shelves with jars of colorful candies and fruit, a long wooden counter with a bowl of lemons and tomatoes, warm light from a window, and a flat empty white-and-sky-blue tiled floor in the lower part. No people, no animals, no writing."
     }
   ]
 }

@@ -128,6 +128,7 @@ export const PLACE = {
   tandem: { cx: 105, bottom: 178, w: 160, shadow: 66, cls: 'veh-bob' },
   bus_fratrie: { cx: 117, bottom: 178, w: 200, shadow: 86, cls: 'veh-bob', ride: { hips: [98, 124], s: 0.12, front: 118 } },
   licorne: { cx: 105, bottom: 178, h: 112, shadow: 48, cls: 'veh-bob', ride: { hips: [95, 119], s: 0.21, front: 120 } },
+  sous_marin: { cx: 112, bottom: 178, w: 180, shadow: 74, cls: 'veh-bob', ride: { hips: [112, 150], s: 0.17, win: { cx: 112, cy: 130, rx: 20, ry: 20 } } },
 
   // --- Accessoires ---
   ballon_foot: { cx: 40, bottom: 178, w: 27, shadow: 13, cls: 'ball-bounce' },
@@ -140,6 +141,14 @@ export const PLACE = {
   telescope: { cx: 40, bottom: 178, h: 66, shadow: 22, over: () => sparkle(72, 104, 5, 'tw', 0) },
   batterie: { cx: 44, bottom: 178, w: 66, shadow: 30 },
   talkie: { cx: 46, bottom: 178, h: 58, shadow: 24 },
+  // Accessoires des thèmes métiers
+  baguette: { cx: 40, bottom: 178, h: 74, shadow: 12, over: () => html`<g>${sparkle(58, 106, 5, 'tw', 0)}${sparkle(22, 118, 4, 'tw', 0.7)}</g>` },
+  chaudron: { cx: 40, bottom: 178, h: 52, shadow: 22 },
+  epee_bouclier: { cx: 42, bottom: 178, h: 64, shadow: 24 },
+  lasso: { cx: 40, bottom: 178, h: 50, shadow: 20 },
+  ustensiles: { cx: 42, bottom: 178, h: 56, shadow: 26 },
+  gateau_etages: { cx: 40, bottom: 178, h: 74, shadow: 20 },
+  extincteur: { cx: 40, bottom: 178, h: 66, shadow: 14 },
 
   // --- Le jardin de la fratrie ---
   cabane: { cx: 170, bottom: 178, h: 178, shadow: 40 },
@@ -166,6 +175,11 @@ export const PLACE = {
   fleurs: { cx: 100, bottom: 82, w: 140 },
   bonnet: { cx: 126, bottom: 80, w: 176, h: 104 },
   licorne_corne: { cx: 100, bottom: 78, w: 90, over: () => html`<g>${sparkle(126, -30, 6, 'tw', 0.4)}${sparkle(72, -6, 4, 'tw', 1.1)}</g>` },
+  casque_chevalier: { cx: 100, bottom: 70, w: 132 },
+  chapeau_cowboy: { cx: 100, bottom: 64, w: 168 },
+  toque: { cx: 100, bottom: 58, w: 100 },
+  casquette_police: { cx: 100, bottom: 72, w: 132 },
+  casque_pompier: { cx: 100, bottom: 70, w: 156 },
   // Kippas : la calotte posée sur le haut du crâne, un peu aplatie (vue de face, elle épouse la tête)
   kippa_velours: { cx: 100, bottom: 36, w: 74, h: 24 },
   kippa_srouga: { cx: 100, bottom: 36, w: 76, h: 25 },
@@ -179,11 +193,15 @@ export const PLACE = {
   etoiles: { cx: 100, bottom: 128, w: 104 },
   masque: { cx: 100, bottom: 128, w: 132 },
   moustache: { cx: 100, bottom: 143, w: 80 },
+  masque_plongee: { cx: 106, bottom: 130, w: 140 },
 
   // --- Autour du cou (encolure à y ≈ 183) ---
   noeud: { cx: 100, bottom: 200, w: 46 },
   medaille: { cx: 100, bottom: 236, h: 60 },
   medaille_equipe: { cx: 100, bottom: 236, h: 60 },
+  // Épinglés sur la poitrine, côté cœur
+  etoile_sherif: { cx: 78, bottom: 229, w: 30 },
+  insigne: { cx: 78, bottom: 232, w: 26 },
 
   // --- Dans le dos (derrière le buste) ---
   fee: { cx: 100, bottom: 236, w: 196 },
@@ -193,6 +211,8 @@ export const PLACE = {
     under: () => html`<g class="flame"><path d="M44 236 Q53 270 62 236 Z" fill="#FFB13B" /><path d="M138 236 Q147 270 156 236 Z" fill="#FFB13B" /></g>`,
   },
 
+  bouteille_plongee: { cx: 100, bottom: 238, w: 150 },
+
   // --- Compagnons (aux pieds de l'enfant, à sa gauche) ---
   chaton: { cx: 176, bottom: 247, h: 76 },
   gateau_copain: { cx: 172, bottom: 247, h: 70, over: cakeFlames },
@@ -200,6 +220,10 @@ export const PLACE = {
   pandi: { cx: 170, bottom: 247, h: 70 },
   bebe_dragon: { cx: 170, bottom: 246, h: 76 },
   robot_copain: { cx: 170, bottom: 245, h: 80 },
+  hibou: { cx: 170, bottom: 247, h: 74 },
+  tortue: { cx: 168, bottom: 248, h: 56 },
+  chien_policier: { cx: 172, bottom: 247, h: 74 },
+  dalmatien: { cx: 172, bottom: 247, h: 74 },
 
   // --- Décors (plein cadre) ---
   chateau: { img: 'fond_chateau', cover: FRAME },
@@ -210,4 +234,9 @@ export const PLACE = {
   plage: { img: 'fond_plage', cover: FRAME },
   arcenciel: { img: 'fond_arcenciel', cover: FRAME },
   anniversaire: { img: 'fond_anniversaire', cover: FRAME },
+  chateau_fort: { img: 'fond_chateau_fort', cover: FRAME },
+  farwest: { img: 'fond_farwest', cover: FRAME },
+  cuisine: { img: 'fond_cuisine', cover: FRAME },
+  commissariat: { img: 'fond_commissariat', cover: FRAME },
+  caserne: { img: 'fond_caserne', cover: FRAME },
 };

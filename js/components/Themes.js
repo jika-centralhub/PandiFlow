@@ -9,7 +9,7 @@ import { useStore, getState, toast } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import { activeChildren, activeThemeEntry, pendingThemeEntry, themeOn, upcomingThemes, pastThemes, nextThemeStart, themeOverlaps, themeGiftOf, THEME_DAYS, THEME_GAP } from '../domain.js';
 import { toISODate, addDays, formatLong } from '../lib/dates.js';
-import { THEME_CATALOG, getTheme, GIFT_MAX, GIFT_CHOICES } from '../avatar/themes.js';
+import { THEME_CATALOG, getTheme, suggestedTheme, GIFT_MAX, GIFT_CHOICES } from '../avatar/themes.js';
 import { getItem } from '../avatar/items.js';
 import { hasArt, artSrc } from '../avatar/art.js';
 import { Avatar } from '../avatar/Avatar.js';
@@ -38,13 +38,14 @@ export function ThemeBook() {
   return html`<div class="theme-book">${pages.map((t) => html`<${ThemePhoto} key=${t.id} entry=${t} />`)}</div>`;
 }
 
-function CatalogCard({ theme, on, onPick }) {
+// done : le thème a déjà eu lieu ou est déjà programmé (le menu propose d'abord ceux qu'on n'a pas encore faits)
+function CatalogCard({ theme, on, done, onPick }) {
   const items = theme.items.map(getItem).filter(Boolean);
   return html`<button class=${`theme-card ${on ? 'on' : ''}`} style=${{ '--c': theme.color }} onClick=${onPick}>
     <span class="tc-emoji">${theme.emoji}</span>
     <span class="tc-name">${theme.name}</span>
     <span class="tc-thumbs">${items.slice(0, 5).map((it) => html`<span key=${it.id} class="tc-thumb"><${ItemThumb} item=${it} /></span>`)}</span>
-    <span class="tc-meta">${items.length} objets en vitrine, de ${Math.min(...items.map((i) => i.price))} à ${Math.max(...items.map((i) => i.price))} pandi</span>
+    <span class="tc-meta">${items.length} objets en vitrine, de ${Math.min(...items.map((i) => i.price))} à ${Math.max(...items.map((i) => i.price))} pandi${done ? ' · déjà fait' : ''}</span>
   </button>`;
 }
 
@@ -56,7 +57,8 @@ export function ThemeParent() {
   const waiting = pendingThemeEntry(s.settings, today);
   const upcoming = upcomingThemes(s.settings, today);
   const suggested = nextThemeStart(s.settings, today);
-  const [themeId, setThemeId] = useState(THEME_CATALOG[0].id);
+  const [themeId, setThemeId] = useState(() => suggestedTheme(s.settings.themes));
+  const doneIds = new Set((Array.isArray(s.settings.themes) ? s.settings.themes : []).map((t) => t.theme));
   const [start, setStart] = useState(suggested);
   const end = addDays(start, THEME_DAYS - 1);
   const clash = start < today || themeOverlaps(s.settings, start, end);
@@ -69,8 +71,9 @@ export function ThemeParent() {
       return;
     }
     sfx.sparkle();
-    toast(start === today ? `Pandi va proposer le thème ${getTheme(themeId).name} aux enfants sur l’écran de la routine 🚀` : `Thème programmé ${period(res.entry)} : Pandi le proposera aux enfants le premier jour`);
+    toast(start === today ? `Pandi va proposer le thème ${getTheme(themeId).name} aux enfants sur l’écran de la routine ${getTheme(themeId).emoji}` : `Thème programmé ${period(res.entry)} : Pandi le proposera aux enfants le premier jour`);
     setStart(nextThemeStart(getState().settings, today));
+    setThemeId(suggestedTheme(getState().settings.themes));
   }
 
   function stop(t) {
@@ -120,7 +123,7 @@ export function ThemeParent() {
       })}</div>`}
 
     <h3 class="section-title" style="color:var(--ink);margin-top:20px">Lancer un thème</h3>
-    <div class="theme-catalog">${THEME_CATALOG.map((t) => html`<${CatalogCard} key=${t.id} theme=${t} on=${themeId === t.id} onPick=${() => { sfx.tap(); setThemeId(t.id); }} />`)}</div>
+    <div class="theme-catalog">${THEME_CATALOG.map((t) => html`<${CatalogCard} key=${t.id} theme=${t} on=${themeId === t.id} done=${doneIds.has(t.id)} onPick=${() => { sfx.tap(); setThemeId(t.id); }} />`)}</div>
     <div class="row" style="margin-top:10px">
       <span class="emoji">📅</span>
       <div class="grow"><div class="title">À partir du</div><div class="meta">${THEME_DAYS} jours, jusqu’au ${formatLong(end)}. Une semaine sur deux : le prochain peut commencer le ${formatLong(suggested)}.</div></div>

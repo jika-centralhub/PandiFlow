@@ -455,6 +455,34 @@ const capitaine = {
   </g></g>`,
 };
 
+// Thème cow-boy : chemise à carreaux, gilet de cuir, étoile de shérif, foulard, chapeau et lasso
+const VEST = 'M58 184 L84 182 L92 264 L54 264 Z';
+const cowboy = {
+  id: 'cowboy', name: 'Cow-boy', price: 150, shirt: '#D9483B',
+  torso: () => html`<g>
+    ${[64, 80, 96, 112, 128, 144].map((x) => html`<path key=${x} d=${`M${x} 180 L${x} 264`} stroke="#A8322A" stroke-width="3" opacity="0.55" />`)}
+    ${[198, 214, 230, 246].map((y) => html`<path key=${y} d=${`M40 ${y} L160 ${y}`} stroke="#F4E3D0" stroke-width="2" opacity="0.45" />`)}
+    <g fill="#8C5A2B" stroke="#6E4520" stroke-width="1.5" stroke-linejoin="round"><path d=${VEST} /><path d=${mirror(VEST)} /></g>
+    <path d=${starPath(72, 214, 7, 3.4)} fill="#FFD23F" stroke="#B8860B" stroke-width="1" />
+  </g>`,
+  collar: () => html`<g>
+    <path d="M80 180 Q100 196 120 180 L116 192 Q100 202 84 192 Z" fill="#2D6CDF" stroke="#1D4FA8" stroke-width="1" />
+    <path d="M91 194 L109 194 L100 214 Z" fill="#2D6CDF" stroke="#1D4FA8" stroke-width="1" />
+    ${[[96, 198], [104, 198], [100, 206]].map(([x, y], i) => html`<circle key=${i} cx=${x} cy=${y} r="1.3" fill="#fff" />`)}
+  </g>`,
+  sleeves: cuff('#F4E3D0', 222, 4),
+  hat: ({ id }) => html`<g>
+    <defs>${grad(`${id}-cbh`, ['#D9A066', '#B87A3D', '#8C5A2B'])}</defs>
+    <path d="M62 52 C60 20 72 4 86 10 C92 13 96 16 100 16 C104 16 108 13 114 10 C128 4 140 20 138 52 Z" fill=${`url(#${id}-cbh)`} stroke="#6E4520" stroke-width="2" stroke-linejoin="round" />
+    <path d="M62 43 C80 39 120 39 138 43 L138 52 C120 48 80 48 62 52 Z" fill="#4A2E18" />
+    <path d="M18 38 C24 58 50 64 100 62 C150 64 176 58 182 38 C176 54 150 54 100 54 C50 54 24 54 18 38 Z" fill=${`url(#${id}-cbh)`} stroke="#6E4520" stroke-width="2" stroke-linejoin="round" />
+  </g>`,
+  prop: () => html`<g transform="translate(18 226)">
+    ${[13, 10, 7].map((r) => html`<ellipse key=${r} cx="0" cy="0" rx=${r} ry=${r * 0.9} fill="none" stroke="#D9A55A" stroke-width="2.4" />`)}
+    <path d="M12 4 C18 6 18 14 14 18" stroke="#D9A55A" stroke-width="2.2" fill="none" stroke-linecap="round" />
+  </g>`,
+};
+
 const magicien = {
   id: 'magicien', name: 'Magicien', price: 130, shirt: '#1E1E26',
   back: ({ id }) => capeBack(id, ['#9B6CF0', '#6A40C8', '#4B2A9A']),
@@ -817,6 +845,7 @@ export const COSTUMES = [
   chef,
   chevalier,
   capitaine,
+  cowboy,
   magicien,
   princesse,
   prince,
@@ -828,6 +857,6 @@ export const COSTUME_GROUPS = [
   { id: 'heros', label: 'Super-héros', icon: '🦸', ids: ['superheros', ...HEROES.map((h) => h.id)] },
   { id: 'foot', label: 'Maillots de foot', icon: '⚽', ids: KITS.map((k) => k.id) },
   { id: 'metiers', label: 'Métiers', icon: '🧑‍🚒', ids: ['pompier', 'police', 'medecin', 'chef', 'astronaute_combi', 'rabbin'] },
-  { id: 'aventure', label: 'Contes et aventures', icon: '🏰', ids: ['chevalier', 'capitaine', 'magicien', 'princesse', 'prince', 'dompteur', 'dresseur_dragons'] },
+  { id: 'aventure', label: 'Contes et aventures', icon: '🏰', ids: ['chevalier', 'capitaine', 'cowboy', 'magicien', 'princesse', 'prince', 'dompteur', 'dresseur_dragons'] },
   { id: 'tortues', label: 'Tortues ninja', icon: '🐢', ids: COSTUMES.filter((c) => c.id.startsWith('tortue_')).map((c) => c.id) },
 ];

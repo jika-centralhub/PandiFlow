@@ -4,7 +4,7 @@ import { html } from '../vendor/preact-htm.js';
 import { REWARDS } from './rewards.js';
 import { COSTUMES } from './costumes.js';
 import { GARAGE_ITEMS, GARAGE_SLOTS } from './garage.js';
-import { starPath, heartPath, grad, GOLD, sparkle, mirror } from './draw.js';
+import { starPath, heartPath, grad, GOLD, SILVER, sparkle, mirror } from './draw.js';
 import { JUDAICA_WEAR } from './judaica.js';
 import { withArt } from './art.js';
 
@@ -171,6 +171,57 @@ const hats = [
       ${sparkle(118, -8, 6, 'tw', 0.4)}${sparkle(80, 6, 4, 'tw', 1.1)}
     </g>`,
   },
+  // Chapeaux des thèmes métiers (js/avatar/themes.js)
+  {
+    id: 'casque_chevalier', name: 'Casque de chevalier', short: 'Casque chevalier', price: 55,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-kh`, SILVER)}</defs>
+      <path d="M100 16 C96 -4 110 -24 132 -24 C118 -14 114 0 112 16 Z" fill="#E23B4B" stroke="#B02A3C" stroke-width="1.5" />
+      <path d="M40 64 C38 30 64 12 100 12 C136 12 162 30 160 64 Z" fill=${`url(#${id}-kh)`} stroke="#6B778C" stroke-width="2" stroke-linejoin="round" />
+      <path d="M100 13 L100 60" stroke="#E0A100" stroke-width="5" />
+      <path d="M38 56 C70 50 130 50 162 56 L162 66 C130 60 70 60 38 66 Z" fill="#FFD23F" stroke="#C99A12" stroke-width="1.5" />
+      <path d="M58 36 C70 24 86 19 100 18" stroke="#fff" stroke-width="4" opacity="0.6" fill="none" stroke-linecap="round" />
+    </g>`,
+  },
+  {
+    id: 'chapeau_cowboy', name: 'Chapeau de cow-boy', short: 'Chapeau cow-boy', price: 45,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-cb`, ['#D9A066', '#B87A3D', '#8C5A2B'])}</defs>
+      <path d="M62 52 C60 20 72 4 86 10 C92 13 96 16 100 16 C104 16 108 13 114 10 C128 4 140 20 138 52 Z" fill=${`url(#${id}-cb)`} stroke="#6E4520" stroke-width="2" stroke-linejoin="round" />
+      <path d="M62 43 C80 39 120 39 138 43 L138 52 C120 48 80 48 62 52 Z" fill="#4A2E18" />
+      <rect x="94" y="42" width="12" height="9" rx="2" fill="none" stroke="#D5DCE6" stroke-width="2" />
+      <path d="M18 38 C24 58 50 64 100 62 C150 64 176 58 182 38 C176 54 150 54 100 54 C50 54 24 54 18 38 Z" fill=${`url(#${id}-cb)`} stroke="#6E4520" stroke-width="2" stroke-linejoin="round" />
+    </g>`,
+  },
+  {
+    id: 'toque', name: 'Toque de chef', short: 'Toque', price: 30,
+    render: () => html`<g>
+      <path d="M60 54 L64 20 C48 16 52 -8 72 -4 C76 -18 98 -24 108 -8 C120 -20 146 -12 140 6 C156 8 154 28 136 24 L140 54 Z" fill="#FFFFFF" stroke="#D5DCE6" stroke-width="2" stroke-linejoin="round" />
+      <path d="M80 22 L80 44 M100 18 L100 44 M120 22 L120 44" stroke="#E6EAF0" stroke-width="2" />
+      <path d="M60 44 L140 44 L140 56 L60 56 Z" fill="#F4F6FA" stroke="#D5DCE6" stroke-width="1.5" />
+    </g>`,
+  },
+  {
+    id: 'casquette_police', name: 'Casquette de police', short: 'Casquette police', price: 40,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-pc`, ['#3A5BA8', '#1E3770', '#15284F'])}</defs>
+      <path d="M36 40 C40 14 70 6 100 6 C130 6 160 14 164 40 C150 50 50 50 36 40 Z" fill=${`url(#${id}-pc)`} stroke="#0F1D3A" stroke-width="2" stroke-linejoin="round" />
+      <path d="M46 44 C70 51 130 51 154 44 L154 57 C130 63 70 63 46 57 Z" fill="#8FC3FF" stroke="#0F1D3A" stroke-width="1.5" />
+      <path d="M48 57 C70 72 130 72 152 57 C140 66 60 66 48 57 Z" fill="#1A1A22" stroke="#000" stroke-width="1" />
+      <path d=${starPath(100, 28, 10)} fill="#FFD23F" stroke="#C99A12" stroke-width="1.4" />
+    </g>`,
+  },
+  {
+    id: 'casque_pompier', name: 'Casque de pompier', short: 'Casque pompier', price: 50,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-fh`, ['#FF6B6B', '#E2363F', '#A81C2C'])}</defs>
+      <path d="M24 60 C40 54 60 52 100 52 C140 52 160 54 176 60 C176 68 160 70 100 68 C40 70 24 68 24 60 Z" fill="#A81C2C" />
+      <path d="M44 58 C40 24 66 6 100 6 C134 6 160 24 156 58 Z" fill=${`url(#${id}-fh)`} stroke="#8A1622" stroke-width="2" stroke-linejoin="round" />
+      <path d="M100 8 L100 54" stroke="#FF8A8A" stroke-width="6" stroke-linecap="round" />
+      <path d="M86 24 L114 24 L114 40 Q100 52 86 40 Z" fill="#FFD23F" stroke="#C99A12" stroke-width="1.5" />
+      <path d="M94 28 L94 42 M106 28 L106 42 M94 32 H106 M94 37 H106" stroke="#C99A12" stroke-width="1.6" />
+    </g>`,
+  },
   {
     id: 'astronaute', name: "Casque d'astronaute", price: 90, free: true, zones: ['sommet', 'serre-tete', 'yeux', 'bouche'],
     render: () => html`<g>
@@ -210,6 +261,17 @@ const faces = [
     </g>`,
   },
   {
+    id: 'masque_plongee', name: 'Masque et tuba', price: 40,
+    render: () => html`<g>
+      <path d="M46 98 L30 96 M154 98 L170 96" stroke="#E2701E" stroke-width="5" stroke-linecap="round" />
+      <path d="M150 108 C162 104 166 92 164 40 C164 30 176 30 176 40 C178 96 170 114 152 118 Z" fill="#FFD23F" stroke="#C99A12" stroke-width="1.5" />
+      <rect x="162" y="22" width="16" height="14" rx="4" fill="#FF8A2B" />
+      <path d="M48 90 C70 80 130 80 152 90 C158 106 152 124 132 126 C116 128 108 118 100 118 C92 118 84 128 68 126 C48 124 42 106 48 90 Z" fill="#FF8A2B" stroke="#D9661A" stroke-width="2" />
+      <path d="M56 94 C76 86 124 86 144 94 C148 106 144 118 130 119 C116 120 108 112 100 112 C92 112 84 120 70 119 C56 118 52 106 56 94 Z" fill="rgba(170,220,255,0.55)" stroke="#fff" stroke-width="1" />
+      <path d="M64 97 L80 92" stroke="#fff" stroke-width="3" opacity="0.7" stroke-linecap="round" />
+    </g>`,
+  },
+  {
     id: 'etoiles', name: 'Lunettes étoiles', price: 35,
     render: () => html`<g fill="rgba(255,210,63,0.35)" stroke="#FFB300" stroke-width="3" stroke-linejoin="round">
       <path d=${starPath(78, 106, 19, 10)} /><path d=${starPath(122, 106, 19, 10)} />
@@ -239,6 +301,29 @@ const necks = [
       <circle cx="100" cy="212" r="12" fill=${`url(#${id}-med)`} stroke="#B8860B" stroke-width="2" />
       <path d=${starPath(100, 212, 6.5)} fill="#fff" opacity="0.9" />
       ${sparkle(110, 202, 4, 'tw', 0.2)}
+    </g>`,
+  },
+  // Épinglés sur la poitrine, côté cœur
+  {
+    id: 'etoile_sherif', name: 'Étoile de shérif', price: 35,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-sh`, GOLD)}</defs>
+      <path d=${starPath(78, 214, 14, 7)} fill=${`url(#${id}-sh)`} stroke="#B8860B" stroke-width="1.6" stroke-linejoin="round" />
+      ${[0, 1, 2, 3, 4].map((k) => {
+        const a = -Math.PI / 2 + (k * 2 * Math.PI) / 5;
+        return html`<circle key=${k} cx=${(78 + 14 * Math.cos(a)).toFixed(1)} cy=${(214 + 14 * Math.sin(a)).toFixed(1)} r="2.4" fill="#FFE27A" stroke="#B8860B" stroke-width="1" />`;
+      })}
+      <circle cx="78" cy="214" r="5" fill="none" stroke="#B8860B" stroke-width="1.4" />
+      ${sparkle(92, 200, 4, 'tw', 0.3)}
+    </g>`,
+  },
+  {
+    id: 'insigne', name: 'Insigne de police', short: 'Insigne', price: 30,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-in`, GOLD)}</defs>
+      <path d="M66 202 Q78 198 90 202 L90 214 Q90 226 78 232 Q66 226 66 214 Z" fill=${`url(#${id}-in)`} stroke="#B8860B" stroke-width="1.6" stroke-linejoin="round" />
+      <path d="M70 206 Q78 203 86 206 L86 214 Q86 222 78 227 Q70 222 70 214 Z" fill="#2D5BD0" />
+      <path d=${starPath(78, 214, 5)} fill="#FFD23F" />
     </g>`,
   },
   {
@@ -300,6 +385,18 @@ const backs = [
       <rect x="20" y="170" width="24" height="54" rx="11" fill=${`url(#${id}-jp)`} stroke="#6B778C" stroke-width="2" />
       <rect x="156" y="170" width="24" height="54" rx="11" fill=${`url(#${id}-jp)`} stroke="#6B778C" stroke-width="2" />
       <rect x="20" y="190" width="24" height="6" fill="#E8455A" /><rect x="156" y="190" width="24" height="6" fill="#E8455A" /><path d="M44 186 L60 194 M156 186 L140 194" stroke="#6B778C" stroke-width="5" stroke-linecap="round" />
+    </g>`,
+  },
+  {
+    id: 'bouteille_plongee', name: 'Bouteilles de plongée', short: 'Bouteilles', price: 60,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-bp`, ['#FFF09A', '#FFD23F', '#E0A800'], false)}</defs>
+      <rect x="20" y="168" width="24" height="58" rx="11" fill=${`url(#${id}-bp)`} stroke="#B8860B" stroke-width="2" />
+      <rect x="156" y="168" width="24" height="58" rx="11" fill=${`url(#${id}-bp)`} stroke="#B8860B" stroke-width="2" />
+      <rect x="27" y="160" width="10" height="10" rx="2" fill="#C9D1DE" stroke="#6B778C" stroke-width="1.4" />
+      <rect x="163" y="160" width="10" height="10" rx="2" fill="#C9D1DE" stroke="#6B778C" stroke-width="1.4" />
+      <path d="M44 190 L60 196 M156 190 L140 196" stroke="#2B2B33" stroke-width="5" stroke-linecap="round" />
+      <path d="M168 160 C176 140 150 132 140 150" stroke="#2B2B33" stroke-width="3" fill="none" />
     </g>`,
   },
 ];
@@ -433,6 +530,67 @@ const pets = [
       <path d="M-4 -6 Q0 -3 4 -6" stroke="#5EF0FF" stroke-width="1.5" fill="none" stroke-linecap="round" />
     </g>`,
   },
+  // Compagnons des thèmes métiers (js/avatar/themes.js)
+  {
+    id: 'hibou', name: 'Hibou', price: 80,
+    render: () => html`<g transform="translate(168 208) scale(1.32)">
+      <ellipse cx="0" cy="8" rx="17" ry="20" fill="#B5814E" />
+      <ellipse cx="0" cy="13" rx="10" ry="12" fill="#F3DEC0" />
+      <path d="M-14 -10 L-16 -24 L-6 -14 Z M14 -10 L16 -24 L6 -14 Z" fill="#8C5A32" />
+      <circle cx="-7" cy="-4" r="8" fill="#F3DEC0" /><circle cx="7" cy="-4" r="8" fill="#F3DEC0" />
+      <circle cx="-7" cy="-4" r="5" fill="#FFB547" /><circle cx="7" cy="-4" r="5" fill="#FFB547" />
+      <circle cx="-7" cy="-4" r="2.6" fill="#2A1D1D" /><circle cx="7" cy="-4" r="2.6" fill="#2A1D1D" />
+      <circle cx="-6" cy="-5.2" r="0.9" fill="#fff" /><circle cx="8" cy="-5.2" r="0.9" fill="#fff" />
+      <path d="M-2.5 2 L2.5 2 L0 7 Z" fill="#FF8A2B" />
+      <path d="M-6 27 l-2 3 M-3 27 l0 3 M3 27 l0 3 M6 27 l2 3" stroke="#FF8A2B" stroke-width="2" stroke-linecap="round" />
+    </g>`,
+  },
+  {
+    id: 'tortue', name: 'Bébé tortue', price: 60,
+    render: () => html`<g transform="translate(164 218) scale(1.32)">
+      <ellipse cx="-16" cy="14" rx="7" ry="4" fill="#5CC98A" transform="rotate(-20 -16 14)" />
+      <ellipse cx="16" cy="14" rx="7" ry="4" fill="#5CC98A" transform="rotate(20 16 14)" />
+      <path d="M-20 10 C-20 -12 20 -12 20 10 Z" fill="#C98A3D" stroke="#8C5A20" stroke-width="1.6" />
+      <path d="M-8 -3 L0 -7 L8 -3 L8 4 L0 8 L-8 4 Z" fill="#E0A85A" stroke="#8C5A20" stroke-width="1" />
+      <rect x="-22" y="8" width="44" height="5" rx="2.5" fill="#E9C98A" />
+      <circle cx="24" cy="2" r="8" fill="#5CC98A" />
+      <circle cx="26" cy="0" r="2" fill="#1F2A1F" /><circle cx="26.6" cy="-0.6" r="0.7" fill="#fff" />
+      <path d="M24 5 Q27 7 30 4" stroke="#2E7A4F" stroke-width="1.2" fill="none" stroke-linecap="round" />
+    </g>`,
+  },
+  {
+    id: 'chien_policier', name: 'Chien policier', price: 60,
+    render: () => html`<g transform="translate(168 210) scale(1.32)">
+      <path class="tail" d="M14 14 C26 10 30 0 28 -8" stroke="#8C5A32" stroke-width="6" fill="none" stroke-linecap="round" />
+      <ellipse cx="0" cy="14" rx="17" ry="14" fill="#C9935D" />
+      <path d="M-15 6 C-8 2 8 2 15 6 L14 22 C8 26 -8 26 -14 22 Z" fill="#1E3770" />
+      <path d=${starPath(0, 14, 4)} fill="#FFD23F" />
+      <circle cx="0" cy="-7" r="15" fill="#C9935D" />
+      <path d="M-13 -14 L-10 -32 L-2 -20 Z M13 -14 L10 -32 L2 -20 Z" fill="#3A2A22" />
+      <path d="M-10 -19 C-6 -23 6 -23 10 -19 C8 -14 -8 -14 -10 -19 Z" fill="#3A2A22" />
+      <ellipse cx="0" cy="-1" rx="8" ry="6" fill="#F1D6B4" />
+      <circle cx="-5.5" cy="-9" r="2.6" fill="#2A1D1D" /><circle cx="5.5" cy="-9" r="2.6" fill="#2A1D1D" />
+      <circle cx="-4.6" cy="-10" r="0.9" fill="#fff" /><circle cx="6.4" cy="-10" r="0.9" fill="#fff" />
+      <ellipse cx="0" cy="-3" rx="3.2" ry="2.3" fill="#2A1D1D" />
+    </g>`,
+  },
+  {
+    id: 'dalmatien', name: 'Dalmatien', price: 60,
+    render: () => html`<g transform="translate(168 210) scale(1.32)">
+      <path class="tail" d="M14 14 C26 10 30 0 28 -8" stroke="#F4F4F6" stroke-width="6" fill="none" stroke-linecap="round" />
+      <ellipse cx="0" cy="14" rx="17" ry="14" fill="#F4F4F6" stroke="#D5D8E0" stroke-width="1" />
+      ${[[-9, 12, 3], [6, 18, 2.6], [10, 8, 2.2], [-3, 22, 2]].map(([x, y, r], i) => html`<circle key=${i} cx=${x} cy=${y} r=${r} fill="#2B2B33" />`)}
+      <circle cx="0" cy="-7" r="15" fill="#F4F4F6" stroke="#D5D8E0" stroke-width="1" />
+      <g class="ear-l"><ellipse cx="-15" cy="-6" rx="6" ry="12" fill="#2B2B33" transform="rotate(16 -15 -6)" /></g>
+      <g class="ear-r"><ellipse cx="15" cy="-6" rx="6" ry="12" fill="#F4F4F6" stroke="#D5D8E0" stroke-width="1" transform="rotate(-16 15 -6)" /><circle cx="16" cy="-2" r="2.4" fill="#2B2B33" /></g>
+      <circle cx="7" cy="-15" r="2" fill="#2B2B33" /><circle cx="-9" cy="-1" r="1.6" fill="#2B2B33" />
+      <circle cx="-5.5" cy="-9" r="2.6" fill="#2A1D1D" /><circle cx="5.5" cy="-9" r="2.6" fill="#2A1D1D" />
+      <circle cx="-4.6" cy="-10" r="0.9" fill="#fff" /><circle cx="6.4" cy="-10" r="0.9" fill="#fff" />
+      <ellipse cx="0" cy="-3" rx="3.2" ry="2.3" fill="#2A1D1D" />
+      <path d="M-12 6 Q0 11 12 6" stroke="#E2363F" stroke-width="3.4" fill="none" stroke-linecap="round" />
+      <circle cx="0" cy="11" r="2.4" fill="#FFD23F" />
+    </g>`,
+  },
 ];
 
 // --- Décors (fond plein cadre : x -20..220, y -36..254) ---------------------------------------------
@@ -521,6 +679,67 @@ const backgrounds = [
       ${frameRect(`url(#${id}-ac)`)}
       ${['#FF6B6B', '#FFA53A', '#FFD23F', '#48D07F', '#4DA3FF', '#9B6CF0'].map((c, i) => html`<path key=${i} d=${`M${-10 + i * 9} 150 A${110 - i * 9} ${110 - i * 9} 0 0 1 ${210 - i * 9} 150`} stroke=${c} stroke-width="9" fill="none" />`)}
       <g fill="#fff"><ellipse cx="-4" cy="150" rx="26" ry="12" /><ellipse cx="204" cy="150" rx="26" ry="12" /></g>
+    </g>`,
+  },
+  // Décors des thèmes métiers (js/avatar/themes.js) : dessins de secours tant que l'image 3D manque
+  {
+    id: 'chateau_fort', name: 'Château fort', price: 180,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-sky`, ['#8FD0FF', '#D9F0FF'])}</defs>
+      ${frameRect(`url(#${id}-sky)`)}
+      <rect x="-20" y="44" width="240" height="130" fill="#B7C1D2" />
+      ${[-16, 8, 32, 56, 80, 104, 128, 152, 176, 200].map((x) => html`<rect key=${x} x=${x} y="32" width="14" height="14" fill="#B7C1D2" />`)}
+      <rect x="-16" y="10" width="40" height="164" fill="#A3AEC2" /><path d="M-20 10 L4 -28 L28 10 Z" fill="#2F5FC4" />
+      <rect x="176" y="10" width="40" height="164" fill="#A3AEC2" /><path d="M172 10 L196 -28 L220 10 Z" fill="#2F5FC4" />
+      <path d="M4 -28 L4 -42 L18 -37 L4 -33 M196 -28 L196 -42 L210 -37 L196 -33" fill="#E2363F" stroke="#7A4A26" stroke-width="1.5" />
+      <path d="M78 174 L78 118 Q100 92 122 118 L122 174 Z" fill="#7A4A26" stroke="#5A3418" stroke-width="2" />
+      <rect x="-20" y="174" width="240" height="80" fill="#E8D3A6" />
+    </g>`,
+  },
+  {
+    id: 'farwest', name: 'Far West', price: 180,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-sky`, ['#7EC8FF', '#FFE3B0'])}</defs>
+      ${frameRect(`url(#${id}-sky)`)}
+      <circle cx="170" cy="0" r="18" fill="#FFE27A" />
+      <path d="M-20 130 L8 130 L16 98 L58 98 L66 130 L128 130 L138 106 L176 106 L184 130 L220 130 L220 170 L-20 170 Z" fill="#D9774A" />
+      <rect x="-20" y="166" width="240" height="88" fill="#E8C48A" />
+      <path d="M186 214 L186 150 C186 142 198 142 198 150 L198 214 Z M186 182 L176 182 L176 164 M198 172 L208 172 L208 156" fill="#48A860" stroke="#2E7A4F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+    </g>`,
+  },
+  {
+    id: 'cuisine', name: 'Cuisine de chef', price: 150,
+    render: () => html`<g>
+      ${frameRect('#FFF6E5')}
+      ${[0, 1, 2, 3, 4, 5].flatMap((r) => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].filter((c) => (r + c) % 2 === 0).map((c) => html`<rect key=${`${r}-${c}`} x=${-20 + c * 20} y=${30 + r * 20} width="20" height="20" fill="#CFE6FF" />`))}
+      ${[[30, '#C9773A'], [70, '#B5652C'], [150, '#C9773A']].map(([x, c]) => html`<g key=${x}><path d=${`M${x} -10 L${x} 6`} stroke="#8C5A2B" stroke-width="2" /><circle cx=${x} cy="18" r="12" fill=${c} /></g>`)}
+      <rect x="-20" y="150" width="240" height="24" fill="#C98A5B" />
+      <rect x="-20" y="174" width="240" height="80" fill="#E4EEFA" />
+    </g>`,
+  },
+  {
+    id: 'commissariat', name: 'Commissariat', price: 150,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-sky`, ['#8FD0FF', '#D9F0FF'])}</defs>
+      ${frameRect(`url(#${id}-sky)`)}
+      <rect x="10" y="40" width="180" height="134" fill="#E9EEF7" stroke="#1E3770" stroke-width="3" />
+      <rect x="10" y="40" width="180" height="22" fill="#1E3770" />
+      <path d=${starPath(100, 98, 16)} fill="#FFD23F" stroke="#C99A12" stroke-width="2" />
+      <rect x="80" y="124" width="40" height="50" fill="#1E3770" />
+      <circle cx="100" cy="30" r="8" fill="#4D8BFF" />
+      <rect x="-20" y="174" width="240" height="80" fill="#C9D1DE" />
+    </g>`,
+  },
+  {
+    id: 'caserne', name: 'Caserne des pompiers', short: 'Caserne', price: 150,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-sky`, ['#8FD0FF', '#D9F0FF'])}</defs>
+      ${frameRect(`url(#${id}-sky)`)}
+      <rect x="0" y="30" width="200" height="144" fill="#C8513A" stroke="#8A2E1E" stroke-width="3" />
+      <path d="M84 30 L84 6 L116 6 L116 30 M80 6 L100 -10 L120 6" fill="#C8513A" stroke="#8A2E1E" stroke-width="3" />
+      <path d="M30 174 L30 92 Q70 76 110 92 L110 174 Z" fill="#E2363F" stroke="#8A2E1E" stroke-width="3" />
+      <rect x="124" y="92" width="56" height="40" fill="#BFE4FF" stroke="#8A2E1E" stroke-width="3" />
+      <rect x="-20" y="174" width="240" height="80" fill="#C9D1DE" />
     </g>`,
   },
   // Le fond de fête de l'anniversaire : pas en boutique, la scène le prend d'elle-même le soir de la

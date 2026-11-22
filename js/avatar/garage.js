@@ -198,6 +198,18 @@ const VEHICLES = [
       ${sparkle(150, 50, 6, 'tw', 0)}${sparkle(48, 70, 5, 'tw', 0.8)}
     </g>`,
   },
+  // Thème plongeur : l'enfant est assis dedans, vu par le hublot (ride dans art-place.js)
+  {
+    id: 'sous_marin', act: 'sail', sound: 'splash', name: 'Sous-marin', price: 300, box: '20 70 190 110',
+    render: () => html`<g class="veh-bob">${shadow(112, 82)}
+      <path d="M104 92 L104 70 L118 70" stroke="#2BB3B3" stroke-width="5" fill="none" stroke-linecap="round" />
+      <rect x="90" y="90" width="36" height="22" rx="8" fill="#FF8A2B" stroke="#C9601A" stroke-width="2" />
+      <ellipse cx="112" cy="140" rx="86" ry="36" fill="#FF8A2B" stroke="#C9601A" stroke-width="2.4" />
+      <path d="M40 130 L184 130 M36 150 L188 150" stroke="#2BB3B3" stroke-width="5" />
+      <circle cx="112" cy="138" r="20" fill=${glass} stroke="#C9D1DE" stroke-width="5" />
+      <path d="M26 140 L12 126 L12 154 Z" fill="#FFD23F" stroke="#C99A12" stroke-width="1.6" />
+    </g>`,
+  },
   {
     id: 'soucoupe', act: 'fly', sound: 'ufo', zone: 'sky', name: 'Soucoupe volante', price: 350, box: '20 70 180 110',
     render: () => html`<g>
@@ -461,6 +473,67 @@ const GEAR = [
         ${[0, 1, 2].map((r) => html`<path key=${r} d=${`M${x + 4} ${158 + r * 4} L${x + 14} ${158 + r * 4}`} stroke=${shade(c, -0.35)} stroke-width="1.4" />`)}
       </g>`)}
       <path class="tw" d="M44 112 Q50 118 44 124 M50 108 Q60 118 50 128" stroke="#FFD23F" stroke-width="2" fill="none" stroke-linecap="round" /></g>`,
+  },
+  // --- Accessoires des thèmes métiers (js/avatar/themes.js) ---
+  {
+    id: 'baguette', act: 'star', sound: 'sparkle', name: 'Baguette magique', short: 'Baguette', price: 30, box: '14 96 52 88',
+    render: () => html`<g>${shadow(40, 14)}
+      <ellipse cx="40" cy="172" rx="13" ry="6" fill="#6A2E8C" stroke="#E0A100" stroke-width="1.6" />
+      <path d="M40 170 L40 116" stroke="#1E2A5C" stroke-width="4.5" stroke-linecap="round" />
+      <path d="M40 124 L40 116" stroke="#fff" stroke-width="4.5" stroke-linecap="round" />
+      <path d=${starPath(40, 108, 11)} fill="#FFD23F" stroke="#E0A100" stroke-width="1.4" />
+      ${sparkle(58, 100, 5, 'tw', 0)}${sparkle(22, 112, 4, 'tw', 0.7)}</g>`,
+  },
+  {
+    id: 'chaudron', act: 'shine', sound: 'sparkle', name: 'Chaudron à potions', short: 'Chaudron', price: 60, box: '8 118 66 66',
+    render: () => html`<g>${shadow(40, 24)}
+      <path d="M24 170 L20 178 M56 170 L60 178 M40 174 L40 179" stroke="#2B1F3A" stroke-width="4" stroke-linecap="round" />
+      <path d="M14 140 C12 166 26 176 40 176 C54 176 68 166 66 140 Z" fill="#4B2A5C" stroke="#2B1F3A" stroke-width="2" />
+      <ellipse cx="40" cy="140" rx="27" ry="7" fill="#9B4BFF" stroke="#2B1F3A" stroke-width="2.4" />
+      <path d=${starPath(40, 158, 5)} fill="#FFD23F" />
+      <g class="float-up"><circle cx="32" cy="132" r="3.4" fill="#C79BFF" /><circle cx="46" cy="126" r="2.4" fill="#C79BFF" /></g></g>`,
+  },
+  {
+    id: 'epee_bouclier', act: 'shine', sound: 'sparkle', name: 'Épée et bouclier', price: 50, box: '6 104 72 80',
+    render: () => html`<g>${shadow(42, 26)}
+      <path d="M58 174 L58 116" stroke="#D4DAE4" stroke-width="6" stroke-linecap="round" />
+      <path d="M50 160 L66 160" stroke="#E0A100" stroke-width="5" stroke-linecap="round" />
+      <path d="M58 162 L58 176" stroke="#B02A3C" stroke-width="5" stroke-linecap="round" />
+      <circle cx="34" cy="150" r="24" fill="#2F5FC4" stroke="#E0A100" stroke-width="4" />
+      <path d=${starPath(34, 150, 10)} fill="#FFD23F" /></g>`,
+  },
+  {
+    id: 'lasso', act: 'swoop', sound: 'whoosh', name: 'Lasso', price: 40, box: '8 118 70 66',
+    render: () => html`<g>${shadow(40, 22)}
+      ${[22, 18, 14].map((r) => html`<ellipse key=${r} cx="40" cy=${178 - r - 2} rx=${r} ry=${r * 0.95} fill="none" stroke="#D9A55A" stroke-width="3.4" />`)}
+      <path d="M58 160 C68 160 72 170 66 178" stroke="#D9A55A" stroke-width="3" fill="none" stroke-linecap="round" /></g>`,
+  },
+  {
+    id: 'ustensiles', act: 'drum', sound: 'drum', name: 'Ustensiles du petit chef', short: 'Ustensiles', price: 40, box: '6 108 76 76',
+    render: () => html`<g>${shadow(42, 28)}
+      <path d="M58 158 L32 118" stroke="#C9D1DE" stroke-width="3" stroke-linecap="round" />
+      <ellipse cx="31" cy="116" rx="5" ry="8" fill="none" stroke="#C9D1DE" stroke-width="2" transform="rotate(-32 31 116)" />
+      <path d="M14 150 C14 170 26 176 40 176 C54 176 66 170 66 150 Z" fill="#5EB8FF" stroke="#2E84D0" stroke-width="2" />
+      <ellipse cx="40" cy="150" rx="26" ry="5" fill="#8FD0FF" stroke="#2E84D0" stroke-width="1.6" />
+      <path d="M64 176 L80 140" stroke="#D9A55A" stroke-width="7" stroke-linecap="round" /></g>`,
+  },
+  {
+    id: 'gateau_etages', act: 'shine', sound: 'sparkle', name: 'Gâteau à étages', short: 'Gâteau', price: 60, box: '6 96 68 88',
+    render: () => html`<g>${shadow(40, 24)}
+      <rect x="16" y="172" width="48" height="5" rx="2" fill="#F4F6FA" stroke="#D5DCE6" stroke-width="1" />
+      <rect x="18" y="148" width="44" height="24" rx="4" fill="#FFF1D6" stroke="#E5D3B8" stroke-width="1.4" />
+      <rect x="24" y="128" width="32" height="20" rx="4" fill="#8C5A32" stroke="#6E4520" stroke-width="1.4" />
+      <rect x="30" y="112" width="20" height="16" rx="4" fill="#E2483A" stroke="#B02A3C" stroke-width="1.4" />
+      <path d="M18 150 Q24 156 30 150 Q36 156 42 150 Q48 156 54 150 Q58 154 62 150" stroke="#fff" stroke-width="2.4" fill="none" />
+      <circle cx="40" cy="108" r="4" fill="#E2363F" /></g>`,
+  },
+  {
+    id: 'extincteur', act: 'shine', sound: 'splash', name: 'Extincteur', price: 40, box: '14 100 56 84',
+    render: () => html`<g>${shadow(40, 14)}
+      <rect x="28" y="118" width="24" height="58" rx="10" fill="#E2363F" stroke="#A81C2C" stroke-width="2" />
+      <path d="M36 118 L36 108 L50 104" stroke="#2B2B33" stroke-width="4" stroke-linecap="round" fill="none" />
+      <circle cx="40" cy="134" r="5" fill="#E9EEF5" stroke="#6B7486" stroke-width="1.4" />
+      <path d="M52 122 C64 128 62 156 56 166" stroke="#2B2B33" stroke-width="3" fill="none" stroke-linecap="round" /></g>`,
   },
 ];
 

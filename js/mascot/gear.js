@@ -334,6 +334,147 @@ export const ACCESSORIES = [
       return placed;
     },
   },
+  // --- Coiffes des thèmes métiers (js/avatar/themes.js ; pas dans le tirage du jour) ---
+  {
+    id: 'chapeau_magicien', slot: 'tete', name: 'Chapeau de magicien', bone: 'head', hideTuft: true, theme: true,
+    build(occ) {
+      const purple = felt(occ, '#6A3FC8');
+      purple.side = THREE.DoubleSide;
+      // un grand cône dont la pointe retombe sur le côté
+      const cone = lathe([[0.001, 0.66], [0.035, 0.58], [0.08, 0.44], [0.13, 0.28], [0.18, 0.12], [0.205, 0.03], [0.21, 0]]);
+      bend(cone, (x, y, z) => {
+        const k = smooth((y - 0.32) / 0.34);
+        return [x + 0.2 * k * k, y - 0.1 * k * k, z];
+      });
+      const brim = lathe([[0.19, 0.012], [0.3, 0.008], [0.4, 0.014], [0.43, 0.03], [0.42, 0.042], [0.38, 0.03], [0.28, 0.026], [0.19, 0.03]], 64);
+      bend(brim, (x, y, z) => [x, y - 0.03 * (z / 0.43) ** 2, z]);
+      const band = m(new THREE.TorusGeometry(0.205, 0.024, 10, 48), felt(occ, '#FFC93C'), [0, 0.045, 0], [Math.PI / 2, 0, 0]);
+      const starGeo = (r) => new THREE.ExtrudeGeometry(starShape(r), { depth: 0.01, bevelSize: 0.006, bevelThickness: 0.006, bevelSegments: 2 });
+      const stars = [
+        m(starGeo(0.045), gold(occ), [0, 0.17, 0.172], [-0.25, 0, 0]),
+        m(starGeo(0.03), gold(occ), [0.09, 0.3, 0.09], [-0.3, 0.6, 0]),
+        m(starGeo(0.028), gold(occ), [-0.1, 0.24, 0.12], [-0.3, -0.6, 0]),
+      ];
+      return place(group(m(cone, purple), m(brim, purple), band, ...stars), [0.03, 0.47, -0.03], [-0.14, 0, -0.12], 1.3);
+    },
+  },
+  {
+    id: 'masque_plongee', slot: 'yeux', name: 'Masque et tuba', bone: 'head', theme: true,
+    build(occ) {
+      const frame = plastic(occ, '#FF8A2B');
+      const yellow = plastic(occ, '#FFC93C');
+      const glass = new THREE.MeshPhysicalMaterial({ color: '#BFE6FF', transparent: true, opacity: 0.32, roughness: 0.05, clearcoat: 1, depthWrite: false });
+      // un seul grand hublot aux coins arrondis devant les deux yeux, courbé comme le visage
+      const rr = (w, h, r) => {
+        const s = new THREE.Shape();
+        s.moveTo(-w + r, -h);
+        s.lineTo(-0.05, -h);
+        s.quadraticCurveTo(0, -h + 0.05, 0.05, -h); // le creux du nez
+        s.lineTo(w - r, -h);
+        s.quadraticCurveTo(w, -h, w, -h + r);
+        s.lineTo(w, h - r);
+        s.quadraticCurveTo(w, h, w - r, h);
+        s.lineTo(-w + r, h);
+        s.quadraticCurveTo(-w, h, -w, h - r);
+        s.lineTo(-w, -h + r);
+        s.quadraticCurveTo(-w, -h, -w + r, -h);
+        return s;
+      };
+      const ring = rr(0.37, 0.16, 0.1);
+      ring.holes.push(new THREE.Path(rr(0.32, 0.12, 0.08).getPoints(24).reverse()));
+      const curve = (x, y, z) => [x, y, z - 0.55 * x * x];
+      const rim = bend(new THREE.ExtrudeGeometry(ring, { depth: 0.04, bevelSize: 0.014, bevelThickness: 0.014, bevelSegments: 3, curveSegments: 16 }), curve);
+      const lens = bend(new THREE.ShapeGeometry(rr(0.32, 0.12, 0.08), 16), curve);
+      const out = group(m(rim, frame, [0, 0.05, 0.6]), m(lens, glass, [0, 0.05, 0.63]));
+      for (const sx of [1, -1]) out.add(m(new THREE.CylinderGeometry(0.02, 0.02, 0.36, 10), frame, [0.44 * sx, 0.07, 0.4], [Math.PI / 2, 0, -0.45 * sx]));
+      // le tuba remonte le long de la tête, à droite, avec son embout orange
+      const path = new THREE.CatmullRomCurve3([new THREE.Vector3(0.44, -0.08, 0.42), new THREE.Vector3(0.52, 0.2, 0.36), new THREE.Vector3(0.53, 0.55, 0.28), new THREE.Vector3(0.5, 0.82, 0.22)]);
+      out.add(new THREE.Mesh(new THREE.TubeGeometry(path, 32, 0.035, 12), yellow));
+      out.add(m(new THREE.CylinderGeometry(0.045, 0.04, 0.08, 16), frame, [0.5, 0.85, 0.215], [-0.15, 0, 0.08]));
+      return out;
+    },
+  },
+  {
+    id: 'heaume', slot: 'tete', name: 'Casque de chevalier', bone: 'head', hideTuft: true, theme: true,
+    build(occ) {
+      const steel = mat(occ, '#DDE3EC', { metalness: 0.85, roughness: 0.28 });
+      const shell = new THREE.SphereGeometry(1, 56, 28, 0, TAU, 0, Math.PI * 0.36);
+      shell.scale(0.7, 0.66, 0.64);
+      const band = m(new THREE.TorusGeometry(1, 0.05, 12, 56), gold(occ), [0, 0.25, 0], [Math.PI / 2, 0, 0], [0.64, 0.59, 1]);
+      // la crête dorée d'avant en arrière, et le panache rouge qui se balance
+      const ridge = m(new THREE.TorusGeometry(1, 0.028, 8, 48, Math.PI), gold(occ), [0, 0, 0], [0, Math.PI / 2, 0], [0.645, 0.665, 1]);
+      const red = felt(occ, '#E23B4B');
+      const plume = new THREE.Group();
+      [[0, 0.08, 0.08, 0.12], [0, 0.17, -0.02, 0.13], [0, 0.23, -0.14, 0.13], [0, 0.24, -0.27, 0.12], [0, 0.2, -0.38, 0.1]].forEach(([x, y, z, r]) => plume.add(m(new THREE.SphereGeometry(r, 18, 14), red, [x, y, z], [0, 0, 0], [0.8, 1, 1.2])));
+      plume.position.set(0, 0.64, 0.02);
+      const rivets = [];
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * TAU;
+        rivets.push(m(new THREE.SphereGeometry(0.018, 10, 8), steel, [Math.cos(a) * 0.59, 0.36, Math.sin(a) * 0.54]));
+      }
+      let t = 0;
+      const out = place(group(m(shell, steel), band, ridge, plume, ...rivets), [0, 0.02, -0.01], [-0.08, 0, 0], 1);
+      out.userData.update = (dt, energy) => {
+        t += dt;
+        plume.rotation.x = Math.sin(t * 2.2) * (0.04 + energy * 0.1);
+      };
+      return out;
+    },
+  },
+  {
+    id: 'toque', slot: 'tete', name: 'Toque de chef', bone: 'head', hideTuft: true, theme: true,
+    build(occ) {
+      const white = felt(occ, '#FFFFFF');
+      white.side = THREE.DoubleSide;
+      const band = m(new THREE.CylinderGeometry(0.21, 0.21, 0.1, 48, 1, true), white, [0, 0.05, 0]);
+      // le haut tout gonflé, avec ses plis
+      const puff = lathe([[0.2, 0.09], [0.23, 0.14], [0.27, 0.22], [0.29, 0.3], [0.28, 0.36], [0.22, 0.4], [0.12, 0.415], [0.001, 0.42]], 72);
+      bend(puff, (x, y, z) => {
+        const a = Math.atan2(z, x);
+        const k = 1 + 0.045 * Math.cos(a * 12) * smooth((y - 0.1) / 0.12);
+        return [x * k, y, z * k];
+      });
+      return place(group(band, m(puff, white)), [0.02, 0.48, -0.03], [-0.14, 0, -0.1], 1);
+    },
+  },
+  {
+    id: 'casquette_police', slot: 'tete', name: 'Casquette de police', bone: 'head', hideTuft: true, theme: true,
+    build(occ) {
+      const navy = felt(occ, '#1E3770');
+      navy.side = THREE.DoubleSide;
+      const top = lathe([[0.21, 0.07], [0.26, 0.11], [0.3, 0.17], [0.3, 0.2], [0.2, 0.215], [0.001, 0.22]], 64);
+      const band = m(new THREE.CylinderGeometry(0.215, 0.21, 0.075, 48, 1, true), felt(occ, '#8FC3FF'), [0, 0.035, 0]);
+      const bandMat = band.material;
+      bandMat.side = THREE.DoubleSide;
+      const visor = m(new THREE.CylinderGeometry(0.23, 0.23, 0.016, 40, 1, false, -Math.PI / 2, Math.PI), plastic(occ, '#16161C'), [0, 0.0, 0.1], [0.3, 0, 0], [1, 1, 1.15]);
+      const star = m(new THREE.ExtrudeGeometry(starShape(0.05), { depth: 0.012, bevelSize: 0.006, bevelThickness: 0.006, bevelSegments: 2 }), gold(occ), [0, 0.11, 0.25], [-0.25, 0, 0]);
+      return place(group(m(top, navy), band, visor, star), [0, 0.48, -0.02], [-0.12, 0, 0.04], 1.3);
+    },
+  },
+  {
+    id: 'casque_pompier', slot: 'tete', name: 'Casque de pompier', bone: 'head', hideTuft: true, theme: true,
+    build(occ) {
+      const red = plastic(occ, '#E2363F');
+      red.side = THREE.DoubleSide;
+      const dome = lathe([[0.25, 0], [0.255, 0.05], [0.24, 0.14], [0.2, 0.23], [0.12, 0.29], [0.001, 0.305]], 56);
+      // le bord, plus large à l'arrière pour protéger la nuque
+      const brim = lathe([[0.24, -0.005], [0.31, -0.015], [0.36, -0.035], [0.355, -0.05], [0.31, -0.035], [0.24, -0.025]], 64);
+      bend(brim, (x, y, z) => {
+        const k = 1 + 0.45 * smooth(-z / 0.36);
+        return [x, y - 0.04 * smooth(-z / 0.36), z * k];
+      });
+      const ridge = m(new THREE.TorusGeometry(1, 0.026, 8, 40, Math.PI), plastic(occ, '#C42833'), [0, 0, 0], [0, Math.PI / 2, 0], [0.252, 0.31, 1]);
+      const shield = new THREE.Shape();
+      shield.moveTo(-0.055, 0.05);
+      shield.lineTo(0.055, 0.05);
+      shield.lineTo(0.055, -0.005);
+      shield.quadraticCurveTo(0.05, -0.05, 0, -0.07);
+      shield.quadraticCurveTo(-0.05, -0.05, -0.055, -0.005);
+      shield.lineTo(-0.055, 0.05);
+      const badge = m(new THREE.ExtrudeGeometry(shield, { depth: 0.012, bevelSize: 0.006, bevelThickness: 0.006, bevelSegments: 2 }), gold(occ), [0, 0.12, 0.235], [-0.32, 0, 0]);
+      return place(group(m(dome, red), m(brim, red), ridge, badge), [0, 0.47, -0.02], [-0.1, 0, 0.05], 1.25);
+    },
+  },
   // --- Tenue d'anniversaire (pas dans le tirage du jour : seulement les soirs de fête, themeLook.js) ---
   {
     id: 'ballons', slot: 'dos', name: 'Ballons de fête', bone: 'torso', theme: true,
