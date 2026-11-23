@@ -518,6 +518,13 @@ export function adjustPandi(childId, amount, note) {
   return { applied: res.applied, before: res.before, after: res.after };
 }
 
+export function repair(childId) {
+  const res = domain.applyRepair(getState(), { familyId: familyId(), childId, id: uid() });
+  setState({ ledger: res.ledger });
+  commit(res.ops);
+  return { palier: res.palier };
+}
+
 // --- Réglages de la famille ------------------------------------------------------------------
 export function updateSettings(patch) {
   const s = getState();

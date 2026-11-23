@@ -318,6 +318,26 @@ export function applyRating(state, { familyId, childId, taskId, date, color, now
   };
 }
 
+// Réparation après un conflit (« On a réparé ensemble ») : pas de pandi, une pierre dans le coffre de
+// l'équipe, au profit de toute la fratrie. Écriture « manual » de 0 pandi reconnue à sa note (pas de
+// nouveau type dans la base). Peut faire franchir un palier du coffre.
+export const REPAIR_NOTE = '🤝 On a réparé ensemble';
+export const isRepair = (l) => l.kind === 'manual' && !Number(l.amount) && l.note === REPAIR_NOTE;
+
+export function applyRepair(state, { familyId, childId, id, now = new Date().toISOString() }) {
+  const row = { id, family_id: familyId, child_id: childId, kind: 'manual', amount: 0, evening_date: null, note: REPAIR_NOTE, created_at: now };
+  let ledger = [...state.ledger, row];
+  const ops = [{ op: 'put', table: 'ledger', rows: [row] }];
+  let palier = null;
+  const grant = palierRows({ ...state, ledger }, { familyId, now });
+  if (grant.rows.length) {
+    ledger = [...ledger, ...grant.rows];
+    ops.push({ op: 'put', table: 'ledger', rows: grant.rows });
+    palier = { n: grant.n, bonus: grant.bonus, kids: grant.kids };
+  }
+  return { ledger, ops, palier };
+}
+
 // Ajout ou retrait de pandi par un parent, hors des routines.
 // Un retrait ne peut pas faire passer la cagnotte sous zéro.
 export function applyAdjust(state, { familyId, childId, amount, note, id, now = new Date().toISOString() }) {
@@ -405,6 +425,7 @@ export function treasureProgress(state) {
   const kids = new Set(activeChildren(state.children).map((c) => c.id));
   let count = 0;
   for (const r of state.ratings) if (isDone(r.color) && kids.has(r.child_id) && (!t.start || r.evening_date >= t.start)) count++;
+  for (const l of state.ledger) if (isRepair(l) && kids.has(l.child_id) && (!t.start || String(l.created_at || '').slice(0, 10) >= t.start)) count++;
   const goal = Math.max(1, Number(t.goal) || 1);
   const step = Math.max(1, Math.min(goal, Math.round(Number(s.team.step) || 100)));
   const bonus = Math.max(0, Math.round(Number(s.team.bonus) || 0));

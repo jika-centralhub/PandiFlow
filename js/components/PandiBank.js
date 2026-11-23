@@ -2,14 +2,15 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { useStore } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { balance } from '../domain.js';
+import { balance, isRepair } from '../domain.js';
 import { Modal, NumberInput, PandiCounter } from './ui.js';
 import { showOverlay } from './Overlays.js';
 import { sfx } from '../lib/sounds.js';
 
 const REASONS = {
   add: ['🤝 Aide à la maison', '💖 Gentillesse', '🧹 Rangement spontané', '📚 Effort à l’école', '🍽️ Bien mangé', '🦁 Courage'],
-  remove: ['🙉 N’a pas écouté', '😤 Colère', '🥊 Dispute', '💥 Bêtise', '🗣️ Gros mot', '📺 Trop d’écran'],
+  // Pas de colère, de dispute ni de « n’a pas écouté » : la colère s’accueille (coin calme), un conflit se répare
+  remove: ['💥 Bêtise', '🗣️ Gros mot', '📺 Trop d’écran'],
 };
 const AMOUNTS = [1, 2, 3, 5, 10, 20];
 
@@ -41,6 +42,13 @@ export function PandiBank({ child, onClose }) {
     if (res.applied) showOverlay('pandi', { childId: child.id, amount: res.applied, note, before: res.before });
   }
 
+  function repaired() {
+    sfx.chest?.();
+    const res = actions.repair(child.id);
+    onClose();
+    if (res.palier) showOverlay('team', { kind: 'palier', kids: res.palier.kids });
+  }
+
   return html`<${Modal} onClose=${onClose} style=${{ '--kid': child.color }}>
     <div class="bank-head">
       <h2>La cagnotte de ${child.name}</h2>
@@ -65,6 +73,10 @@ export function PandiBank({ child, onClose }) {
       </div>
       <input class="input" style="margin-top:8px" value=${custom} maxLength="40" onInput=${(e) => setCustom(e.target.value)} placeholder="Ou écris une autre raison…" />
     </div>
+    <div class="bank-repair">
+      <p>Après une colère ou une dispute, on ne retire rien : on répare ensemble (un câlin, un mot, on range à deux…).</p>
+      <button class="btn btn-green" onClick=${repaired}>🤝 On a réparé ensemble · +1 pierre au coffre</button>
+    </div>
     <div class="sheet-actions">
       <button class=${`btn btn-big ${mode === 'add' ? 'btn-green' : 'btn-danger'}`} disabled=${value <= 0} onClick=${confirm}>
         ${mode === 'add' ? `Offrir ${value} pandi` : `Retirer ${value} pandi`}
@@ -73,7 +85,7 @@ export function PandiBank({ child, onClose }) {
     ${recent.length > 0 && html`<div class="bank-history">
       <h3>Derniers bonus et retraits</h3>
       ${recent.map((l) => html`<div key=${l.id} class="bank-line">
-        <strong class=${l.amount > 0 ? 'plus' : 'minus'}>${l.amount > 0 ? `+${l.amount}` : `−${-l.amount}`}</strong>
+        <strong class=${l.amount >= 0 ? 'plus' : 'minus'}>${isRepair(l) ? '🧰' : l.amount > 0 ? `+${l.amount}` : `−${-l.amount}`}</strong>
         <span>${l.note}</span>
         <em>${shortDate(l.created_at)}</em>
       </div>`)}

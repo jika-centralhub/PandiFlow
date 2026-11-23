@@ -416,6 +416,17 @@ test('coffre de l’équipe : +10 pandi pour chacun à chaque palier, une seule 
   const up = d.applyRating(s, { familyId: 'f', childId: 'c1', taskId: 't3', date: MONDAY, color: 'green' });
   eq([s.ledger.filter((l) => l.kind === 'team').length, up.result.palier], [4, null]);
 });
+test('coffre de l’équipe : « On a réparé ensemble » met une pierre, sans pandi, et peut franchir un palier', () => {
+  let s = { ...fixture(), settings: d.mergeSettings({ team: { step: 1, bonus: 10 }, treasure: { goal: 5 } }) };
+  const before = d.balance('c1', s);
+  const r = d.applyRepair(s, { familyId: 'f', childId: 'c1', id: 'rep1' });
+  s = { ...s, ledger: r.ledger };
+  eq([d.treasureProgress(s).count, r.palier?.n, d.balance('c1', s) - before], [1, 1, 10]);
+  eq(r.ledger.filter(d.isRepair).length, 1);
+  // Un retrait de 0 avec une autre note ne compte pas
+  const other = { ...s, ledger: [...s.ledger, { id: 'x', child_id: 'c1', kind: 'manual', amount: 0, note: 'autre' }] };
+  eq(d.treasureProgress(other).count, 1);
+});
 test('coffre de l’équipe : pas de palier avec un seul enfant', () => {
   const solo = { ...fixture(), children: [{ id: 'c1', name: 'Léa' }], settings: d.mergeSettings({ team: { step: 1, bonus: 10 } }) };
   eq(d.applyRating(solo, { familyId: 'f', childId: 'c1', taskId: 't1', date: MONDAY, color: 'green' }).result.palier, null);
