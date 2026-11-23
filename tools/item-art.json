@@ -720,6 +720,83 @@
       "prompt": "A kid-sized toy-like birthday party train seen exactly from the side, facing right: a chunky glossy cherry-red steam locomotive at the front on the right with a golden bell, a tall black smokestack with no smoke and a rounded cab with a wide open window and an empty seat (nobody in it), pulling one small open passenger wagon in sunny yellow with an empty bench seat (nobody in it), both decorated with colorful bunting flags, a few balloons in red, yellow and sky blue tied to the wagon, golden wheels with red spokes. No rails, no writing on it."
     },
     {
+      "id": "cage_but",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A kid-sized soccer goal seen from the front with a slight three-quarter angle: a chunky rounded glossy white goal frame (two posts and a crossbar) with soft bevelled edges, a soft white rope net stretched behind it in a neat diamond pattern, two little red-and-white striped weights holding the back feet. Nothing inside it. No writing on it."
+    },
+    {
+      "id": "chaussures_foot",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A pair of child's soccer cleats standing side by side, seen from the side with a slight three-quarter angle, toes facing right: glossy sunny-yellow leather uppers with royal-blue stripes on the sides, white laces tied in neat bows, chunky black rubber soles with little round studs underneath. No writing and no logo on them."
+    },
+    {
+      "id": "panier_basket",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A kid-sized standing basketball hoop seen from the front with a slight three-quarter angle: a heavy rounded royal-blue plastic base on the floor, a sturdy straight dark-grey pole, a white rectangular backboard with a simple orange square outline, a glossy orange metal ring with a soft white rope net hanging below it. No ball, no writing on it."
+    },
+    {
+      "id": "raquette_tennis",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's tennis racket standing upright and leaning slightly, seen from the front: a glossy cherry-red oval frame with tight white strings, a white handle grip wrapped with soft tape, and two bright fuzzy yellow tennis balls with white curved seams resting on the floor at its foot. No writing and no logo on it."
+    },
+    {
+      "id": "gong_dojo",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A small Japanese dojo gong for children, seen from the front: a round polished golden-bronze gong with a raised center boss and soft concentric rings, hanging by two red cords from a chunky rounded honey-colored wooden frame with two posts and a curved top beam, standing on two little feet, a small wooden mallet with a soft red padded head leaning against one post. No writing and no symbols on it."
+    },
+    {
+      "id": "skis",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A pair of child's skis standing upright side by side, slightly apart, with their two ski poles leaning against them, seen from the front: glossy sky-blue skis with rounded curled-up tips and orange and white stripes, chunky white plastic bindings, the poles in silver with black rubber grips, orange wrist straps and little round baskets near their tips. No snow, no writing and no logo on them."
+    },
+    {
+      "id": "ballon_rugby",
+      "size": "1024x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A classic oval rugby ball lying slightly tilted, seen from the side: soft pebbled white leather with royal-blue and cherry-red bands at both ends, neat stitched seams along its length, a soft highlight. No writing and no logo on it."
+    },
+    {
+      "id": "bandeau_sport",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's terry-cloth sports headband seen straight from the front at eye level, as if worn: a soft fluffy sky-blue terry-cloth band in a gentle curve with a thin white stripe along its middle, a small round white star patch in the center. Nothing inside it, no head. No writing on it."
+    },
+    {
+      "id": "visiere_tennis",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's tennis sun visor seen straight from the front at eye level, as if worn: a soft white band with a wide curved sunny-yellow brim that sticks out forward, a thin cherry-red edging along the brim, no top (open crown). Nothing inside it, no head. No writing and no logo on it."
+    },
+    {
+      "id": "casque_rugby",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's soft rugby scrum cap seen straight from the front at eye level, as if worn: a padded royal-blue cap made of soft quilted segments with little round breathing holes, white padded ear covers on both sides and a white chin strap hanging below them. Nothing inside it, no head. No writing and no logo on it."
+    },
+    {
+      "id": "masque_ski",
+      "size": "1536x1024",
+      "quality": "high",
+      "key": "green",
+      "prompt": "A child's ski goggles seen straight from the front at eye level, as if worn: one wide rounded lens with a shiny mirrored orange-to-gold gradient and a soft white reflection (the lens is opaque, nothing is seen through it), a soft white padded frame, a thick sky-blue elastic strap with white zigzags sticking out on both sides. No writing and no logo on it."
+    },
+    {
       "id": "fond_chambre",
       "size": "1024x1536",
       "quality": "high",
@@ -841,6 +918,54 @@
       "quality": "high",
       "key": "none",
       "prompt": "A warm cozy toy-like restaurant kitchen for children, environment only, like an empty film set waiting for its characters: cream and sky-blue checkered tiles on the walls, a big round-bellied cherry-red oven at the back, shiny copper pots and pans hanging from a rack, wooden shelves with jars of colorful candies and fruit, a long wooden counter with a bowl of lemons and tomatoes, warm light from a window, and a flat empty white-and-sky-blue tiled floor in the lower part. No people, no animals, no writing."
+    },
+    {
+      "id": "fond_stade_foot",
+      "style": "scenery",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A sunny friendly toy-like soccer stadium for children, environment only, like an empty film set waiting for its characters: a bright lush striped lawn with crisp white lines and a white goal far at the back, round chunky stands full of colorful seats (all empty) curving around the field, four tall floodlight towers, little red and blue pennant flags (no symbols), a big blue sky with puffy clouds, and a flat empty lawn in the lower part. No players, no people, no writing, no logo."
+    },
+    {
+      "id": "fond_basket",
+      "style": "scenery",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A sunny friendly toy-like outdoor basketball court for children in a city playground, environment only, like an empty film set waiting for its characters: a smooth orange and blue painted court with white lines, a basketball hoop on a pole at the back, a chunky rounded wire fence, colorful toy-like apartment buildings and round green trees behind, a big blue sky, and a flat empty court floor in the lower part. No ball, no players, no people, no writing, no logo."
+    },
+    {
+      "id": "fond_tennis",
+      "style": "scenery",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A sunny friendly toy-like tennis court for children, environment only, like an empty film set waiting for its characters: warm terracotta clay court with crisp white lines, a white tennis net across the middle, a tall wooden umpire chair beside it, a dark green fence with round trimmed bushes and a few round trees behind, a big blue sky, and a flat empty clay ground in the lower part. No balls, no players, no people, no writing, no logo."
+    },
+    {
+      "id": "fond_dojo",
+      "style": "scenery",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A warm friendly toy-like Japanese judo dojo for children, environment only, like an empty film set waiting for its characters: soft green and pale yellow tatami mats on the floor, honey-colored wooden walls and beams, sliding paper shoji doors glowing with warm daylight, a small round paper lantern, a little bonsai tree on a low wooden shelf, a row of colored judo belts hanging on pegs, and a flat empty tatami floor in the lower part. No people, no writing, no symbols, no letters."
+    },
+    {
+      "id": "fond_ski",
+      "style": "scenery",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A sunny friendly toy-like snowy ski slope for children, environment only, like an empty film set waiting for its characters: soft round snowy mountains, fluffy snow-covered fir trees, a cozy wooden chalet with a snowy roof and warm lit windows, a little chairlift with round colorful seats (all empty) going up the slope, a big blue sky, and a flat empty smooth white snow ground in the lower part. No skiers, no people, no writing, no logo."
+    },
+    {
+      "id": "fond_rugby",
+      "style": "scenery",
+      "size": "1024x1536",
+      "quality": "high",
+      "key": "none",
+      "prompt": "A sunny friendly toy-like rugby field for children, environment only, like an empty film set waiting for its characters: a bright lush striped lawn with white lines, tall white H-shaped rugby goal posts with soft padded bases at the back, small chunky stands with colorful seats (all empty), little red and blue pennant flags (no symbols), round trees behind, a big blue sky with puffy clouds, and a flat empty lawn in the lower part. No ball, no players, no people, no writing, no logo."
     }
   ]
 }

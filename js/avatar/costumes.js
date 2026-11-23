@@ -471,6 +471,22 @@ const capitaine = {
   </g></g>`,
 };
 
+// Sport : kimono de judo blanc, revers croisés, ceinture noire nouée
+const kimonoJudo = {
+  id: 'kimono_judo', name: 'Kimono de judo', short: 'Kimono', price: 150, shirt: '#FAFBFD', headsOk: true,
+  torso: () => html`<g>
+    <path d="M84 180 L100 206 L116 180 Z" fill="#E9EDF3" />
+    <path d="M84 180 L122 236 L130 236 L92 180 Z" fill="#F1F4F8" stroke="#C5CEDA" stroke-width="1.5" stroke-linejoin="round" />
+    <path d="M116 180 L82 228 L74 226 L108 180 Z" fill="#FFFFFF" stroke="#C5CEDA" stroke-width="1.5" stroke-linejoin="round" />
+    <path d="M60 190 C62 214 62 236 58 258 M140 190 C138 214 138 236 142 258" stroke="#DDE3EC" stroke-width="2" fill="none" />
+    <rect x="40" y="240" width="120" height="11" fill="#22222A" />
+    <path d="M100 245 L90 264 L97 264 L100 252 L103 264 L110 264 Z" fill="#22222A" />
+    <rect x="95" y="240" width="10" height="12" rx="2" fill="#33333D" />
+  </g>`,
+  collar: () => null,
+  sleeves: cuff('#E9EDF3', 222, 4),
+};
+
 // Thème cow-boy : chemise à carreaux, gilet de cuir, étoile de shérif, foulard, chapeau et lasso
 const VEST = 'M58 184 L84 182 L92 264 L54 264 Z';
 const cowboy = {
@@ -862,6 +878,7 @@ export const COSTUMES = [
   chevalier,
   capitaine,
   cowboy,
+  kimonoJudo,
   magicien,
   princesse,
   prince,
@@ -874,5 +891,6 @@ export const COSTUME_GROUPS = [
   { id: 'foot', label: 'Maillots de foot', icon: '⚽', ids: KITS.map((k) => k.id) },
   { id: 'metiers', label: 'Métiers', icon: '🧑‍🚒', ids: ['pompier', 'police', 'medecin', 'chef', 'astronaute_combi', 'rabbin'] },
   { id: 'aventure', label: 'Contes et aventures', icon: '🏰', ids: ['chevalier', 'capitaine', 'cowboy', 'magicien', 'princesse', 'prince', 'dompteur', 'dresseur_dragons'] },
+  { id: 'sports', label: 'Sports', icon: '🥋', ids: ['kimono_judo'] },
   { id: 'tortues', label: 'Tortues ninja', icon: '🐢', ids: COSTUMES.filter((c) => c.id.startsWith('tortue_')).map((c) => c.id) },
 ];

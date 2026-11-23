@@ -413,6 +413,60 @@ const GEAR = [
     render: () => html`<g>${shadow(44, 30)}<path d="M12 164 C12 160 16 158 20 160 L68 160 C72 158 76 160 76 164 C76 168 72 170 68 168 L20 168 C16 170 12 168 12 164 Z" fill="#FF7EB6" stroke="#D94A8A" stroke-width="1.6" />
       <path d="M24 164 L64 164" stroke="#fff" stroke-width="2" stroke-dasharray="4 3" />${wheel(24, 173, 4.6, '#FFD23F')}${wheel(64, 173, 4.6, '#FFD23F')}</g>`,
   },
+  // Accessoires de sport (dessins de secours tant que l'image 3D manque)
+  {
+    id: 'ballon_rugby', act: 'bounce', sound: 'kick', name: 'Ballon de rugby', price: 30, box: '6 130 68 54',
+    render: () => html`<g>${shadow(40, 16)}<g class="ball-bounce"><ellipse cx="40" cy="164" rx="18" ry="11" fill="#FFFFFF" stroke="#2B2B33" stroke-width="1.6" transform="rotate(-18 40 164)" />
+      <path d="M25 170 C27 162 29 158 31 155 M55 158 C53 166 51 170 49 173" stroke="#2D6CDF" stroke-width="4" fill="none" stroke-linecap="round" />
+      <path d="M33 168 L47 160 M36 162 l3 4 M40 160 l3 4 M44 158 l3 4" stroke="#E2363F" stroke-width="1.4" fill="none" stroke-linecap="round" /></g></g>`,
+  },
+  {
+    id: 'chaussures_foot', act: 'ollie', sound: 'kick', name: 'Chaussures de foot', short: 'Crampons', price: 40, box: '4 140 80 44',
+    render: () => html`<g>${shadow(44, 30)}${[[10, 0], [38, 4]].map(([x, dy]) => html`<g key=${x} transform=${`translate(${x} ${dy})`}>
+      <path d="M2 166 C2 152 10 148 18 150 L26 156 C34 158 40 160 40 166 Z" fill="#FFD23F" stroke="#C99A12" stroke-width="1.5" stroke-linejoin="round" />
+      <path d="M8 160 L30 160" stroke="#2D6CDF" stroke-width="3" /><rect x="1" y="165" width="40" height="5" rx="2.5" fill="#2B2B33" />
+      ${[6, 16, 26, 36].map((s) => html`<rect key=${s} x=${s} y="169" width="3" height="3" fill="#2B2B33" />`)}</g>`)}</g>`,
+  },
+  {
+    id: 'cage_but', act: 'shine', sound: 'kick', name: 'Cage de but', price: 70, box: '0 104 88 80',
+    render: () => html`<g>${shadow(44, 40)}
+      <g stroke="#D5DCE6" stroke-width="1">${[14, 24, 34, 44, 54, 64, 74].map((x) => html`<path key=${x} d=${`M${x} 116 L${x} 176`} />`)}${[126, 138, 150, 162].map((y) => html`<path key=${y} d=${`M8 ${y} L80 ${y}`} />`)}</g>
+      <path d="M8 178 L8 112 L80 112 L80 178" stroke="#FFFFFF" stroke-width="6" fill="none" stroke-linejoin="round" />
+      <path d="M8 178 L8 112 L80 112 L80 178" stroke="#C5CEDA" stroke-width="1.2" fill="none" /></g>`,
+  },
+  {
+    id: 'panier_basket', act: 'shine', sound: 'kick', name: 'Panier de basket', price: 80, box: '4 60 76 124',
+    render: () => html`<g>${shadow(40, 24)}
+      <rect x="22" y="166" width="36" height="12" rx="5" fill="#2D6CDF" stroke="#1D4FA8" stroke-width="1.5" />
+      <rect x="38" y="80" width="5" height="88" fill="#5A6070" />
+      <rect x="14" y="64" width="52" height="34" rx="3" fill="#FFFFFF" stroke="#C5CEDA" stroke-width="1.5" /><rect x="30" y="76" width="20" height="14" fill="none" stroke="#F28C28" stroke-width="2" />
+      <ellipse cx="40" cy="100" rx="12" ry="3" fill="none" stroke="#F28C28" stroke-width="2.5" />
+      <path d="M29 101 L33 114 L47 114 L51 101 M34 101 L37 114 M46 101 L43 114" stroke="#FFFFFF" stroke-width="1.2" fill="none" /></g>`,
+  },
+  {
+    id: 'raquette_tennis', act: 'swoop', sound: 'kick', name: 'Raquette de tennis', short: 'Raquette', price: 50, box: '6 96 72 88',
+    render: () => html`<g>${shadow(40, 18)}<g transform="rotate(-12 40 150)">
+      <ellipse cx="40" cy="124" rx="17" ry="22" fill="rgba(255,255,255,.35)" stroke="#E2363F" stroke-width="4" />
+      <path d="M30 108 L30 140 M40 102 L40 146 M50 108 L50 140 M24 116 L56 116 M23 126 L57 126 M25 136 L55 136" stroke="#FFFFFF" stroke-width="0.9" />
+      <rect x="37" y="146" width="6" height="26" rx="2" fill="#F4F6FA" stroke="#C5CEDA" stroke-width="1" /></g>
+      ${[[58, 172], [68, 174]].map(([x, y]) => html`<circle key=${x} cx=${x} cy=${y} r="5" fill="#DDF23F" stroke="#A8B81E" stroke-width="1" />`)}</g>`,
+  },
+  {
+    id: 'gong_dojo', act: 'drum', sound: 'drum', name: 'Gong du dojo', short: 'Gong', price: 60, box: '4 104 76 80',
+    render: () => html`<g>${shadow(40, 30)}
+      <path d="M12 178 L12 112 M68 178 L68 112" stroke="#C98A4A" stroke-width="6" stroke-linecap="round" />
+      <path d="M6 112 Q40 100 74 112" stroke="#A86E34" stroke-width="7" fill="none" stroke-linecap="round" />
+      <path d="M30 112 L32 122 M50 112 L48 122" stroke="#E2363F" stroke-width="1.6" />
+      <circle cx="40" cy="142" r="22" fill="#E0A100" stroke="#B8860B" stroke-width="2" /><circle cx="40" cy="142" r="14" fill="none" stroke="#FFE27A" stroke-width="1.5" /><circle cx="40" cy="142" r="6" fill="#FFD23F" /></g>`,
+  },
+  {
+    id: 'skis', act: 'ollie', sound: 'whoosh', name: 'Skis et bâtons', short: 'Skis', price: 60, box: '8 70 68 114',
+    render: () => html`<g>${shadow(40, 22)}
+      ${[30, 46].map((x) => html`<g key=${x}><path d=${`M${x - 4} 178 L${x - 4} 82 Q${x} 72 ${x + 4} 82 L${x + 4} 178 Z`} fill="#3FA9F5" stroke="#1F7FC4" stroke-width="1.4" />
+        <path d=${`M${x - 4} 120 L${x + 4} 116 M${x - 4} 128 L${x + 4} 124`} stroke="#FF8A2B" stroke-width="2" /><rect x=${x - 5} y="140" width="10" height="8" rx="2" fill="#FFFFFF" /></g>`)}
+      <path d="M18 178 L24 88 M62 178 L56 88" stroke="#B7C1D2" stroke-width="2.4" stroke-linecap="round" />
+      <circle cx="19" cy="170" r="4" fill="none" stroke="#2B2B33" stroke-width="1.4" /><circle cx="61" cy="170" r="4" fill="none" stroke="#2B2B33" stroke-width="1.4" /></g>`,
+  },
   {
     id: 'trophee', act: 'shine', sound: 'sparkle', name: 'Trophée', price: 120, box: '10 110 60 74',
     render: ({ id }) => html`<g>${shadow(40, 16)}<defs>${grad(`${id}-tr`, GOLD)}</defs>

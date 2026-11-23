@@ -138,6 +138,14 @@ export const PLACE = {
   guitare: { cx: 36, bottom: 178, h: 82, shadow: 14 },
   cerf_volant: { cx: 54, bottom: 142, h: 104, cls: 'sway', under: () => kiteString },
   robot: { cx: 42, bottom: 178, h: 64, shadow: 16 },
+  // Accessoires de sport
+  ballon_rugby: { cx: 40, bottom: 178, w: 34, shadow: 15, cls: 'ball-bounce' },
+  chaussures_foot: { cx: 44, bottom: 178, w: 70, shadow: 30 },
+  cage_but: { cx: 44, bottom: 178, w: 92, shadow: 40 },
+  panier_basket: { cx: 40, bottom: 178, h: 118, shadow: 24 },
+  raquette_tennis: { cx: 40, bottom: 178, h: 70, shadow: 18 },
+  gong_dojo: { cx: 40, bottom: 178, h: 72, shadow: 30 },
+  skis: { cx: 40, bottom: 178, h: 106, shadow: 22 },
   telescope: { cx: 40, bottom: 178, h: 66, shadow: 22, over: () => sparkle(72, 104, 5, 'tw', 0) },
   batterie: { cx: 44, bottom: 178, w: 66, shadow: 30 },
   talkie: { cx: 46, bottom: 178, h: 58, shadow: 24 },
@@ -180,6 +188,11 @@ export const PLACE = {
   toque: { cx: 100, bottom: 58, w: 100 },
   casquette_police: { cx: 100, bottom: 72, w: 132 },
   casque_pompier: { cx: 100, bottom: 70, w: 156 },
+  // Sport : bandeau et visière sur le front, casque de rugby comme un bonnet, masque de ski sur les yeux
+  bandeau_sport: { cx: 100, bottom: 62, w: 128 },
+  visiere_tennis: { cx: 100, bottom: 82, w: 140 },
+  casque_rugby: { cx: 100, bottom: 162, w: 164 },
+  masque_ski: { cx: 100, bottom: 130, w: 140 },
   // Kippas : la calotte posée sur le haut du crâne, un peu aplatie (vue de face, elle épouse la tête)
   kippa_velours: { cx: 100, bottom: 36, w: 74, h: 24 },
   kippa_srouga: { cx: 100, bottom: 36, w: 76, h: 25 },
@@ -240,4 +253,11 @@ export const PLACE = {
   cuisine: { img: 'fond_cuisine', cover: FRAME },
   commissariat: { img: 'fond_commissariat', cover: FRAME },
   caserne: { img: 'fond_caserne', cover: FRAME },
+  // Décors de sport
+  stade_foot: { img: 'fond_stade_foot', cover: FRAME },
+  terrain_basket: { img: 'fond_basket', cover: FRAME },
+  court_tennis: { img: 'fond_tennis', cover: FRAME },
+  dojo: { img: 'fond_dojo', cover: FRAME },
+  piste_ski: { img: 'fond_ski', cover: FRAME },
+  terrain_rugby: { img: 'fond_rugby', cover: FRAME },
 };

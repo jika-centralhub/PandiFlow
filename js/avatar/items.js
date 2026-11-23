@@ -222,6 +222,32 @@ const hats = [
       <path d="M94 28 L94 42 M106 28 L106 42 M94 32 H106 M94 37 H106" stroke="#C99A12" stroke-width="1.6" />
     </g>`,
   },
+  // Sport
+  {
+    id: 'bandeau_sport', name: 'Bandeau de sport', short: 'Bandeau', price: 20, zones: ['serre-tete'],
+    render: () => html`<g>
+      <path d="M40 46 C60 30 140 30 160 46 L158 60 C140 46 60 46 42 60 Z" fill="#5EC8FF" stroke="#2F9AD6" stroke-width="2" stroke-linejoin="round" />
+      <path d="M41 53 C60 38 140 38 159 53" stroke="#FFFFFF" stroke-width="2.4" fill="none" />
+      <path d=${starPath(100, 42, 6)} fill="#FFFFFF" />
+    </g>`,
+  },
+  {
+    id: 'visiere_tennis', name: 'Visière de tennis', short: 'Visière', price: 30, zones: ['serre-tete'],
+    render: () => html`<g>
+      <path d="M40 50 C60 38 140 38 160 50 L158 60 C140 50 60 50 42 60 Z" fill="#FFFFFF" stroke="#D5DCE6" stroke-width="2" stroke-linejoin="round" />
+      <path d="M44 58 C70 50 130 50 156 58 C164 66 162 74 154 78 C130 70 70 70 46 78 C38 74 36 66 44 58 Z" fill="#FFD23F" stroke="#E2363F" stroke-width="2" />
+    </g>`,
+  },
+  {
+    id: 'casque_rugby', name: 'Casque de rugby', price: 40,
+    render: () => html`<g>
+      <path d="M40 70 C36 26 66 8 100 8 C134 8 164 26 160 70 Z" fill="#2D6CDF" stroke="#1D4FA8" stroke-width="2" stroke-linejoin="round" />
+      <path d="M100 9 L100 68 M70 14 C62 30 60 50 60 68 M130 14 C138 30 140 50 140 68" stroke="#1D4FA8" stroke-width="2" fill="none" />
+      ${[[84, 30], [116, 30], [80, 50], [120, 50]].map(([x, y]) => html`<circle key=${`${x}-${y}`} cx=${x} cy=${y} r="2.6" fill="#1D4FA8" />`)}
+      <g fill="#FFFFFF" stroke="#D5DCE6" stroke-width="1.5"><ellipse cx="38" cy="96" rx="12" ry="20" /><ellipse cx="162" cy="96" rx="12" ry="20" /></g>
+      <path d="M40 114 C60 158 140 158 160 114" stroke="#FFFFFF" stroke-width="4" fill="none" />
+    </g>`,
+  },
   {
     id: 'astronaute', name: "Casque d'astronaute", price: 90, free: true, zones: ['sommet', 'serre-tete', 'yeux', 'bouche'],
     render: () => html`<g>
@@ -269,6 +295,16 @@ const faces = [
       <path d="M48 90 C70 80 130 80 152 90 C158 106 152 124 132 126 C116 128 108 118 100 118 C92 118 84 128 68 126 C48 124 42 106 48 90 Z" fill="#FF8A2B" stroke="#D9661A" stroke-width="2" />
       <path d="M56 94 C76 86 124 86 144 94 C148 106 144 118 130 119 C116 120 108 112 100 112 C92 112 84 120 70 119 C56 118 52 106 56 94 Z" fill="rgba(170,220,255,0.55)" stroke="#fff" stroke-width="1" />
       <path d="M64 97 L80 92" stroke="#fff" stroke-width="3" opacity="0.7" stroke-linecap="round" />
+    </g>`,
+  },
+  {
+    id: 'masque_ski', name: 'Masque de ski', price: 40,
+    render: ({ id }) => html`<g>
+      <defs>${grad(`${id}-ski`, ['#FFB347', '#FF8A2B', '#E0A100'])}</defs>
+      <path d="M46 100 L28 96 L28 110 L46 108 Z M154 100 L172 96 L172 110 L154 108 Z" fill="#5EC8FF" />
+      <path d="M46 90 C70 80 130 80 154 90 C160 106 154 124 132 126 C116 128 108 118 100 118 C92 118 84 128 68 126 C46 124 40 106 46 90 Z" fill="#FFFFFF" stroke="#D5DCE6" stroke-width="2" />
+      <path d="M54 94 C76 86 124 86 146 94 C150 106 146 118 130 119 C116 120 108 112 100 112 C92 112 84 120 70 119 C54 118 50 106 54 94 Z" fill=${`url(#${id}-ski)`} />
+      <path d="M64 97 L82 91" stroke="#fff" stroke-width="3" opacity="0.7" stroke-linecap="round" />
     </g>`,
   },
   {
@@ -765,6 +801,23 @@ const backgrounds = [
       ${[[-6, 222, '#FFD23F'], [28, 236, '#5EC8FF'], [60, 226, '#FF5E7E'], [140, 232, '#7CE07A'], [176, 222, '#FFD23F'], [206, 238, '#FF8FC8']].map(([x, y, c], i) => html`<rect key=${i} x=${x} y=${y} width="7" height="3.4" rx="1" fill=${c} transform=${`rotate(${(i * 47) % 90 - 45} ${x + 3.5} ${y + 1.7})`} />`)}
     </g>`,
   },
+  // Décors de sport : dessins de secours tant que l'image 3D manque
+  ...[
+    ['stade_foot', 'Stade de foot', '#4FB85A', '#3E9E48', (y) => html`<path d=${`M-20 ${y} L220 ${y}`} stroke="#fff" stroke-width="2" /><path d="M70 150 L70 128 L130 128 L130 150" stroke="#fff" stroke-width="3" fill="none" />`],
+    ['terrain_basket', 'Terrain de basket', '#F28C28', '#2D6CDF', () => html`<rect x="96" y="96" width="5" height="76" fill="#5A6070" /><rect x="80" y="84" width="38" height="24" fill="#fff" stroke="#C5CEDA" stroke-width="1.5" /><ellipse cx="99" cy="110" rx="9" ry="2.4" fill="none" stroke="#F28C28" stroke-width="2" />`],
+    ['court_tennis', 'Court de tennis', '#D9774A', '#C2653B', (y) => html`<path d=${`M-20 ${y + 30} L220 ${y + 30}`} stroke="#fff" stroke-width="2" /><path d="M20 172 L20 150 L180 150 L180 172" stroke="#fff" stroke-width="2" fill="none" /><g stroke="#fff" stroke-width="0.8" opacity="0.8">${[30, 50, 70, 90, 110, 130, 150, 170].map((x) => html`<path key=${x} d=${`M${x} 152 L${x} 172`} />`)}</g>`],
+    ['dojo', 'Dojo de judo', '#D7E3A0', '#B9CC7A', () => html`<rect x="-20" y="40" width="240" height="134" fill="#E8C48A" />${[10, 60, 110, 160].map((x) => html`<rect key=${x} x=${x} y="60" width="40" height="90" fill="#FFF6E5" stroke="#B5652C" stroke-width="3" />`)}`],
+    ['piste_ski', 'Piste de ski', '#FFFFFF', '#E6F0FA', () => html`<path d="M-20 140 L40 70 L90 120 L140 50 L220 140 Z" fill="#F4F8FC" stroke="#C9D8E8" stroke-width="2" />${[20, 170, 196].map((x) => html`<path key=${x} d=${`M${x} 168 L${x - 12} 168 L${x} 138 L${x + 12} 168 Z`} fill="#3E8E5A" />`)}`],
+    ['terrain_rugby', 'Terrain de rugby', '#4FB85A', '#3E9E48', () => html`<path d="M80 172 L80 96 M120 172 L120 96 M80 140 L120 140" stroke="#fff" stroke-width="4" stroke-linecap="round" />`],
+  ].map(([id, name, ground, line, extra]) => ({
+    id, name, price: 180,
+    render: () => html`<g>
+      ${frameRect('#9ED8FF')}
+      <rect x="-20" y="174" width="240" height="80" fill=${ground} />
+      <rect x="-20" y="190" width="240" height="14" fill=${line} opacity="0.35" />
+      ${extra(196)}
+    </g>`,
+  })),
 ];
 
 // --- Effets ---------------------------------------------------------------------------------------
