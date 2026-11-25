@@ -11,7 +11,9 @@
 // Lumière de studio d'animation : grande lumière chaude devant à gauche, contre-jour froid qui
 // détoure la fourrure, ciel doux pour les reflets des yeux et de la truffe.
 import { THREE, blobTexture } from './pandi3d.js';
-import { PandiActor } from './actor.js';
+import { PandiActor, ACTS } from './actor.js';
+import * as B from './boucles.js';
+import { BOUCLES } from '../config.js';
 
 let raf = 0, last = 0, solo = null;
 const views = new Set();
@@ -194,34 +196,134 @@ function tick(now) {
 }
 
 function drawAll(dt, steps = 1) {
+  let playing = 0;
   for (const v of views) {
+    // labo : ce Pandi rejoue sa boucle enregistrée, il n'y a rien à calculer
+    if (v.loop?.play) {
+      playing++;
+      checkPlay(v);
+      continue;
+    }
     // idle : en pause, caché, ou une scène plein écran passe devant (les autres attendent)
-    if (!v.canvas.isConnected || v.surface?.lost || idle(v)) continue;
+    if (!v.canvas.isConnected || v.surface?.lost || idle(v)) {
+      if (v.loop?.rec) B.abort(v);
+      continue;
+    }
     // il réapparaît après avoir prêté sa surface : il en reprend une et se dessine tout de suite
     const back = !v.surface;
     if (back) attach(v, acquire(v));
-    // les petits Pandi des cartes se contentent de 15 images par seconde au repos, 30 quand ils réagissent
-    v.acc += dt * steps;
-    if (!back && v.fps && steps === 1 && v.acc < 1 / v.fps - 0.004) continue;
-    const step = v.acc / steps;
-    v.acc = 0;
-    frame(v, step * steps);
-    for (let i = 0; i < steps; i++) {
-      v.actor.update(v.still ? 0 : step, v.camera);
-      v.cast?.update(v.still ? 0 : step, v.camera);
+    // labo : au repos, le geste en cours est enregistré une fois puis rejoué (boucles.js)
+    if (steps === 1 && B.canStart(v)) {
+      B.start(v, enterPlay);
+      if (v.loop.play) {
+        playing++;
+        continue;
+      }
     }
-    // l'ombre suit Pandi quand il se déplace (à côté de son lit…)
-    v.shadow.position.x = v.actor.rig.root.position.x;
-    v.shadow.position.z = v.actor.rig.root.position.z;
-    v.shadow.scale.setScalar(1 - Math.min(0.45, v.actor.rig.root.position.y * 1.2));
-    v.shadow.material.opacity = 0.34 * (1 - Math.min(0.6, v.actor.rig.root.position.y * 1.5));
-    v.surface.renderer.render(v.scene, v.camera);
-    if (!v.drawn) {
-      v.drawn = true;
-      v.onFirstDraw?.();
+    const rec = steps === 1 ? v.loop?.rec : null;
+    // les petits Pandi des cartes se contentent de 15 images par seconde au repos, 30 quand ils réagissent
+    // (pendant un enregistrement : le rythme exact de la boucle)
+    v.acc += dt * steps;
+    const period = rec ? rec.dReal : v.fps ? 1 / v.fps : 0;
+    if (!back && period && steps === 1 && v.acc < period - 0.004) continue;
+    const step = rec ? rec.dReal : v.acc / steps;
+    v.acc = 0;
+    drawView(v, step, steps);
+    if (rec) B.capture(v, enterPlay);
+  }
+  B.countPlaying(playing);
+}
+
+function drawView(v, step, steps = 1) {
+  frame(v, step * steps);
+  // l'acteur avance au plus de 0,05 s d'un coup (actor.js) : à 15 ou 12 images par seconde, le pas est
+  // coupé en morceaux, sinon Pandi bougerait au ralenti (au retour d'arrière-plan, le temps perdu ne compte pas)
+  step = Math.min(step, 0.2);
+  const sub = Math.max(1, Math.ceil(step / 0.05 - 1e-6));
+  for (let i = 0; i < steps; i++) {
+    for (let j = 0; j < sub; j++) {
+      v.actor.update(v.still ? 0 : step / sub, v.camera);
+      v.cast?.update(v.still ? 0 : step / sub, v.camera);
     }
   }
+  // l'ombre suit Pandi quand il se déplace (à côté de son lit…)
+  v.shadow.position.x = v.actor.rig.root.position.x;
+  v.shadow.position.z = v.actor.rig.root.position.z;
+  v.shadow.scale.setScalar(1 - Math.min(0.45, v.actor.rig.root.position.y * 1.2));
+  v.shadow.material.opacity = 0.34 * (1 - Math.min(0.6, v.actor.rig.root.position.y * 1.5));
+  v.surface.renderer.render(v.scene, v.camera);
+  if (!v.drawn) {
+    v.drawn = true;
+    v.onFirstDraw?.();
+  }
 }
+
+// --- Labo : les boucles enregistrées (boucles.js) ---
+// La planche qui défile prend la place de la surface 3D, qui retourne dans la réserve
+function enterPlay(v, entry, phase) {
+  const p = B.makePlayer(entry, phase);
+  entry.inUse = true;
+  const s = v.surface;
+  v.loop.css = v.canvas.style.cssText;
+  swapIn(v, p.el);
+  p.el.classList.add('pandi3d-boucle');
+  p.el.style.position = 'relative';
+  p.el.style.overflow = 'hidden';
+  v.surface = null;
+  if (s) release(s);
+  v.loop.play = p;
+  v.loop.mode = 'play';
+  p.checkAt = performance.now() + 500;
+  B.stats.plays++;
+}
+
+// La vraie 3D reprend, au point du geste où en était la boucle (aucun blanc : on dessine tout de suite)
+function exitPlay(v) {
+  const p = v.loop?.play;
+  if (!p) return;
+  const a = v.actor;
+  a.cur.t = p.entry.t0 + B.phaseOf(p) * (a.cur.ctx.tempo || 1);
+  a.prev = null;
+  a.mix = 1;
+  p.entry.inUse = false;
+  v.loop.play = null;
+  v.loop.mode = 'live';
+  v.loop.sizeKey = null;
+  attach(v, acquire(v));
+  v.canvas.style.cssText = v.loop.css || '';
+  v.canvas.classList.remove('pandi3d-boucle');
+  p.entry.atlas.remove();
+  v.acc = 0;
+  if (v.canvas.clientWidth && v.canvas.clientHeight) drawView(v, 0);
+  B.stats.liveBack++;
+}
+
+// La boucle s'arrête quand le Pandi ne se voit pas ; elle repasse en 3D si la carte change de taille
+function checkPlay(v) {
+  const p = v.loop.play;
+  if (!v.canvas.isConnected) return;
+  const run = v.active && v.visible && !(solo && v !== solo && solo.canvas?.isConnected);
+  B.setRunning(p, run);
+  const now = performance.now();
+  if (!run || now < p.checkAt) return;
+  p.checkAt = now + 500;
+  const dpr = Math.min(window.devicePixelRatio || 1, v.maxDpr || 2);
+  const w = Math.round(v.canvas.clientWidth * dpr), h = Math.round(v.canvas.clientHeight * dpr);
+  if (w && h && (w !== p.entry.w || h !== p.entry.h)) exitPlay(v);
+}
+
+// Un changement de geste, de réglages ou de rythme : retour à la 3D (ou enregistrement abandonné)
+function wake(v) {
+  if (!v.loop) return;
+  if (v.loop.play) exitPlay(v);
+  else if (v.loop.rec) B.abort(v);
+  v.loop.failed = null;
+}
+const ctxKey = (name, ctx) => {
+  const c = { ...ctx };
+  if (name !== 'dents') delete c.zone;
+  return `${name}|${JSON.stringify(c)}`;
+};
 
 // Arrête ou relance l'animation automatique (captures du banc d'essai)
 export function pause(on) {
@@ -253,7 +355,7 @@ export function webglOk() {
 // Scène à plusieurs (coin calme) : spot { x, z, turn } place Pandi, cast { group, update(dt, camera), frame }
 // est l'autre personnage, frames remplace les cadrages ({ x, y, h, w }), maxDpr limite la définition ;
 // exclusive : tant qu'elle est affichée, les autres Pandi de l'écran (cachés dessous) ne sont plus dessinés.
-export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', base = 'bust', date, look, brushColor, still = false, fps = 0, onCue, spot = null, cast = null, frames = null, maxDpr = 0, exclusive = false, className = '', label = 'Pandi le panda', onFirstDraw = null } = {}) {
+export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', base = 'bust', date, look, brushColor, still = false, fps = 0, onCue, spot = null, cast = null, frames = null, maxDpr = 0, exclusive = false, className = '', label = 'Pandi le panda', onFirstDraw = null, loop = false } = {}) {
   // la scène plein écran est déclarée avant de chercher une surface : les Pandi qu'elle cache prêtent la leur
   const view = { drawn: false };
   if (exclusive) solo = view;
@@ -286,6 +388,10 @@ export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', bas
   actor.play(act, ctx);
   actor.onCue = onCue || null;
   Object.assign(view, { canvas, surface, scene, shadow, camera: new THREE.PerspectiveCamera(24, 1, 0.1, 40), actor, cast, frames, maxDpr, framing, base, visible: true, active: true, still, fps, acc: 0, onFirstDraw });
+  // labo : ce Pandi peut passer en boucle enregistrée quand il est au repos
+  view.loop = loop && BOUCLES && !cast && !spot ? { mode: 'live', rec: null, play: null } : null;
+  view.actName = ACTS[act] ? act : 'idle';
+  view.lookKey = `${JSON.stringify(actor.look)}|${brushColor || ''}`;
   const io = 'IntersectionObserver' in window ? new IntersectionObserver(([e]) => (view.visible = e.isIntersecting)) : null;
   view.io = io;
   io?.observe(canvas);
@@ -297,11 +403,22 @@ export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', bas
     get canvas() {
       return view.canvas;
     },
-    play: (name, c) => actor.play(name, c),
-    set: (c) => actor.setContext(c),
+    play(name, c = {}) {
+      const n = ACTS[name] ? name : 'idle';
+      if (view.loop && ctxKey(n, c) !== ctxKey(view.actName, actor.cur.ctx)) wake(view);
+      view.actName = n;
+      actor.play(name, c);
+    },
+    set(c) {
+      if (view.loop && ctxKey(view.actName, { ...actor.cur.ctx, ...c }) !== ctxKey(view.actName, actor.cur.ctx)) wake(view);
+      actor.setContext(c);
+    },
     setFraming: (f) => (view.framing = f),
     // images par seconde (0 : à chaque image de l'écran) ; les cartes ralentissent au repos (Evening.js)
-    setFps: (n) => (view.fps = n),
+    setFps(n) {
+      if (n > 15) wake(view);
+      view.fps = n;
+    },
     // Où se trouve à l'écran un point du buste de Pandi (en pixels CSS dans son canvas), ex. son ventre
     screenOf(off) {
       if (!view.cam) return null;
@@ -312,11 +429,15 @@ export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', bas
     setActive: (on) => (view.active = on),
     setCue: (fn) => (actor.onCue = fn),
     // une image (animations réduites : Pandi reste immobile mais garde sa pose)
-    still: (on) => (view.still = on),
+    still(on) {
+      if (on) wake(view);
+      view.still = on;
+    },
     // Bancs d'essai qui montrent beaucoup de Pandi : l'image du moment est recopiée dans le <canvas> d'origine,
     // puis la surface est rendue (un navigateur ne garde qu'une quinzaine de contextes WebGL à la fois)
     freeze() {
       if (!stand) return ctl.destroy();
+      wake(view);
       if (!view.surface) attach(view, acquire(view));
       frame(view, 0);
       view.surface.renderer.render(scene, view.camera);
@@ -327,6 +448,12 @@ export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', bas
     },
     destroy() {
       io?.disconnect();
+      if (view.loop?.play) {
+        view.loop.play.entry.inUse = false;
+        view.loop.play.entry.atlas.remove();
+        view.loop.play = null;
+      }
+      if (view.loop?.rec) B.abort(view);
       views.delete(view);
       if (solo === view) solo = null;
       actor.wear.dispose();
@@ -342,4 +469,13 @@ export function mountPandi(host, { act = 'idle', ctx = {}, framing = 'full', bas
     },
   };
   return ctl;
+}
+
+// Labo : l'état de chaque Pandi, pour la console (await import('./js/mascot/stage.js')).etat()
+export function etat() {
+  return [...views].map((v) => ({
+    act: v.actName, t: Math.round(v.actor.cur.t * 10) / 10, prev: Boolean(v.actor.prev), mix: v.actor.mix, fps: v.fps,
+    active: v.active, visible: v.visible, w: v.canvas.width, h: v.canvas.height, cw: v.canvas.clientWidth,
+    loop: v.loop && { mode: v.loop.mode, rec: v.loop.rec && v.loop.rec.frame, sizeKey: v.loop.sizeKey },
+  }));
 }

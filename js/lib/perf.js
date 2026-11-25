@@ -515,6 +515,8 @@ export function report(reason = 'console') {
     taps: tapSummary(),
     longFrames: loafSummary(),
     portraits,
+    // labo : les boucles enregistrées des Pandi (js/mascot/boucles.js)
+    boucles: globalThis.pandiBoucles ? { ...globalThis.pandiBoucles } : null,
     battery: { start: batteryStart, now: battery ? { level: Math.round(battery.level * 100), charging: battery.charging } : null },
     visibility: { hides: vis.hides, hiddenS: Math.round(vis.hiddenMs / 1000) },
     errors,

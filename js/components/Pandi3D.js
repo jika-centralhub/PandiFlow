@@ -26,7 +26,8 @@ export function has3D() {
 // act : le numéro (voir js/mascot/acts.js) ; ctx : ses réglages (zone des dents, tempo, variante…)
 // framing : 'full', 'bust' ou 'auto' ; sound : Pandi fait ses petits bruits ; active : false = en pause ;
 // fps : images par seconde (0 = celles de l'écran), modifiable à tout moment ; maxDpr : définition maximale
-export function Pandi3D({ act = 'idle', ctx = {}, framing = 'full', base = 'bust', class: cls = '', fps = 0, maxDpr = 0, sound = false, active = true, brushColor, label = 'Pandi le panda' }) {
+// loop : au repos, Pandi peut rejouer une boucle enregistrée (labo, js/mascot/boucles.js)
+export function Pandi3D({ act = 'idle', ctx = {}, framing = 'full', base = 'bust', class: cls = '', fps = 0, maxDpr = 0, sound = false, active = true, brushColor, label = 'Pandi le panda', loop = false }) {
   const ref = useRef(null);
   const ctl = useRef(null);
   const [ready, setReady] = useState(false);
@@ -44,7 +45,7 @@ export function Pandi3D({ act = 'idle', ctx = {}, framing = 'full', base = 'bust
         const still = prefersReducedMotion();
         stillRef.current = still;
         ctl.current = m.mountPandi(ref.current, {
-          act, ctx, framing, base, brushColor, still, fps: still ? 4 : fps, maxDpr, className, label,
+          act, ctx, framing, base, brushColor, still, fps: still ? 4 : fps, maxDpr, className, label, loop,
           date: eveningDate(),
           onCue: (cue) => voice.current && pandiVoice(cue),
           // apparition en douceur une fois la première image dessinée (canvas.pandi3d.ready, app.css)

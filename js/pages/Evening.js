@@ -28,6 +28,7 @@ import { KidStuff, sceneOf } from '../components/KidBanner.js';
 import { flyCoins, burst, replay } from '../anim/fx.js';
 import { sfx, setSoftSound } from '../lib/sounds.js';
 import { navigate } from '../router.js';
+import { BOUCLES } from '../config.js';
 import { keepScreenOn } from '../lib/device.js';
 
 // Matin ou soir : la routine change toute seule (à 4 h et à 13 h), on n'affiche que celle du moment.
@@ -71,8 +72,9 @@ function CardPandi({ task, rating, view, color, active, night }) {
     return () => clearTimeout(t);
   }, [rating]);
   const { act, ctx } = pandiFor(task, { rating, timer: view, night });
-  const fps = react || (view && view.look !== 'paused') ? 30 : 15;
-  return html`<div class="cr-pandi"><${Pandi3D} act=${act} ctx=${{ ...ctx, color }} framing="auto" fps=${fps} maxDpr=${CARD_DPR} sound=${voice} active=${active} brushColor=${color} /></div>`;
+  // labo : pendant un minuteur aussi, Pandi rejoue sa boucle (une par coin de la bouche), seule la réaction est en direct
+  const fps = react || (!BOUCLES && view && view.look !== 'paused') ? 30 : 15;
+  return html`<div class="cr-pandi"><${Pandi3D} act=${act} ctx=${{ ...ctx, color }} framing="auto" fps=${fps} maxDpr=${CARD_DPR} sound=${voice} active=${active} brushColor=${color} loop=${BOUCLES} /></div>`;
 }
 
 function TaskCard({ task, index, total, d, rating, timer, canTime, cardRef, onClick, onTimer, color, pandiActive, night }) {
@@ -121,7 +123,7 @@ function NightCard({ child, index, total, d, ready, asleep, cardRef, onClick, pa
     onKeyDown=${(e) => (e.key === 'Enter' || e.key === ' ') && onClick(e)}>
     <div class=${`cr-emoji-wrap ${withPandi ? 'has-pandi' : ''}`}>
       ${withPandi
-        ? html`<div class="cr-pandi"><${Pandi3D} act="endormi" framing="auto" fps=${15} maxDpr=${CARD_DPR} active=${pandiActive} brushColor=${child.color} /></div><span class="cr-badge">🌙</span>`
+        ? html`<div class="cr-pandi"><${Pandi3D} act="endormi" framing="auto" fps=${15} maxDpr=${CARD_DPR} active=${pandiActive} brushColor=${child.color} loop=${BOUCLES} /></div><span class="cr-badge">🌙</span>`
         : html`<span class="cr-emoji">${asleep ? '😴' : '🌙'}</span>`}
     </div>
     <div class="cr-title">${asleep ? `Bonne nuit ${child.name} !` : 'Bonne nuit Pandi'}</div>
