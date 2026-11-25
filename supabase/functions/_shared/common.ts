@@ -57,3 +57,58 @@ export async function parentOfChild(req: Request, admin: SupabaseClient, childId
   if (!child || !member) return { error: ["Enfant introuvable.", 404] };
   return { child };
 }
+
+// Plafonds du jour des appels payants : par enfant, par famille et pour toute l'app (garde-fou si
+// quelqu'un crée des comptes à la chaîne). Comptés par public.take_ai_quota, en heure UTC.
+//   images : images OpenAI (make-portrait) ; count : analyses photo par Claude (analyze-photo) ;
+//   marks : relectures des repères par Claude (make-portrait, marksOnly)
+export type QuotaKind = "images" | "count" | "marks";
+export const AI_LIMITS: Record<QuotaKind, { child: number; family: number; app: number }> = {
+  images: { child: 12, family: 24, app: 150 },
+  count: { child: 5, family: 10, app: 100 },
+  marks: { child: 12, family: 24, app: 200 },
+};
+
+const QUOTA_MESSAGES: Record<QuotaKind, Record<"enfant" | "famille", string>> = {
+  images: {
+    enfant: "2 séances photo par jour au maximum. On réessaie demain !",
+    famille: "Votre famille a fait toutes ses séances photo du jour. On réessaie demain !",
+  },
+  count: {
+    enfant: "5 photos magiques par jour au maximum. On réessaie demain !",
+    famille: "Votre famille a fait toutes ses photos magiques du jour. On réessaie demain !",
+  },
+  marks: {
+    enfant: "Ce personnage a déjà été relu plusieurs fois aujourd'hui. On réessaie demain !",
+    famille: "Les personnages de la famille ont déjà été relus plusieurs fois aujourd'hui. On réessaie demain !",
+  },
+};
+
+// Réserve un appel. null si c'est accordé, sinon [message, statut HTTP] à renvoyer tel quel.
+export async function takeQuota(admin: SupabaseClient, child: { id: string; family_id: string }, kind: QuotaKind): Promise<[string, number] | null> {
+  const limits = AI_LIMITS[kind];
+  const { data, error } = await admin.rpc("take_ai_quota", {
+    p_child: child.id,
+    p_family: child.family_id,
+    p_kind: kind,
+    p_child_limit: limits.child,
+    p_family_limit: limits.family,
+    p_app_limit: limits.app,
+  });
+  if (error) {
+    console.error(`quota ${kind}:`, error.message);
+    return ["La magie n'a pas marché cette fois-ci. Réessaie dans un instant.", 500];
+  }
+  if (data === "enfant" || data === "famille") return [QUOTA_MESSAGES[kind][data], 429];
+  if (data === "app") {
+    console.error(`quota ${kind}: limite de l'app atteinte (${limits.app} par jour)`);
+    return ["La magie se repose : il y a eu beaucoup de demandes aujourd'hui. On réessaie demain !", 429];
+  }
+  return null;
+}
+
+// Rend l'appel réservé quand il a échoué
+export async function refundQuota(admin: SupabaseClient, childId: string, kind: QuotaKind) {
+  const { error } = await admin.rpc("refund_ai_quota", { p_child: childId, p_kind: kind });
+  if (error) console.error(`quota ${kind}: remboursement`, error.message);
+}

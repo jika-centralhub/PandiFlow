@@ -30,7 +30,6 @@ const SHELL = [
   './js/vendor/gsap.min.js',
   './js/vendor/confetti.js',
   './js/main.js',
-  './js/relais.js',
 ];
 
 self.addEventListener('install', (event) => {
@@ -53,8 +52,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
-  // La page cachée du relais ne doit jamais recevoir l'app à sa place (voir js/relais.js)
-  if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/relais/')) return;
+  if (req.method !== 'GET' || url.origin !== self.location.origin) return;
   event.respondWith(
     // (une navigation ne peut pas recevoir d'options : la page elle-même est revalidée par défaut)
     (req.mode === 'navigate' ? fetch(req) : fetch(req, { cache: 'no-cache' }))

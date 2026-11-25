@@ -19,14 +19,13 @@
 //
 // Secrets : OPENAI_API_KEY (tools/set-openai-key.ps1) et ANTHROPIC_API_KEY (déjà utilisée par analyze-photo)
 
-import { adminClient, claudeClient, parentOfChild, replier } from "../_shared/common.ts";
+import { adminClient, claudeClient, parentOfChild, refundQuota, replier, takeQuota } from "../_shared/common.ts";
 
 // Du plus récent au plus ancien : si le compte n'a pas accès à un modèle, on essaie le suivant
 const IMAGE_MODELS = ["gpt-image-2.5-sunburst", "gpt-image-2", "gpt-image-1.5"];
 // Une image prend ~20 s en « medium » : « high » tient encore largement dans les 150 s
 const IMAGE_QUALITY = "high";
 const CLAUDE_MODEL = "claude-opus-5-5";
-const DAILY_IMAGES = 12; // 2 séances photo (6 poses) par enfant et par jour
 const MAX_IMAGE_BASE64 = 7_000_000; // ~5 Mo
 const BUCKET = "portraits";
 const BUDGET_MS = 140_000; // la fonction est coupée à 150 s
@@ -198,10 +197,12 @@ Deno.serve(async (req) => {
     return reply({ error: message, detail }, status);
   };
 
-  // Repères seuls d'une image déjà créée : ni OpenAI ni quota
+  // Repères seuls d'une image déjà créée : pas d'OpenAI, mais un appel à Claude, compté à part
   if (marksOnly) {
     const { data, error } = await admin.storage.from(BUCKET).download(`${folder}/${version}/${expr}.webp`);
     if (error || !data) return reply({ error: "Image introuvable." }, 404);
+    const refused = await takeQuota(admin, child, "marks");
+    if (refused) return reply({ error: refused[0] }, refused[1]);
     const found = await findMarks(encode(new Uint8Array(await data.arrayBuffer())), started + 60_000);
     await log(true, { via: "repères", detail: found.why ?? undefined });
     return reply({ version, base: `${folder}/${version}`, expr, marks: found.marks });
@@ -219,14 +220,13 @@ Deno.serve(async (req) => {
     input = data;
   }
 
-  // 4. Limite quotidienne (pour maîtriser le coût), rendue si la création échoue
-  const { data: allowed, error: quotaError } = await admin.rpc("take_portrait_quota", { p_child: child.id, p_family: child.family_id, p_limit: DAILY_IMAGES });
-  if (quotaError) return fail("La magie n'a pas marché cette fois-ci. Réessaie dans un instant.", 500, `quota: ${quotaError.message}`);
-  if (!allowed) {
-    await log(false, { detail: `limite du jour atteinte (${DAILY_IMAGES} images)` });
-    return reply({ error: "2 séances photo par jour au maximum. On réessaie demain !" }, 429);
+  // 4. Limites du jour par enfant, par famille et pour l'app (pour maîtriser le coût), rendues si la création échoue
+  const refused = await takeQuota(admin, child, "images");
+  if (refused) {
+    await log(false, { detail: `limite du jour : ${refused[0]}` });
+    return reply({ error: refused[0] }, refused[1]);
   }
-  const refund = () => admin.rpc("refund_portrait_quota", { p_child: child.id });
+  const refund = () => refundQuota(admin, child.id, "images");
 
   // 5. Création du visage par OpenAI
   let face: Face;

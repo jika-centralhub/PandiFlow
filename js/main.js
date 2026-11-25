@@ -70,11 +70,12 @@ if (localStorage.getItem('pandiflow-perf')) {
 initSky(document.getElementById('sky'));
 unlockAudio();
 render(html`<${App} />`, document.getElementById('app'));
-// Le relais (js/relais.js) range d'abord une connexion venue d'une autre adresse (8 s au plus)
-const relayed = window.PandiRelais?.ready || Promise.resolve();
-Promise.race([relayed, new Promise((done) => setTimeout(done, 8000))])
-  .then(() => actions.boot())
-  .then(() => actions.watchVisibility());
+// L'ancien relais de connexion (pandiflow.com -> www, retiré en v1.32.0) a pu laisser un cookie
+// pf_pont* sur /relais/ : on l'efface pour qu'aucune connexion ne puisse plus arriver par là.
+for (const name of ['pf_pont', 'pf_pont0', 'pf_pont1', 'pf_pont2']) {
+  for (const domain of ['', '; domain=pandiflow.com']) document.cookie = `${name}=; path=/relais/${domain}; max-age=0`;
+}
+actions.boot().then(() => actions.watchVisibility());
 
 if (!location.hash) navigate('soiree', { replace: true });
 

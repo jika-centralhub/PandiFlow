@@ -118,7 +118,7 @@ create table if not exists public.challenges (
   foreign key (task_id, family_id) references public.tasks (id, family_id) on delete cascade
 );
 
--- Limite d'analyses photo et de visages 3D par enfant et par jour (écrite uniquement par les Edge Functions)
+-- Appels aux IA par enfant et par jour : analyses (count), images (images), repères (marks), écrits uniquement par les Edge Functions
 create table if not exists public.photo_analyses (
   family_id uuid not null references public.families (id) on delete cascade,
   child_id uuid not null,
@@ -358,40 +358,101 @@ grant execute on function public.remove_member(uuid, uuid) to authenticated;
 -- Visages 3D des enfants (Edge Function make-portrait) : bucket privé « portraits »,
 -- <famille>/<enfant>/<version>/<expression>.webp, écrit par l'Edge Function, lu par la famille
 -- ---------------------------------------------------------------------
--- Réserve une image dans la limite du jour (false si la limite est atteinte)
-create or replace function public.take_portrait_quota(p_child uuid, p_family uuid, p_limit int)
-returns boolean
+-- Plafonds des appels aux IA : par enfant, par famille et pour toute l'app (limites dans les Edge Functions)
+-- Relectures des repères par Claude (make-portrait, marksOnly)
+alter table public.photo_analyses add column if not exists marks int not null default 0;
+
+-- Compteurs du jour pour toute l'app, écrits uniquement par les Edge Functions
+create table if not exists public.ai_usage_days (
+  day date primary key,
+  images int not null default 0,
+  count int not null default 0,
+  marks int not null default 0
+);
+alter table public.ai_usage_days enable row level security;
+revoke all on public.ai_usage_days from anon, authenticated;
+
+-- Réserve un appel. p_kind : 'images' (OpenAI), 'count' (analyse photo par Claude), 'marks' (repères).
+-- Renvoie null si c'est accordé, sinon la limite atteinte : 'enfant', 'famille' ou 'app'.
+create or replace function public.take_ai_quota(p_child uuid, p_family uuid, p_kind text, p_child_limit int, p_family_limit int, p_app_limit int)
+returns text
 language plpgsql
 security definer
 set search_path = public
 as $$
-declare n int;
+declare
+  n_child int;
+  n_family int;
+  n_app int;
 begin
-  insert into public.photo_analyses (child_id, family_id, day, images)
-  values (p_child, p_family, current_date, 1)
-  on conflict (child_id, day) do update set images = public.photo_analyses.images + 1
-  returning images into n;
-  if n > p_limit then
-    update public.photo_analyses set images = images - 1 where child_id = p_child and day = current_date;
-    return false;
+  if p_kind not in ('images', 'count', 'marks') then
+    raise exception 'Type de quota inconnu : %', p_kind;
   end if;
-  return true;
+  -- Une famille à la fois : deux enfants de la même famille ne passent pas ensemble sous la limite
+  perform pg_advisory_xact_lock(hashtext('pandi-quota:' || p_family::text));
+
+  execute format('select coalesce(sum(%1$I), 0) from public.photo_analyses where family_id = $1 and day = current_date', p_kind)
+    into n_family using p_family;
+  if n_family >= p_family_limit then return 'famille'; end if;
+
+  execute format('select coalesce(max(%1$I), 0) from public.photo_analyses where child_id = $1 and day = current_date', p_kind)
+    into n_child using p_child;
+  if n_child >= p_child_limit then return 'enfant'; end if;
+
+  execute format('insert into public.ai_usage_days as a (day, %1$I) values (current_date, 1)
+    on conflict (day) do update set %1$I = a.%1$I + 1 returning a.%1$I', p_kind)
+    into n_app;
+  if n_app > p_app_limit then
+    execute format('update public.ai_usage_days set %1$I = %1$I - 1 where day = current_date', p_kind);
+    return 'app';
+  end if;
+
+  execute format('insert into public.photo_analyses as p (child_id, family_id, day, %1$I) values ($1, $2, current_date, 1)
+    on conflict (child_id, day) do update set %1$I = p.%1$I + 1', p_kind)
+    using p_child, p_family;
+  return null;
 end $$;
 
--- Rend l'image réservée quand la création a échoué
-create or replace function public.refund_portrait_quota(p_child uuid)
+-- Rend l'appel réservé quand il a échoué
+create or replace function public.refund_ai_quota(p_child uuid, p_kind text)
 returns void
-language sql
+language plpgsql
 security definer
 set search_path = public
 as $$
-  update public.photo_analyses set images = greatest(images - 1, 0) where child_id = p_child and day = current_date;
-$$;
+begin
+  if p_kind not in ('images', 'count', 'marks') then
+    raise exception 'Type de quota inconnu : %', p_kind;
+  end if;
+  execute format('update public.photo_analyses set %1$I = greatest(%1$I - 1, 0) where child_id = $1 and day = current_date', p_kind) using p_child;
+  execute format('update public.ai_usage_days set %1$I = greatest(%1$I - 1, 0) where day = current_date', p_kind);
+end $$;
 
-revoke all on function public.take_portrait_quota(uuid, uuid, int) from public, anon, authenticated;
-revoke all on function public.refund_portrait_quota(uuid) from public, anon, authenticated;
-grant execute on function public.take_portrait_quota(uuid, uuid, int) to service_role;
-grant execute on function public.refund_portrait_quota(uuid) to service_role;
+revoke all on function public.take_ai_quota(uuid, uuid, text, int, int, int) from public, anon, authenticated;
+revoke all on function public.refund_ai_quota(uuid, text) from public, anon, authenticated;
+grant execute on function public.take_ai_quota(uuid, uuid, text, int, int, int) to service_role;
+grant execute on function public.refund_ai_quota(uuid, text) to service_role;
+
+-- Au plus 10 enfants par famille, archivés compris
+create or replace function public.limit_children()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- L'app écrit par upsert : un enfant déjà là n'est qu'une mise à jour, il ne compte pas
+  if exists (select 1 from public.children where id = new.id) then return new; end if;
+  perform pg_advisory_xact_lock(hashtext('pandi-enfants:' || new.family_id::text));
+  if (select count(*) from public.children where family_id = new.family_id) >= 10 then
+    raise exception 'Une famille compte au plus 10 enfants.' using errcode = 'check_violation';
+  end if;
+  return new;
+end $$;
+revoke all on function public.limit_children() from public, anon, authenticated;
+
+drop trigger if exists children_limit on public.children;
+create trigger children_limit before insert on public.children for each row execute function public.limit_children();
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('portraits', 'portraits', false, 3145728, array['image/webp', 'image/png'])

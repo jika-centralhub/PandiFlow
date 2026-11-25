@@ -6,10 +6,9 @@
 //   ANTHROPIC_API_KEY  — ta clé API Claude
 // (SUPABASE_URL, SUPABASE_ANON_KEY et SUPABASE_SERVICE_ROLE_KEY sont fournis automatiquement.)
 
-import { adminClient, claudeClient, parentOfChild, replier } from "../_shared/common.ts";
+import { adminClient, claudeClient, parentOfChild, refundQuota, replier, takeQuota } from "../_shared/common.ts";
 
 const MODEL = "claude-opus-5-5";
-const DAILY_LIMIT = 5;
 const MAX_IMAGE_BASE64 = 7_000_000; // ~5 Mo
 
 // Vocabulaire identique à js/avatar/palette.js : toute modification doit être faite des deux côtés.
@@ -81,17 +80,9 @@ Deno.serve(async (req) => {
   if (access.error) return reply({ error: access.error[0] }, access.error[1]);
   const { child } = access;
 
-  // 3. Limite quotidienne (pour maîtriser le coût)
-  const day = new Date().toISOString().slice(0, 10);
-  const { data: quota } = await admin.from("photo_analyses").select("count").eq("child_id", childId).eq("day", day).maybeSingle();
-  const used = quota?.count ?? 0;
-  if (used >= DAILY_LIMIT) {
-    return reply({ error: `${DAILY_LIMIT} photos magiques par jour au maximum. On réessaie demain !` }, 429);
-  }
-  await admin.from("photo_analyses").upsert(
-    { child_id: childId, family_id: child.family_id, day, count: used + 1 },
-    { onConflict: "child_id,day" },
-  );
+  // 3. Limites du jour par enfant, par famille et pour l'app (pour maîtriser le coût), réservées d'un coup
+  const refused = await takeQuota(admin, child, "count");
+  if (refused) return reply({ error: refused[0] }, refused[1]);
 
   // 4. Analyse par Claude
   const anthropic = claudeClient();
@@ -122,6 +113,7 @@ Deno.serve(async (req) => {
     const { notes, ...look } = JSON.parse(text.text);
     return reply({ look, notes: typeof notes === "string" ? notes.slice(0, 200) : undefined });
   } catch (e) {
+    await refundQuota(admin, child.id, "count");
     // Jamais l'image dans les journaux : seulement le type d'erreur renvoyé par l'API
     const err = e as { status?: number; name?: string; message?: string; error?: { error?: { type?: string; message?: string } } };
     const type = err.error?.error?.type ?? err.name ?? "erreur";
