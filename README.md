@@ -71,9 +71,9 @@ Chaque parent crée son compte avec **e-mail + mot de passe** (8 caractères min
 
 **Envoi des e-mails par Brevo** : sans serveur d'envoi à soi, Supabase n'écrit qu'aux membres de son organisation et refuse les modèles d'e-mails. L'ordre compte :
 
-1. Dans Brevo, *Senders, Domains & Dedicated IPs* : vérifier que le domaine `pandiflow.com` est authentifié (ses enregistrements DKIM sont déjà dans le DNS) et que `bonjour@pandiflow.com` peut envoyer.
+1. Dans Brevo, *Senders, Domains & Dedicated IPs* : vérifier que le domaine `pandiflow.com` est authentifié (ses enregistrements DKIM sont déjà dans le DNS) et que `contact@pandiflow.com` peut envoyer.
 2. Dans Brevo, *SMTP & API → SMTP* : noter l'identifiant SMTP (il se termine par `@smtp-brevo.com`), puis *Generate a new SMTP key* et copier la clé (elle n'est montrée qu'une fois).
-3. Dans Supabase, [Authentication → Emails → SMTP Settings](https://supabase.com/dashboard/project/kyhhkhmwdostzdaksxzw/auth/smtp) : activer *Enable custom SMTP*, puis *Sender email* `bonjour@pandiflow.com`, *Sender name* `Pandi`, *Host* `smtp-relay.brevo.com`, *Port* `587`, *Username* l'identifiant SMTP, *Password* la clé SMTP → *Save*. La clé reste dans Supabase, jamais dans le code.
+3. Dans Supabase, [Authentication → Emails → SMTP Settings](https://supabase.com/dashboard/project/kyhhkhmwdostzdaksxzw/auth/smtp) : activer *Enable custom SMTP*, puis *Sender email* `contact@pandiflow.com`, *Sender name* `Pandi`, *Host* `smtp-relay.brevo.com`, *Port* `587`, *Username* l'identifiant SMTP, *Password* la clé SMTP → *Save*. La clé reste dans Supabase, jamais dans le code.
 4. Ensuite seulement : `supabase config push --project-ref kyhhkhmwdostzdaksxzw`, qui envoie les modèles en français et active la confirmation par code ([`supabase/config.toml`](supabase/config.toml)).
 
 **Inviter un autre parent** : *Espace parent → Réglages → Parents de la famille → Inviter un parent*. Le code a 8 caractères, il est valable 48 h et ne sert qu'une fois ; 5 invitations en cours et 6 parents au maximum par famille ; 10 essais ratés par heure au maximum. Seul le créateur de la famille peut retirer un parent. Ces règles sont dans [`supabase/migrations/20261020120000_invitations.sql`](supabase/migrations/20261020120000_invitations.sql).
