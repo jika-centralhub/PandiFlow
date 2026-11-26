@@ -5,6 +5,8 @@ import * as cd from '../lib/countdown.js';
 import * as timers from '../lib/timers.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { Pandi3D, has3D } from './Pandi3D.js';
+import { PandiPose } from './PandiPose.js';
+import { POSES } from '../config.js';
 import { PandiFlat } from './Coin.js';
 import { pandiFor } from '../mascot/tasks.js';
 import { Modal } from './ui.js';
@@ -130,7 +132,9 @@ export function TimerStage({ timer, child, task, others, onRate, onClose, onSwit
       </div>
       <div class="ts-pandi">
         <div class="ts-mascot">
-          ${has3D()
+          ${POSES
+            ? html`<${PandiPose} class="ts-pose" ...${pandiFor(task, { timer: { look, progress: v.progress } })} />`
+            : has3D()
             ? html`<${Pandi3D} class="ts-pandi3d" framing="auto" base="full" sound=${true} brushColor=${child.color} ...${pandiFor(task, { timer: { look, progress: v.progress } })} />`
             : html`<${PandiFlat} mood=${won ? 'happy' : 'neutral'} wave=${look === 'calm'} />`}
           <div class="ts-deco">${deco.map((e, i) => html`<span key=${`${look}${i}`} style=${{ left: `${8 + ((i * 29) % 84)}%`, animationDelay: `${i * 0.35}s` }}>${e}</span>`)}</div>

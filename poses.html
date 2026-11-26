@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1a1b4b">
+  <title>Pandi labo · les poses</title>
+  <link rel="stylesheet" href="css/pandi-pose.css">
+  <style>
+    @font-face { font-family: Fredoka; src: url(assets/fonts/fredoka.woff2) format('woff2'); font-weight: 300 700; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body { font-family: Fredoka, system-ui, sans-serif; color: #fff; background: linear-gradient(160deg, #22205A, #4A2C7A); min-height: 100vh;
+      padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+    header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+    h1 { font-size: 17px; margin: 0 8px 0 0; font-weight: 600; }
+    select, a { font: inherit; font-size: 14px; }
+    select { border-radius: 10px; border: 0; padding: 5px 8px; }
+    a { color: #FFE2B0; margin-left: auto; }
+    .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .case { background: #fff; border-radius: 16px; height: 210px; display: flex; flex-direction: column; align-items: center; padding: 6px 4px 4px; }
+    .case .scene { flex: 1; min-height: 0; width: 100%; display: flex; justify-content: center; }
+    .case b { color: #2B2733; font-size: 13px; font-weight: 600; }
+    .case.sombre { background: #1E1A3A; } .case.sombre b { color: #fff; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Pandi · les 20 poses</h1>
+    <select id="theme" aria-label="Thème de la semaine">
+      <option value="">Sans thème</option>
+      <option value="antennes">Astronaute</option><option value="chapeau_magicien">Magicien</option>
+      <option value="masque_plongee">Plongeur</option><option value="heaume">Chevalier</option>
+      <option value="cowboy">Cowboy</option><option value="toque">Cuisinier</option>
+      <option value="casquette_police">Policier</option><option value="casque_pompier">Pompier</option>
+    </select>
+    <select id="fond" aria-label="Fond"><option value="">Fond clair</option><option value="sombre">Fond sombre (minuteur)</option></select>
+    <a href="./#/soiree">↩ l'app</a>
+  </header>
+  <div class="grille" id="grille"></div>
+  <script type="module">
+    import { html, render } from './js/vendor/preact-htm.js';
+    import { PandiPose, loadPoses } from './js/components/PandiPose.js';
+    import { setThemeLooks } from './js/mascot/themeLook.js';
+    const NAMES = { dents: 'Dents', idle: 'Coucou', pyjama: 'Pyjama', habiller: "S'habiller", douche: 'Douche', manger: 'Dîner', cartable: 'Cartable',
+      lecture: 'Lecture', ranger: 'Ranger', dodo: 'Au lit', endormi: 'Il dort', lever: 'Lever', mains: 'Les mains', coiffer: 'Coiffer',
+      chaussures: 'Chaussures', pancarte: 'Pancarte', bravo: 'Bravo', ok: 'Applaudit', calin: 'Câlin', sieste: 'Sieste (pause)' };
+    const ACT = { pyjama: ['habiller', { variant: 'pyjama' }], pancarte: ['pancarte', { emoji: '🎨' }] };
+    const grille = document.getElementById('grille');
+    const theme = document.getElementById('theme');
+    const fond = document.getElementById('fond');
+    function draw() {
+      setThemeLooks(theme.value ? [{ start: '0000-01-01', end: '9999-12-31', look: { tete: theme.value } }] : []);
+      render(html`${Object.keys(NAMES).map((n) => {
+        const [act, ctx] = ACT[n] || [n, {}];
+        return html`<div class=${`case ${fond.value}`}><div class="scene"><${PandiPose} key=${n + theme.value} act=${act} ctx=${ctx} /></div><b>${NAMES[n]}</b></div>`;
+      })}`, grille);
+    }
+    theme.onchange = draw;
+    fond.onchange = draw;
+    loadPoses().then(draw);
+  </script>
+</body>
+</html>

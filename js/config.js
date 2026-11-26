@@ -6,11 +6,23 @@
 export const SUPABASE_URL = 'https://kyhhkhmwdostzdaksxzw.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable__E61F1zKiN431iU2AlKySQ_PZOsOtgi';
 
-export const APP_VERSION = '1.32.0-labo.1';
+export const APP_VERSION = '1.32.0-labo.2';
 
 // Labo (branche labo-boucles, publiée à part) : les Pandi des cartes au repos rejouent une boucle
 // enregistrée au lieu de recalculer la 3D (js/mascot/boucles.js). ?boucles=0 les coupe sur cet appareil
 // pour comparer, ?boucles=1 les remet.
+// Labo : Pandi en poses illustrées animées par calques sur les cartes et le minuteur (PandiPose.js), à la
+// place de la 3D. ?poses=0 remet la 3D sur cet appareil pour comparer, ?poses=1 les poses.
+export const POSES = (() => {
+  try {
+    const m = /[?&]poses=([01])/.exec(location.search);
+    if (m) localStorage.setItem('pandiflow-poses', m[1]);
+    return localStorage.getItem('pandiflow-poses') !== '0';
+  } catch {
+    return true;
+  }
+})();
+
 export const BOUCLES = (() => {
   try {
     const m = /[?&]boucles=([01])/.exec(location.search);
