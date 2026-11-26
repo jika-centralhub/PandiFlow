@@ -328,6 +328,34 @@ function ThemeBackdrop({ scene }) {
   return on ? html`<div class="theme-backdrop" aria-hidden="true" style=${{ backgroundImage: `url("${artSrc(scene)}")` }}></div>` : null;
 }
 
+// Une pastille par enfant, à sa couleur, sous la rangée qui défile : celles des enfants à l'écran sont pleines.
+// Toucher une pastille amène la colonne de cet enfant.
+function KidDots({ kids, cols }) {
+  const [seen, setSeen] = useState([]);
+  useEffect(() => {
+    const el = cols.current;
+    if (!el) return undefined;
+    const update = () => {
+      const box = el.getBoundingClientRect();
+      setSeen([...el.children].filter((c) => c.classList.contains('kid-col')).map((c) => {
+        const r = c.getBoundingClientRect();
+        return r.left >= box.left - 4 && r.right <= box.right + 4;
+      }));
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => { el.removeEventListener('scroll', update); window.removeEventListener('resize', update); };
+  }, [cols, kids.length]);
+  const go = (i) => {
+    sfx.tap();
+    cols.current?.querySelectorAll('.kid-col')[i]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+  };
+  return html`<div class="kid-dots">
+    ${kids.map((k, i) => html`<button key=${k.id} class=${seen[i] ? 'on' : ''} style=${{ '--kid': k.color }} onClick=${() => go(i)} aria-label=${`Voir la colonne de ${k.name}`}></button>`)}
+  </div>`;
+}
+
 function nextOpen(list, from, isRated) {
   for (let k = 1; k <= list.length; k++) {
     const i = (from + k) % list.length;
@@ -359,6 +387,7 @@ export function Evening() {
   const heads = useRef({});
   const moodTimers = useRef({});
   const moodsRef = useRef({});
+  const colsRef = useRef(null);
   const lastAuto = useRef(currentRoutine());
   const routineRef = useRef(routine);
   routineRef.current = routine;
@@ -402,6 +431,8 @@ export function Evening() {
   }, [date]);
 
   const kids = activeChildren(s.children);
+  // À partir de 3 enfants, chaque colonne garde la largeur qu'elle a à 2 et la rangée défile sur le côté
+  const many = kids.length > 2;
   const today = routineDate(routine);
   const canTime = date === today;
   const timerFor = (childId, taskId) => s.timers.find((t) => t.key === timerKey(childId, taskId) && t.date === date && !t.finished) || null;
@@ -692,7 +723,7 @@ export function Evening() {
       ${evening && kids.length > 1 && html`<${TeamCardBar} level=${teamCard} ready=${allDone} onOpen=${() => { sfx.tap(); setTeamCardOpen(true); }} />`}
       ${fact && allDone && html`<${FunFactBar} onOpen=${() => { sfx.tap(); showOverlay('funfact', { themeId: themeEntry.theme, fact }); }} />`}
     </div>
-    <div class="columns" style=${{ '--n': Math.max(1, kids.length) }}>
+    <div class=${`columns ${many ? 'many' : ''}`} ref=${colsRef} style=${{ '--n': Math.max(1, kids.length) }}>
       ${kids.length === 0 && html`<div class="empty-col">Ajoute un enfant dans l'espace parent ⚙️ pour commencer !</div>`}
       ${kids.map((child, index) => {
         const prog = progress[child.id];
@@ -738,6 +769,7 @@ export function Evening() {
         </section>`;
       })}
     </div>
+    ${many && html`<${KidDots} kids=${kids} cols=${colsRef} />`}
     ${pickerChild && pickerTask && html`<${TimerPicker}
       child=${pickerChild}
       task=${pickerTask}
