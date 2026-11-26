@@ -4,17 +4,23 @@ import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js';
 import { eveningDate } from '../lib/dates.js';
 import { prefersReducedMotion } from '../lib/util.js';
 import { has3D } from './Pandi3D.js';
+import { CalmScene, hasCalmScene, loadCalmScene } from './CalmScene.js';
 
 let scene = null;
 const loadScene = () => (scene ||= import('../mascot/calm/scene.js'));
 
-// Les exercices qui ont leur personnage en 3D le disent dans js/lib/emotions.js (hero)
-export const hasCalmHero = (hero) => Boolean(hero) && has3D();
+// Les exercices qui ont leur personnage en 3D le disent dans js/lib/emotions.js (hero) ; le labo en a certains en
+// images façon Pixar (CalmScene.js), sans besoin de WebGL
+export const hasCalmHero = (hero) => Boolean(hero) && (hasCalmScene(hero) || has3D());
 // dès que l'exercice est proposé : la scène est prête quand l'enfant appuie sur « C'est parti ! »
-export const preloadCalmStage = () => loadScene().catch(() => {});
+export const preloadCalmStage = (hero) => (hasCalmScene(hero) ? loadCalmScene(hero) : loadScene()).catch(() => {});
 
 // ctx : l'étape en cours ({ phase, secs, … }) ; chaque changement est transmis aux personnages
-export function CalmStage({ hero, ctx = {}, label = 'Pandi et son ami font l’exercice' }) {
+export function CalmStage(props) {
+  return hasCalmScene(props.hero) ? html`<${CalmScene} ...${props} />` : html`<${CalmStage3D} ...${props} />`;
+}
+
+function CalmStage3D({ hero, ctx = {}, label = 'Pandi et son ami font l’exercice' }) {
   const ref = useRef(null);
   const ctl = useRef(null);
   const [ready, setReady] = useState(false);

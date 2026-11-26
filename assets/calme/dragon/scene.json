@@ -1,0 +1,27 @@
+{
+ "frame": [
+  1082,
+  720
+ ],
+ "layers": [
+  "fache",
+  "apaise",
+  "inspire",
+  "souffle",
+  "calme",
+  "yeux",
+  "feu"
+ ],
+ "feu": [
+  85.25,
+  36.81
+ ],
+ "pandi": [
+  24.37,
+  33.65
+ ],
+ "dragon": [
+  71.07,
+  36.81
+ ]
+}
