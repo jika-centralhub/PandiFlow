@@ -276,17 +276,18 @@ export function suggestedTheme(themes) {
 
 export const getTheme = (id) => THEME_CATALOG.find((t) => t.id === id) || null;
 
-// Les objets de la vitrine que l'enfant peut voir (selon le sexe) ; ceux qu'il a déjà sont signalés
-export const vitrineItems = (theme, child) => (theme?.items || []).map(getItem).filter((it) => it && offeredTo(it, sexOf(child)));
+// Les objets de la vitrine que l'enfant peut voir (selon le sexe et les contenus religieux de la famille) ;
+// ceux qu'il a déjà sont signalés
+export const vitrineItems = (theme, child, religion = null) => (theme?.items || []).map(getItem).filter((it) => it && offeredTo(it, sexOf(child), religion));
 
 // Pendant le thème, la scène garde le décor du thème : les autres décors attendent la fin du thème
 export const waitsForTheme = (theme, item) => Boolean(theme && item?.slot === 'bg' && !theme.items.includes(item.id));
 
 // Les trois cadeaux proposés : ceux du thème, sinon d'autres objets du thème, puis de la boutique,
 // toujours à 60 pandi au plus, jamais un objet que l'enfant a déjà
-export function giftOptions(theme, child, owned) {
+export function giftOptions(theme, child, owned, religion = null) {
   const sex = sexOf(child);
-  const ok = (it) => it && !it.exclusive && it.price > 0 && it.price <= GIFT_MAX && offeredTo(it, sex) && !owned.has(it.id);
+  const ok = (it) => it && !it.exclusive && it.price > 0 && it.price <= GIFT_MAX && offeredTo(it, sex, religion) && !owned.has(it.id);
   const out = [];
   const add = (it) => ok(it) && !out.some((x) => x.id === it.id) && out.push(it);
   (theme?.gifts || []).map(getItem).forEach(add);

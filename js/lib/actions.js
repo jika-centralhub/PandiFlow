@@ -587,7 +587,7 @@ export function takeThemeGift(childId, itemId) {
   const child = s.children.find((c) => c.id === childId);
   if (!theme || !child || domain.themeGiftOf(s.owned, childId, entry)) return { error: 'Pas de cadeau à choisir en ce moment.' };
   const owned = new Set(s.owned.filter((o) => o.child_id === childId).map((o) => o.item_id));
-  const item = giftOptions(theme, child, owned).find((it) => it.id === itemId);
+  const item = giftOptions(theme, child, owned, domain.religionOf(s.settings)).find((it) => it.id === itemId);
   if (!item) return { error: 'Ce cadeau n’est pas proposé.' };
   put('owned_items', [{ family_id: familyId(), child_id: childId, item_id: item.id, source: 'gift', created_at: new Date().toISOString() }]);
   equip(childId, item.slot, item.id);

@@ -279,7 +279,7 @@ const KITS = [
 
 // --- Rabbin --------------------------------------------------------------------------------------
 const rabbin = {
-  id: 'rabbin', name: 'Rabbin', price: 180, shirt: '#1C1C22',
+  id: 'rabbin', name: 'Rabbin', price: 180, shirt: '#1C1C22', religion: 'juif',
   torso: () => html`<g>
     ${vNeck('#FFFFFF')}
     <path d="M86 182 L100 214 L94 264 M114 182 L100 214 L106 264" stroke="#2C2C36" stroke-width="2" fill="none" />

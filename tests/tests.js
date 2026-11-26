@@ -465,9 +465,9 @@ test('accords : féminin pour une fille, masculin sinon', () => {
 test('boutique : kippas et talit katan proposés aux garçons seulement, mis en avant pour eux', () => {
   const kippa = getItem('kippa_velours');
   ok(kippa && rayonOf(kippa) === 'judaica' && kippa.slot === 'hat');
-  ok(!offeredTo(kippa, 'fille') && offeredTo(kippa, 'garcon') && offeredTo(kippa, null));
+  ok(!offeredTo(kippa, 'fille', 'juif') && offeredTo(kippa, 'garcon', 'juif') && offeredTo(kippa, null, 'juif'));
   ok(starredFor(kippa, 'garcon') && !starredFor(kippa, null));
-  ok(starredFor(getItem('bougies_chabbat'), 'fille') && offeredTo(getItem('bougies_chabbat'), 'garcon'));
+  ok(starredFor(getItem('bougies_chabbat'), 'fille') && offeredTo(getItem('bougies_chabbat'), 'garcon', 'juif'));
 });
 
 // --- Tsedaka ----------------------------------------------------------------------------------------
@@ -499,10 +499,54 @@ test('tsedaka : à verser par association, en euros au taux des parents, puis ve
   eq(d.applyTsedakaCancel(s, { id: 'z1' }).ops.length, 1);
 });
 test('tsedaka : badges de mitsva accordés', () => {
-  const s = { ledger: [{ id: 'z', child_id: 'c1', kind: 'tsedaka', amount: -260 }] };
+  const s = { ledger: [{ id: 'z', child_id: 'c1', kind: 'tsedaka', amount: -260 }], settings: { religion: 'juif' } };
   const b = d.tsedakaBadges({ id: 'c1', sex: 'fille' }, s);
   eq(b.filter((x) => x.got).length, 4);
   eq(b[3].label, 'Petite tsadéket');
+  eq(b[0].label, 'Première mitsva');
+});
+
+// --- Contenus religieux ----------------------------------------------------------------------------------
+test('contenus religieux : aucun par défaut, le judaïsme seulement si les parents l’ont choisi', () => {
+  eq(d.mergeSettings({}).religion, null);
+  eq(d.religionOf({}), null);
+  eq(d.religionOf({ religion: 'juif' }), 'juif');
+  eq(d.religionOf({ religion: 'inconnue' }), null, 'une valeur inconnue ne montre rien');
+});
+test('contenus religieux : le rayon Judaïsme et le costume de rabbin seulement pour les familles qui les ont choisis', () => {
+  for (const id of ['kippa_velours', 'talit_katan', 'bougies_chabbat', 'sefer_torah', 'rabbin']) {
+    const it = getItem(id);
+    ok(it, `${id} existe`);
+    ok(!offeredTo(it, null) && !offeredTo(it, 'garcon', null), `${id} caché sans contenus religieux`);
+    ok(offeredTo(it, null, 'juif'), `${id} proposé avec le judaïsme`);
+  }
+  ok(offeredTo(getItem('maillot_israel'), null) && offeredTo(getItem('drapeau_israel'), null), 'les drapeaux et maillots de pays restent pour tous');
+  ok(shopItems().filter((it) => offeredTo(it, 'garcon')).every((it) => rayonOf(it) !== 'judaica'), 'aucun objet du rayon sans contenus religieux');
+});
+test('contenus religieux : la boîte à dons et ses badges ont des mots neutres sans le judaïsme', () => {
+  eq(d.giftWords({}).tab, 'Dons');
+  eq(d.giftWords({ religion: 'juif' }).tab, 'Tsedaka');
+  const s = { ledger: [{ id: 'z', child_id: 'c1', kind: 'tsedaka', amount: -260 }], settings: {} };
+  const labels = d.tsedakaBadges({ id: 'c1', sex: 'fille' }, s).map((b) => b.label).join(' ');
+  ok(!/mitsva|tsad/i.test(labels), `badges neutres : ${labels}`);
+  ok(labels.includes('Championne du partage') && labels.includes('Premier don'));
+});
+test('contenus religieux : les cartes de départ ne parlent du Chabbat qu’avec le judaïsme', () => {
+  const neutral = d.privilegeDeck(d.mergeSettings({})).map((p) => p.text).join(' ');
+  ok(!/chabbat|tsedaka/i.test(neutral), 'aucune carte juive sans le judaïsme');
+  const jewish = d.privilegeDeck(d.mergeSettings({ religion: 'juif' })).map((p) => p.text).join(' ');
+  ok(/Chabbat/.test(jewish) && /tsedaka/.test(jewish), 'les cartes du Chabbat avec le judaïsme');
+  eq(d.privilegeDeck(d.mergeSettings({})).length, d.DEFAULT_PRIVILEGES.length, 'autant de cartes');
+  ok(d.privilegeDeck(d.mergeSettings({})).every((p) => !('neutre' in p)), 'le texte neutre ne reste pas dans la carte');
+  const custom = [{ id: 'x', family: 'choix', emoji: '🎁', text: 'Dessert de Chabbat' }];
+  eq(d.privilegeDeck({ privileges: custom }), custom, 'le paquet écrit par les parents ne change pas');
+});
+test('contenus religieux : un cadeau de thème n’est jamais un objet religieux sans le judaïsme', () => {
+  for (const t of THEME_CATALOG) {
+    const owned = new Set([...(t.gifts || []), ...(t.items || [])]);
+    const opts = giftOptions(t, { id: 'c1', sex: 'garcon' }, owned);
+    ok(opts.every((it) => rayonOf(it) !== 'judaica' && it.id !== 'rabbin'), `cadeaux ${t.id} : ${opts.map((it) => it.id)}`);
+  }
 });
 
 // --- Surprise de Pandi ---------------------------------------------------------------------------------

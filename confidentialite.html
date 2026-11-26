@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pandi – Confidentialité</title>
+  <meta name="description" content="Ce que Pandi garde sur votre famille, où, pour combien de temps, et comment tout effacer.">
+  <meta name="theme-color" content="#1a1b4b">
+  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+  <style>
+    @font-face { font-family: 'Fredoka'; src: url('assets/fonts/fredoka.woff2') format('woff2'); font-weight: 300 700; font-display: swap; }
+    :root { --ink: #2a2350; --ink-soft: #6a6392; --paper: #fffdf8; --card: #ffffff; --line: #ece6f7; --accent: #4b3485; --gold: #ffd23f; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ink: #f4f1ff; --ink-soft: #b9b2dc; --paper: #12143d; --card: #1d1f52; --line: #2f2f6b; --accent: #ffd23f; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.55 'Fredoka', system-ui, sans-serif; }
+    main { max-width: 720px; margin: 0 auto; padding: 28px 16px 56px; }
+    header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    header img { width: 56px; height: 56px; border-radius: 14px; }
+    h1 { font-size: 30px; line-height: 1.15; margin: 0; }
+    .lead { color: var(--ink-soft); margin: 6px 0 22px; }
+    h2 { font-size: 21px; margin: 30px 0 8px; color: var(--accent); }
+    section { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 4px 20px 14px; margin-top: 14px; }
+    ul { padding-left: 20px; margin: 8px 0; }
+    li { margin: 4px 0; }
+    a { color: var(--accent); }
+    .hello { font-size: 19px; }
+    .key { background: var(--gold); color: #2a2350; border-radius: 10px; padding: 2px 8px; font-weight: 600; white-space: nowrap; }
+    table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 15.5px; }
+    th, td { text-align: left; vertical-align: top; padding: 8px 6px; border-top: 1px solid var(--line); }
+    th { font-weight: 600; }
+    .table-wrap { overflow-x: auto; }
+    footer { margin-top: 30px; color: var(--ink-soft); font-size: 15px; text-align: center; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="assets/icons/icon.svg" alt="">
+    <div>
+      <h1>Confidentialité</h1>
+    </div>
+  </header>
+  <p class="lead">Ce que Pandi garde sur votre famille, où, pour combien de temps, et comment tout effacer. En clair, sans jargon.</p>
+
+  <section>
+    <h2>Qui est derrière Pandi</h2>
+    <p class="hello">JK a créé Pandi pour ses enfants… et les vôtres :)</p>
+    <p>Pandi est un projet personnel, gratuit et en version de test (bêta). Il n'y a ni publicité, ni revente de données, ni mesure d'audience. Pour toute question ou demande : <a href="mailto:contact@pandiflow.com">contact@pandiflow.com</a>.</p>
+  </section>
+
+  <section>
+    <h2>Ce que Pandi garde</h2>
+    <ul>
+      <li><b>Le compte de chaque parent</b> : son adresse e-mail et son mot de passe (chiffré, illisible même pour nous), la date de sa dernière ouverture de l'app et sa version, pour vérifier que tout fonctionne.</li>
+      <li><b>La famille</b> : son nom, le prénom des enfants, leur date de naissance (pour l'âge, le barème et la fête d'anniversaire), garçon ou fille si vous l'indiquez (pour accorder les textes), leur couleur et le look de leur personnage.</li>
+      <li><b>La vie dans l'app</b> : les tâches, les notes de chaque routine, les pandi gagnés et dépensés, les achats, les défis, les surprises, les thèmes et vos réglages.</li>
+      <li><b>Les contenus religieux</b>, seulement si vous les activez dans les Réglages : ce choix est enregistré avec les réglages de la famille. Il ne sert qu'à afficher ces contenus, et vous pouvez le retirer à tout moment.</li>
+      <li><b>Sur votre téléphone</b> : votre connexion et quelques préférences (le son, les animations…), dans la mémoire du navigateur. Pandi n'utilise aucun cookie publicitaire.</li>
+      <li><b>Le compteur de performance</b>, seulement si vous l'allumez : des mesures de fluidité de l'app, sans aucune donnée sur les enfants.</li>
+    </ul>
+  </section>
+
+  <section id="photo">
+    <h2>La photo magique (facultative)</h2>
+    <p>Pour créer le personnage 3D d'un enfant, vous pouvez prendre sa photo. Avec votre accord, elle est envoyée une seule fois à deux intelligences artificielles :</p>
+    <ul>
+      <li><b>Claude</b> (Anthropic) repère sa coiffure, ses couleurs et ses lunettes ;</li>
+      <li><b>OpenAI</b> dessine son personnage façon film d'animation, en 6 poses.</li>
+    </ul>
+    <p><span class="key">La photo n'est jamais enregistrée par Pandi.</span> Ni le prénom ni l'âge de l'enfant ne sont envoyés avec elle. Pandi garde seulement les 6 images du personnage, dans un espace privé que seule votre famille peut voir. Vous pouvez les remplacer ou les retirer quand vous voulez, et retirer votre accord dans Espace parent → Réglages.</p>
+    <p>Anthropic et OpenAI ne se servent pas des photos reçues par ce canal pour entraîner leurs modèles. Ils ne les gardent que le temps limité prévu par leurs conditions pour les développeurs, pour la sécurité. Un journal technique note chaque création (durée, réussite ou erreur), sans aucune image.</p>
+    <p>Sans photo, le personnage se compose à la main : rien ne part alors vers ces services.</p>
+  </section>
+
+  <section>
+    <h2>Qui peut voir vos données</h2>
+    <ul>
+      <li><b>Les parents de votre famille</b>, chacun avec son propre compte. Un autre parent ne la rejoint qu'avec le code d'invitation que vous lui donnez. Chaque famille ne voit que ses propres données : c'est la base de données elle-même qui l'impose.</li>
+      <li><b>JK</b>, pour faire marcher l'app et l'améliorer pendant la bêta. Il voit des statistiques d'usage (nombre de routines, d'achats, de familles actives…) et la liste des familles inscrites, avec l'e-mail des parents pour pouvoir vous répondre. Il ne regarde le détail d'une famille que pour régler un problème ou répondre à votre demande.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Où sont les données</h2>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Service</th><th>Son rôle</th><th>Où</th></tr>
+        <tr><td>Supabase</td><td>La base de données, les comptes et les images des personnages</td><td>Paris (Union européenne)</td></tr>
+        <tr><td>GitHub Pages</td><td>Héberge les fichiers de l'app. Comme tout site web, il voit l'adresse IP de votre appareil.</td><td>États-Unis</td></tr>
+        <tr><td>Anthropic, OpenAI</td><td>Seulement pour la photo magique (voir plus haut)</td><td>États-Unis</td></tr>
+        <tr><td>Brevo</td><td>L'envoi des e-mails de l'app (codes de connexion)</td><td>France</td></tr>
+        <tr><td>Hostinger</td><td>La boîte e-mail contact@pandiflow.com</td><td>Société européenne (Lituanie)</td></tr>
+      </table>
+    </div>
+    <p>Les envois vers les États-Unis sont encadrés par les clauses contractuelles prévues par la Commission européenne, que ces services appliquent dans leurs conditions.</p>
+  </section>
+
+  <section>
+    <h2>Combien de temps</h2>
+    <ul>
+      <li>Tant que votre compte existe. La photo, elle, n'est jamais gardée.</li>
+      <li><b>Pour tout effacer</b>, écrivez à <a href="mailto:contact@pandiflow.com?subject=Supprimer%20les%20donn%C3%A9es%20de%20ma%20famille">contact@pandiflow.com</a> depuis l'adresse de votre compte. Tout est supprimé sous 7 jours : les comptes des parents, les enfants, les notes, les pandi et les personnages 3D. Vous recevez une confirmation.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Vos droits</h2>
+    <ul>
+      <li><b>Voir et emporter vos données</b> : Espace parent → Réglages → Sauvegarde télécharge tout dans un fichier.</li>
+      <li><b>Corriger</b> : tout se modifie directement dans l'app.</li>
+      <li><b>Effacer, vous opposer, retirer votre accord</b> (photo, contenus religieux) : dans les Réglages, ou par e-mail.</li>
+      <li><b>Vous plaindre</b> si quelque chose ne va pas : écrivez-nous d'abord, et vous pouvez toujours saisir la CNIL (<a href="https://www.cnil.fr" target="_blank" rel="noopener">cnil.fr</a>).</li>
+    </ul>
+    <p>Les enfants n'ont pas de compte. C'est le parent qui renseigne leurs informations et qui donne son accord pour eux.</p>
+    <p>Pandi traite ces données pour vous rendre le service demandé (les routines, la boutique, les défis). La photo magique et les contenus religieux reposent sur votre accord, que vous pouvez retirer à tout moment.</p>
+  </section>
+
+  <section>
+    <h2>Sécurité</h2>
+    <p>La connexion est toujours chiffrée (HTTPS). Un code parent protège les notes et les réglages sur l'écran partagé. L'usage des intelligences artificielles est plafonné pour chaque enfant, chaque famille et toute l'app.</p>
+  </section>
+
+  <footer>Mise à jour le 26 novembre 2026 · <a href="./">Retour à Pandi</a></footer>
+</main>
+</body>
+</html>
