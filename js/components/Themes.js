@@ -7,7 +7,7 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { useStore, getState, toast } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { activeChildren, activeThemeEntry, pendingThemeEntry, themeOn, upcomingThemes, pastThemes, nextThemeStart, themeOverlaps, themeGiftOf, THEME_DAYS, THEME_GAP } from '../domain.js';
+import { activeChildren, activeThemeEntry, upcomingThemes, pastThemes, nextThemeStart, themeOverlaps, themeGiftOf, THEME_DAYS, THEME_GAP } from '../domain.js';
 import { toISODate, addDays, formatLong } from '../lib/dates.js';
 import { THEME_CATALOG, getTheme, suggestedTheme, GIFT_MAX, GIFT_CHOICES } from '../avatar/themes.js';
 import { getItem } from '../avatar/items.js';
@@ -54,7 +54,6 @@ export function ThemeParent() {
   const today = toISODate(new Date());
   const kids = activeChildren(s.children);
   const current = activeThemeEntry(s.settings, today);
-  const waiting = pendingThemeEntry(s.settings, today);
   const upcoming = upcomingThemes(s.settings, today);
   const suggested = nextThemeStart(s.settings, today);
   const [themeId, setThemeId] = useState(() => suggestedTheme(s.settings.themes));
@@ -71,21 +70,21 @@ export function ThemeParent() {
       return;
     }
     sfx.sparkle();
-    toast(start === today ? `Pandi va proposer le thème ${getTheme(themeId).name} aux enfants sur l’écran de la routine ${getTheme(themeId).emoji}` : `Thème programmé ${period(res.entry)} : Pandi le proposera aux enfants le premier jour`);
+    toast(start === today ? `C’est parti pour le thème ${getTheme(themeId).name} ${getTheme(themeId).emoji}` : `Thème programmé ${period(res.entry)} : il commencera tout seul le premier jour`);
     setStart(nextThemeStart(getState().settings, today));
     setThemeId(suggestedTheme(getState().settings.themes));
   }
 
   function stop(t) {
     const started = t.start <= today;
-    if (!confirm(started && themeOn(t) ? 'Arrêter le thème aujourd’hui ? La boutique retrouve tous ses rayons, et chaque enfant la tenue qu’il avait avant le thème ; les objets du thème restent à lui.' : 'Annuler ce thème ?')) return;
+    if (!confirm(started ? 'Arrêter le thème aujourd’hui ? La boutique retrouve tous ses rayons, et chaque enfant la tenue qu’il avait avant le thème ; les objets du thème restent à lui.' : 'Annuler ce thème ?')) return;
     sfx.pop();
     actions.stopTheme(t.id);
   }
 
   return html`<div class="themes-parent">
     <h2>Thèmes de la boutique</h2>
-    <p class="hint">Une vitrine de Pandi pendant ${THEME_DAYS} jours, une semaine sur deux. Le premier jour, Pandi demande aux enfants sur l’écran de la routine s’ils sont d’accord : il faut le oui de chacun, sinon le thème est annulé. Pendant le thème, la boutique n’a qu’une rubrique : la vitrine, avec tous les objets du thème ; chaque enfant choisit un cadeau parmi ${GIFT_CHOICES} (${GIFT_MAX} pandi au plus), sans condition. Pandi porte la tenue du thème sur la télé, la scène de l’enfant prend son décor (ses autres décors attendent), et un « Le savais-tu ? » s’affiche à la fin de chaque routine. À la fin, tout revient comme avant : les rayons, et la tenue que chaque enfant avait au début du thème (les objets du thème restent à lui). Une photo rejoint le livre des thèmes.</p>
+    <p class="hint">Une vitrine de Pandi pendant ${THEME_DAYS} jours, une semaine sur deux. C’est vous qui décidez pour les enfants : le thème commence de lui-même à la date choisie. Pendant le thème, la boutique n’a qu’une rubrique : la vitrine, avec tous les objets du thème ; chaque enfant choisit un cadeau parmi ${GIFT_CHOICES} (${GIFT_MAX} pandi au plus), sans condition. Pandi porte la tenue du thème sur la télé, la scène de l’enfant prend son décor (ses autres décors attendent), et un « Le savais-tu ? » s’affiche à la fin de chaque routine. À la fin, tout revient comme avant : les rayons, et la tenue que chaque enfant avait au début du thème (les objets du thème restent à lui). Une photo rejoint le livre des thèmes.</p>
 
     ${current && (() => {
       const theme = getTheme(current.theme);
@@ -99,18 +98,6 @@ export function ThemeParent() {
           }).join(' · ')}</div>
         </div>
         <button class="p-btn danger" onClick=${() => stop(current)}>Arrêter</button>
-      </div>`;
-    })()}
-
-    ${waiting && (() => {
-      const theme = getTheme(waiting.theme);
-      return html`<div class="row theme-now" style=${{ '--c': theme?.color }}>
-        <span class="emoji">${theme?.emoji}</span>
-        <div class="grow">
-          <div class="title">${theme?.name} : proposé aux enfants, ${period(waiting)}</div>
-          <div class="meta">Ils n’ont pas encore répondu : Pandi leur pose la question sur l’écran de la routine.</div>
-        </div>
-        <button class="p-btn danger" onClick=${() => stop(waiting)}>Annuler</button>
       </div>`;
     })()}
 

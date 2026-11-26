@@ -663,30 +663,20 @@ test('thème : arrêter le thème en cours le fait finir hier ; un thème à ven
   eq(d.mergeSettings({ themes: 'abîmé' }).themes, []);
 });
 
-test('thème : il ne commence qu’avec le oui des enfants ; un non l’annule', () => {
-  const ask = (list, id, start, end) => d.applyThemeOp(list, { type: 'add', entry: { id, theme: 'espace', start, end, ask: true } });
-  let list = ask([], 't1', '2026-11-01', '2026-11-07');
+test('thème : c’est le parent qui décide, il commence à sa date sans question aux enfants', () => {
+  let list = themeAdd([], 't1', '2026-11-01', '2026-11-07');
   const s = () => ({ themes: list });
-  eq(d.activeThemeEntry(s(), '2026-11-01'), null, 'pas encore de oui : interface normale');
-  eq(d.pendingThemeEntry(s(), '2026-11-01').id, 't1', 'la question est posée');
-  eq(d.pendingThemeEntry(s(), '2026-10-31'), null, 'pas avant le premier jour');
-  eq(themeLooks(list).length, 0, 'Pandi ne porte pas la tenue avant le oui');
-  list = d.applyThemeOp(list, { type: 'agree', id: 't1', at: '2026-11-02T17:00:00.000Z' });
-  eq(d.activeThemeEntry(s(), '2026-11-02').id, 't1', 'oui : le thème a lieu');
-  eq(d.pendingThemeEntry(s(), '2026-11-02'), null);
-  eq(themeLooks(list).length, 1);
-  eq(d.themeDay(d.activeThemeEntry(s(), '2026-11-02'), '2026-11-02'), 0, 'le premier fun fact le jour du oui');
-  eq(d.themeDay(list[0], '2026-11-05'), 3);
-  list = d.applyThemeOp(list, { type: 'decline', id: 't1' });
-  eq(list.length, 1, 'un non après le oui ne change rien');
-  // Un non annule le thème ; un thème d'avant la v1.20 (sans ask) compte comme accepté
-  let other = d.applyThemeOp(ask([], 't2', '2026-11-01', '2026-11-07'), { type: 'decline', id: 't2' });
-  eq(other, [], 'non : le thème est annulé');
-  other = themeAdd([], 'old', '2026-11-01', '2026-11-07');
-  eq(d.activeThemeEntry({ themes: other }, '2026-11-03').id, 'old');
-  // Jamais accepté : il ne rejoint pas le livre des thèmes
-  other = ask([], 't3', '2026-11-01', '2026-11-07');
-  eq(d.pastThemes({ themes: other }, '2026-11-20'), []);
+  eq(d.activeThemeEntry(s(), '2026-10-31'), null, 'pas avant le premier jour');
+  eq(d.activeThemeEntry(s(), '2026-11-01').id, 't1', 'le premier jour, il a lieu tout de suite');
+  eq(themeLooks(list).length, 1, 'Pandi porte la tenue du thème');
+  eq(d.themeDay(list[0], '2026-11-01'), 0, 'le premier fun fact le premier jour');
+  eq(d.themeDay(list[0], '2026-11-05'), 4);
+  eq(d.pastThemes(s(), '2026-11-20').map((t) => t.id), ['t1'], 'il rejoint le livre des thèmes');
+  // Un thème d'avant la v1.36 resté en attente du oui des enfants compte comme accepté
+  const waiting = d.applyThemeOp([], { type: 'add', entry: { id: 't2', theme: 'espace', start: '2026-12-01', end: '2026-12-07', ask: true } });
+  eq(d.activeThemeEntry({ themes: waiting }, '2026-12-02').id, 't2');
+  // Les anciennes réponses des enfants (encore dans une file d'envoi) ne changent plus rien
+  eq(d.applyThemeOp(waiting, { type: 'decline', id: 't2' }).length, 1, 'un ancien non n’annule pas le thème');
 });
 
 test('thème : la tenue d’avant est gardée une fois, rendue une fois ; un fun fact par jour et par routine', () => {

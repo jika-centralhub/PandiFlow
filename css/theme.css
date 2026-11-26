@@ -17,31 +17,6 @@
 .vt-note { margin-top: calc(var(--u) * 3); text-align: center; font-size: calc(var(--u) * 3.4); opacity: .85; }
 .vt-book { margin-top: calc(var(--u) * 3); }
 
-/* Le jour du début, Pandi demande aux enfants s'ils veulent le thème (écran de la routine) */
-.theme-ask { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; padding: calc(var(--u) * 3); overflow: auto;
-  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c), transparent 60%), transparent 65%), rgba(10, 8, 40, .9); animation: fade-in .3s ease; }
-.ta-card { width: min(100%, calc(var(--u) * 150)); max-height: 100%; overflow: auto; padding: calc(var(--u) * 4) calc(var(--u) * 5); border-radius: calc(var(--u) * 7);
-  background: linear-gradient(170deg, #ffffff, color-mix(in srgb, var(--c), #fff 84%)); color: var(--ink); box-shadow: 0 calc(var(--u) * 3) calc(var(--u) * 10) rgba(0, 0, 0, .45);
-  animation: sheet-in .45s cubic-bezier(.3, 1.4, .5, 1); }
-.ta-top { display: flex; align-items: center; gap: calc(var(--u) * 3); }
-.ta-emoji { font-size: calc(var(--u) * 10); animation: rc-bob 3s ease-in-out infinite; }
-.ta-card h2 { font-size: calc(var(--u) * 6); line-height: 1.1; }
-.ta-list { list-style: none; margin: calc(var(--u) * 2.4) 0 0; padding: 0; display: grid; gap: calc(var(--u) * 1); font-size: calc(var(--u) * 3.7); line-height: 1.35; }
-.ta-q { margin-top: calc(var(--u) * 3); font-size: calc(var(--u) * 4.6); }
-.ta-kids { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(var(--u) * 3); margin-top: calc(var(--u) * 2.4); }
-/* chaque enfant : sa tête, son prénom, puis oui / non côte à côte */
-.ta-kid { flex: 1; min-width: calc(var(--u) * 54); max-width: calc(var(--u) * 72); display: grid; grid-template-columns: auto 1fr 1fr; align-items: center; gap: calc(var(--u) * 1.4) calc(var(--u) * 2);
-  padding: calc(var(--u) * 2.4); border-radius: calc(var(--u) * 5); background: #fff; box-shadow: inset 0 0 0 calc(var(--u) * .6) color-mix(in srgb, var(--kid), #fff 40%); }
-.ta-head { grid-row: span 2; width: calc(var(--u) * 16); height: calc(var(--u) * 16); border-radius: 50%; overflow: hidden; background: var(--kid); }
-.ta-head .avatar { width: 100%; height: 100%; }
-.ta-name { grid-column: 2 / span 2; font-weight: 700; font-size: calc(var(--u) * 4.6); color: color-mix(in srgb, var(--kid), #000 30%); }
-.ta-yes, .ta-no { padding: calc(var(--u) * 1.8) calc(var(--u) * 2); border-radius: 999px; font-weight: 700; font-size: calc(var(--u) * 3.8); color: var(--ink);
-  background: #f1eefb; box-shadow: 0 calc(var(--u) * .8) 0 #d6d0ee; transition: transform .15s cubic-bezier(.3, 1.6, .5, 1); }
-.ta-yes:active, .ta-no:active { transform: scale(.92); }
-.ta-yes.on { background: linear-gradient(180deg, #8af0b8, var(--green)); color: #063d22; box-shadow: 0 calc(var(--u) * .8) 0 var(--green-d); }
-.ta-no.on { background: linear-gradient(180deg, #ffd0c2, #ff9f86); color: #5a1a08; box-shadow: 0 calc(var(--u) * .8) 0 #d8735a; }
-.ta-result { margin-top: calc(var(--u) * 3); text-align: center; font-weight: 700; font-size: calc(var(--u) * 4.2); animation: fade-up .4s ease both; }
-.ta-card .sheet-actions { margin-top: calc(var(--u) * 3); }
 
 /* « Le savais-tu ? » à la fin de chaque routine pendant un thème */
 .ff-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: calc(var(--u) * 3); background: rgba(10, 8, 40, .82); animation: fade-in .3s ease; }

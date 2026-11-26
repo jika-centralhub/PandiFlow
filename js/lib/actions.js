@@ -553,9 +553,10 @@ export const cancelSurprise = (id) => surpriseOp({ type: 'cancel', id });
 export function launchTheme(themeId, start, days = domain.THEME_DAYS) {
   const end = addDays(start, Math.max(1, days) - 1);
   if (domain.themeOverlaps(getState().settings, start, end)) return { error: 'Un autre thème est déjà prévu à ces dates.' };
-  // ask : le jour venu, Pandi demande aux enfants s'ils sont d'accord (écran de la routine)
-  const entry = { id: uid(), theme: themeId, start, end, ask: true };
+  // Le parent décide pour les enfants : le thème commence à sa date, sans question sur la télé
+  const entry = { id: uid(), theme: themeId, start, end };
   listOp('themes', { type: 'add', entry });
+  ensureThemeOutfits(); // lancé pour aujourd'hui : la tenue de chaque enfant est gardée tout de suite
   return { entry };
 }
 
@@ -571,12 +572,6 @@ export function stopTheme(id) {
   }
   ensureThemePhotos();
   ensureThemeOutfits();
-}
-
-// Les enfants ont répondu : oui, le thème commence (on garde leur tenue de côté) ; non, il est annulé
-export function answerTheme(id, yes) {
-  listOp('themes', { type: yes ? 'agree' : 'decline', id, at: new Date().toISOString() });
-  if (yes) ensureThemeOutfits();
 }
 
 // Le cadeau d'entrée : l'enfant choisit un objet parmi ceux proposés, le reçoit et le porte tout de suite
@@ -632,15 +627,8 @@ function holdOutfit(childId) {
   const entry = domain.activeThemeEntry(s.settings, toISODate(new Date()));
   const child = s.children.find((c) => c.id === childId);
   if (!entry || !child || entry.before?.[childId]) return;
-  let equipped = JSON.parse(JSON.stringify(child.equipped || {}));
-  // Thème lancé avant la v1.20 et déjà commencé : on retire de la tenue gardée ce qu'il a reçu pendant le thème
-  if (!entry.ask) {
-    for (const o of s.owned) {
-      if (o.child_id !== childId || !o.created_at) continue;
-      const day = toISODate(new Date(o.created_at));
-      if (entry.start <= day && day <= entry.end) equipped = unwear(equipped, getItem(o.item_id));
-    }
-  }
+  // La tenue est gardée à la première ouverture pendant le thème, avant que l'enfant ait pu choisir son cadeau
+  const equipped = JSON.parse(JSON.stringify(child.equipped || {}));
   listOp('themes', { type: 'before', id: entry.id, childId, equipped });
   const bg = getItem(child.equipped?.bg);
   if (waitsForTheme(getTheme(entry.theme), bg)) put('children', [{ ...child, equipped: unwear(child.equipped, bg) }]);
