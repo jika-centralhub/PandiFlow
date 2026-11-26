@@ -3,6 +3,8 @@ import { useStore, inAccueil } from './lib/store.js';
 import * as actions from './lib/actions.js';
 import { useRoute, navigate } from './router.js';
 import { initSky } from './anim/sky.js';
+import { CALME } from './config.js';
+import { startVeille } from './lib/veille.js';
 import { unlockAudio } from './lib/sounds.js';
 import { Toast, Loading } from './components/ui.js';
 import { OverlayHost } from './components/Overlays.js';
@@ -67,6 +69,8 @@ if (localStorage.getItem('pandiflow-perf')) {
   import('./lib/perf.js').then((m) => m.startPerf({ appCode })).catch((e) => console.warn('Pandi : compteur indisponible', e?.message));
 }
 
+document.documentElement.classList.toggle('calme', CALME);
+if (CALME) startVeille();
 initSky(document.getElementById('sky'));
 unlockAudio();
 render(html`<${App} />`, document.getElementById('app'));

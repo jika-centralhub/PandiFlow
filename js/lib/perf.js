@@ -206,6 +206,7 @@ function everySecond() {
     const r = route();
     cur.routes[r] = (cur.routes[r] || 0) + 1;
     cur.pandi = Math.max(cur.pandi, document.querySelectorAll('canvas.pandi3d.ready').length);
+    if (globalThis.pandiVeille?.dort) cur.veille++;
     updateDot();
     if (panel) renderPanel();
   }
@@ -220,7 +221,7 @@ function everySecond() {
 
 const tapTiming = Boolean(globalThis.PerformanceObserver?.supportedEntryTypes?.includes('event'));
 
-const newMinute = (now) => ({ start: now, deltas: [], loops: {}, routes: {}, pandi: 0, taps: 0 });
+const newMinute = (now) => ({ start: now, deltas: [], loops: {}, routes: {}, pandi: 0, taps: 0, veille: 0 });
 
 function summarize(m) {
   const d = [...m.deltas].sort((a, b) => a - b);
@@ -241,11 +242,21 @@ function summarize(m) {
     pandi: m.pandi,
     anims: document.getAnimations ? document.getAnimations().filter((a) => a.playState === 'running').length : null,
     taps: m.taps,
+    // labo : les secondes de cette minute où l'écran était en veille (js/lib/veille.js)
+    veilleS: m.veille,
     heapMb: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null,
     bat: battery ? Math.round(battery.level * 100) : null,
     charging: battery ? battery.charging : null,
     rtt: navigator.connection?.rtt ?? null,
   };
+}
+
+// Labo : la veille de l'écran calme ; celle en cours compte jusqu'à maintenant
+function veilleSummary() {
+  const v = globalThis.pandiVeille;
+  if (!v || !document.documentElement.classList.contains('calme')) return null;
+  const now = v.debut ? Math.round((performance.now() - v.debut) / 1000) : 0;
+  return { fois: v.fois, s: v.s + now, plusLongueS: Math.max(v.plusLongueS, now), dort: v.dort };
 }
 
 // --- Observateurs --------------------------------------------------------------------------
@@ -515,6 +526,10 @@ export function report(reason = 'console') {
     taps: tapSummary(),
     longFrames: loafSummary(),
     portraits,
+    // labo : les boucles enregistrées des Pandi (js/mascot/boucles.js)
+    boucles: globalThis.pandiBoucles ? { ...globalThis.pandiBoucles } : null,
+    // labo : la veille de l'écran calme (js/lib/veille.js), null quand l'écran calme est coupé
+    veille: veilleSummary(),
     battery: { start: batteryStart, now: battery ? { level: Math.round(battery.level * 100), charging: battery.charging } : null },
     visibility: { hides: vis.hides, hiddenS: Math.round(vis.hiddenMs / 1000) },
     errors,
@@ -677,6 +692,7 @@ function lines() {
     ['Appareil', [device?.model, device?.gpu].filter(Boolean).join(' · ') || '–'],
     ['Mémoire', heap],
     ['Batterie', bat],
+    ['Veille', (() => { const v = veilleSummary(); return v ? `${v.fois} fois · ${fr(v.s / 60)} min en tout${v.dort ? ' · en ce moment' : ''}` : 'coupée'; })()],
     ['Envoi', sendText],
   ];
 }

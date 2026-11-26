@@ -202,3 +202,47 @@
   .cc-bubble { font-size: calc(var(--u) * 3.8); }
   .cc-emotion .face { font-size: calc(var(--u) * 9); }
 }
+
+/* Labo : un exercice en images façon Pixar (js/components/CalmScene.js) : Pandi et le héros dans la même image,
+   chaque état est un calque aligné qui apparaît en fondu ; seuls transform et opacity bougent */
+.cs { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.cs-cadre { position: relative; height: 100%; max-width: 100%; container-type: inline-size; }
+.cs-souffle, .cs-feu-tout, .cs-feu-vif { position: absolute; inset: 0; }
+.cs-l { position: absolute; inset: 0; width: 100%; height: 100%; display: block; -webkit-user-drag: none; user-select: none; }
+/* un seul état à l'écran (la scène de base, ou ils inspirent, ou il souffle, ou c'est fini) : le nouveau apparaît en
+   fondu par-dessus, l'ancien reste en dessous le temps du fondu, puis disparaît (jamais de fond qui transparaît) */
+.cs-repos, .cs-gif, .cs-etat { position: absolute; inset: 0; }
+/* les petits GIF : chaque image de la boucle est visible à son tour (une sur n), en marches nettes */
+@keyframes cs-gif2 { 0% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes cs-gif3 { 0% { opacity: 1; } 33.334%, 100% { opacity: 0; } }
+@keyframes cs-gif4 { 0% { opacity: 1; } 25%, 100% { opacity: 0; } }
+.cs-gif .cs-l { opacity: 0; }
+/* hors de l'écran, les GIF s'arrêtent */
+.cs-etat:not(.on) .cs-gif .cs-l, .cs-etat:not(.on).cs-gif .cs-l, .cs-repos:not(.on) .cs-gif .cs-l, .cs-feu-tout:not(.on) .cs-gif .cs-l { animation-play-state: paused !important; }
+.cs-repos, .cs-etat { opacity: 0; z-index: 1; transition: opacity 0s linear .6s; }
+.cs-repos.on, .cs-etat.on { opacity: 1; z-index: 2; transition: opacity .55s ease; }
+/* sur la scène de base, le visage apaisé remplace peu à peu le visage fâché */
+.cs-apaise { opacity: 0; transition: opacity .9s ease; }
+.cs-apaise.on { opacity: 1; }
+/* une fois le visage apaisé posé, la scène fâchée dessous s'efface (sa fumée ne transparaît plus) */
+.cs-repos .cs-fache { transition: opacity 0s linear .95s; }
+.cs-repos.apaise .cs-fache { opacity: 0; }
+/* toujours : la scène respire doucement ; ils inspirent : elle gonfle le temps de l'inspiration */
+.cs-souffle { transform-origin: 50% 96%; animation: cs-respire 3.4s ease-in-out infinite; }
+.cs-in .cs-souffle, .cs-hold .cs-souffle { animation: none; transform: scale(1.012, 1.035); transition: transform var(--secs) ease-out; }
+.cs-out .cs-souffle { animation: none; transform: none; transition: transform 1.6s ease-in-out; }
+@keyframes cs-respire { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.004, 1.012); } }
+/* les yeux fermés : un clignement de temps en temps, seulement quand on voit les visages de la scène de base */
+.cs-yeux { opacity: 0; transition: none; }
+.cs-yeux.cs-cligne { animation: cs-cligne 4.3s linear infinite; }
+@keyframes cs-cligne { 0%, 91%, 97.5%, 100% { opacity: 0; } 92.5%, 96% { opacity: 1; } }
+/* le feu : il jaillit de la gueule à sa taille du souffle (--f, de plus en plus petit), scintille, puis s'éteint */
+.cs-feu-tout { z-index: 3; opacity: 0; transform: scale(.15); transition: opacity .45s ease, transform .5s ease-in; }
+.cs-feu-tout.on { opacity: 1; transform: scale(var(--f, 1)); transition: opacity .25s ease, transform .55s cubic-bezier(.2, 1.4, .4, 1); }
+.cs-feu-tout.on .cs-feu-vif { animation: cs-flamme .16s ease-in-out infinite alternate; }
+.cs-feu .cs-l, .cs-feu-vif .cs-l { transition: none; }
+@keyframes cs-flamme { from { transform: scale(.97, 1.02) rotate(-1deg); } to { transform: scale(1.03, .98) rotate(1deg); } }
+/* c'est fini : des cœurs montent */
+.cs-coeur { position: absolute; z-index: 4; font-size: 6cqw; opacity: 0; animation: cs-coeur 2.6s ease-out infinite; }
+@keyframes cs-coeur { 0% { transform: translateY(0) scale(.4); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-120%) scale(1.1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cs * { animation: none !important; transition: none !important; } }

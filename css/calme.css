@@ -1,0 +1,157 @@
+/* Labo : l'écran calme (26/11/2026, CALME dans js/config.js, classe html.calme).
+   Le téléphone chauffait même quand personne ne touchait l'écran : tant que quelque chose bouge, l'iPhone
+   garde l'affichage à plein régime. Ici, seul ce qui donne une information ou fait vivre Pandi et les
+   enfants bouge encore ; le décor est figé (les numéros sont ceux de la liste choisie avec Jacob). */
+
+/* 3. les nuages s'arrêtent là où ils sont (1 et 2, les étoiles fixes sans étoile filante : js/anim/sky.js) */
+html.calme .sky-cloud { animation-play-state: paused; }
+/* 4. le logo ne tourne plus */
+html.calme .brand .logo { animation: none; }
+/* 5 et 6. les bulles du coffre et du coin calme ne flottent plus, la lueur du coin calme est fixe */
+html.calme .tb-bubble { animation: none; }
+html.calme .calm-btn:not(.tb-bubble) { animation: none; box-shadow: inset 0 0 0 2px var(--line), 0 0 calc(var(--u) * 2.4) rgba(255, 210, 255, .45); }
+/* 7. le coffre d'équipe est immobile, sauf quand le palier est atteint */
+html.calme .team-chest:not(.done) { animation: fade-up .5s ease backwards; }
+html.calme .team-chest:not(.done) .tc-halo { animation: none; }
+/* 10. dans les bandeaux, les objets portés (flammes, hélice, cape, ailes…) sont figés ; l'avatar respire
+   toujours, et danse quand il est content (ils restent animés dans la boutique et le coin de l'enfant) */
+html.calme .kid-avatar.bust .avatar:not(.pose-cheer):not(.pose-dance) *:not(.av-char) { animation: none !important; }
+/* 11 et 12. le véhicule et le compagnon restent garés, et font une balade de temps en temps, jouée comme
+   un dessin animé (étapes posées par Rover dans KidBanner.js : pret/contact, va, stop, regarde, tourne,
+   vient, stop, tourne). Les couches : le bouton avance (.loin), .kr-dir le tourne vers la gauche ou la
+   droite (les images regardent vers la droite), .kh-act joue le geste au toucher, .kr-lean le penche
+   (cabré, freinage), .kr-pas fait les pas, la vibration du moteur ou le vol. */
+html.calme .kh-stuff .kh-veh, html.calme .kh-stuff .kh-pet, html.calme .kh-stuff img { animation: none; }
+html.calme .kr { translate: 0 0; transition: translate var(--dur, 0ms) cubic-bezier(.45, .05, .55, .95); }
+html.calme .kr-animal { transition-timing-function: cubic-bezier(.3, .1, .7, .9); }
+html.calme .kr.loin { translate: var(--far) 0; }
+.kr-dir, .kr-lean, .kr-pas { display: block; position: relative; transform-origin: 50% 100%; }
+.kr.gauche .kr-dir { transform: scaleX(-1); }
+.kr.droite .kr-dir { transform: none; }
+/* le demi-tour : il saute et se retourne en l'air */
+.kr-tourne.droite .kr-dir { animation: kr-vers-droite var(--dur) linear; }
+.kr-tourne.gauche .kr-dir { animation: kr-vers-gauche var(--dur) linear; }
+.kr-tourne .kr-pas { animation: kr-saut var(--dur) ease-out; }
+.kr-ciel.kr-tourne .kr-pas, .kr-eau.kr-tourne .kr-pas { animation-name: kr-saut-doux; }
+@keyframes kr-vers-droite { 0%, 42% { transform: scaleX(-1); } 44%, 100% { transform: scaleX(1); } }
+@keyframes kr-vers-gauche { 0%, 42% { transform: scaleX(1); } 44%, 100% { transform: scaleX(-1); } }
+@keyframes kr-saut { 0% { transform: scale(1, 1); } 18% { transform: scale(1.08, .9); } 45% { transform: translateY(-26%) scale(.94, 1.07); } 78% { transform: translateY(0) scale(1.07, .92); } 100% { transform: none; } }
+@keyframes kr-saut-doux { 0% { transform: none; } 45% { transform: translateY(-14%) scale(.97, 1.03); } 100% { transform: none; } }
+
+/* un animal (compagnon, poney, licorne, dragon) : il prend son élan, trottine en rebondissant à chaque pas,
+   freine en se penchant en arrière, regarde autour de lui */
+.kr-animal.kr-pret .kr-pas { animation: kr-elan var(--dur) ease-in-out; }
+.kr-animal:is(.kr-va, .kr-vient) .kr-pas { animation: kr-trot .62s ease-in-out infinite; }
+.kr-animal.kr-stop .kr-lean, .kr-velo.kr-stop .kr-lean { animation: kr-freine var(--dur) ease-out; transform-origin: 30% 100%; }
+.kr-animal.kr-regarde .kr-pas { animation: kr-regarde var(--dur) ease-in-out; }
+@keyframes kr-elan { 0% { transform: none; } 55% { transform: scale(1.1, .88); } 100% { transform: translateY(-6%) scale(.95, 1.06); } }
+@keyframes kr-trot {
+  0%, 50%, 100% { transform: translateY(0) scale(1.05, .95) rotate(-2.5deg); }
+  25% { transform: translateY(-13%) scale(.97, 1.04) rotate(0deg); }
+  51% { transform: translateY(0) scale(1.05, .95) rotate(2.5deg); }
+  75% { transform: translateY(-13%) scale(.97, 1.04) rotate(0deg); }
+  99% { transform: translateY(0) scale(1.05, .95) rotate(2.5deg); }
+}
+@keyframes kr-freine { 0% { transform: none; } 35% { transform: rotate(-9deg) scale(1.04, .96); } 70% { transform: rotate(3deg); } 100% { transform: none; } }
+@keyframes kr-regarde { 0%, 100% { transform: none; } 22% { transform: rotate(5deg) translateY(-2%); } 50% { transform: rotate(-5deg); } 74% { transform: translateY(-6%) scale(1.03, .98); } }
+/* la poussière soulevée par les pas (ou les roues du vélo), derrière lui */
+.kr-pouf { position: absolute; bottom: 2%; left: 30%; width: calc(var(--u) * 2.6); height: calc(var(--u) * 2.6); border-radius: 50%; background: rgba(255, 255, 255, .6); opacity: 0; pointer-events: none; }
+.kr-pouf.p2 { left: 58%; }
+.kr:is(.kr-va, .kr-vient) .kr-pouf { animation: kr-pouf .62s ease-out infinite; }
+.kr:is(.kr-va, .kr-vient) .kr-pouf.p2 { animation-delay: .31s; }
+.kr-velo .kr-pouf { left: 12%; }
+@keyframes kr-pouf { 0% { opacity: .75; transform: scale(.35); } 100% { opacity: 0; transform: translate(-110%, -40%) scale(1.5); } }
+
+/* un véhicule à moteur : il démarre en vibrant et en crachant sa fumée, se cabre en partant, pique du nez au
+   freinage */
+.kr-moteur:is(.kr-contact, .kr-regarde) .kr-pas { animation: kr-vibre .1s linear infinite; }
+.kr-moteur:is(.kr-va, .kr-vient) .kr-pas { animation: kr-vibre .14s linear infinite; }
+.kr-moteur:is(.kr-va, .kr-vient) .kr-lean, .kr-velo:is(.kr-va, .kr-vient) .kr-lean { animation: kr-cabre 1.3s ease-out; transform-origin: 22% 100%; }
+.kr-moteur.kr-stop .kr-lean { animation: kr-pique var(--dur) ease-out; transform-origin: 80% 100%; }
+@keyframes kr-vibre { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.2%) rotate(-.3deg); } }
+@keyframes kr-cabre { 0% { transform: none; } 18% { transform: rotate(-5deg); } 55% { transform: rotate(1deg); } 100% { transform: none; } }
+@keyframes kr-pique { 0% { transform: none; } 30% { transform: rotate(4.5deg); } 65% { transform: rotate(-1.5deg); } 100% { transform: none; } }
+.kr-fumee { position: absolute; left: 0; bottom: 18%; width: calc(var(--u) * 3); height: calc(var(--u) * 3); border-radius: 50%; background: rgba(225, 225, 240, .75); opacity: 0; pointer-events: none; }
+.kr-moteur:is(.kr-contact, .kr-va, .kr-vient) .kr-fumee { animation: kr-fumee .9s ease-out infinite; }
+.kr-moteur:is(.kr-contact, .kr-va, .kr-vient) .kr-fumee.f2 { animation-delay: .3s; }
+.kr-moteur:is(.kr-contact, .kr-va, .kr-vient) .kr-fumee.f3 { animation-delay: .6s; }
+@keyframes kr-fumee { 0% { opacity: .8; transform: scale(.3); } 100% { opacity: 0; transform: translate(-140%, -70%) scale(1.6); } }
+
+/* le vélo et la trottinette : on pédale, ça balance un peu */
+.kr-velo:is(.kr-va, .kr-vient) .kr-pas { animation: kr-pedale .5s ease-in-out infinite; }
+.kr-velo.kr-pret .kr-pas { animation: kr-elan var(--dur) ease-in-out; }
+@keyframes kr-pedale { 0%, 100% { transform: translateY(0) rotate(-.8deg); } 50% { transform: translateY(-2.5%) rotate(.8deg); } }
+
+/* ce qui vole : il plane pendant toute la balade, pique du nez en accélérant et se redresse en ralentissant */
+.kr-ciel:not(.kr-gare) .kr-pas { animation: kh-hover 2.4s ease-in-out infinite; }
+.kr-ciel.kr-tourne .kr-pas { animation: kr-saut-doux var(--dur) ease-out; }
+.kr-ciel:is(.kr-va, .kr-vient) .kr-lean { animation: kr-plonge var(--dur) ease-in-out; }
+.kr-ciel.kr-stop .kr-lean { animation: kr-redresse var(--dur) ease-out; }
+@keyframes kr-plonge { 0%, 100% { transform: none; } 20%, 75% { transform: rotate(5deg); } }
+@keyframes kr-redresse { 0% { transform: none; } 40% { transform: rotate(-7deg); } 100% { transform: none; } }
+.kr-ciel.kr-pret .kr-pas { animation: kr-decolle var(--dur) ease-out; }
+@keyframes kr-decolle { 0% { transform: none; } 100% { transform: translateY(-6%); } }
+
+/* ce qui tourne : les roues pleines (découpées dans l'image, elles tournent sur elles-mêmes), un disque de
+   flou sur les roues à rayons, le flou des hélices ; seulement pendant la balade */
+.kr-roue, .kr-rayons, .kr-helice { position: absolute; pointer-events: none; }
+.kr-roue { border-radius: 50%; overflow: hidden; }
+.kr-roue img { position: absolute; display: block; }
+.kr:is(.kr-va, .kr-vient) .kr-roue { animation: kr-tourne-roue .7s linear infinite; }
+.kr.kr-stop .kr-roue { animation: kr-tourne-roue .7s cubic-bezier(.2, .6, .4, 1) 1; }
+@keyframes kr-tourne-roue { to { transform: rotate(1turn); } }
+.kr-rayons { border-radius: 50%; opacity: 0;
+  background: repeating-conic-gradient(rgba(255, 255, 255, 0) 0deg 20deg, rgba(255, 255, 255, .5) 26deg, rgba(255, 255, 255, 0) 32deg 45deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 18%, #000 24%, #000 88%, transparent 96%); mask: radial-gradient(closest-side, transparent 18%, #000 24%, #000 88%, transparent 96%); }
+.kr:is(.kr-va, .kr-vient) .kr-rayons { opacity: 1; animation: kr-tourne-roue .32s linear infinite; }
+.kr-helice { border-radius: 50%; opacity: 0; background: radial-gradient(closest-side, rgba(255, 255, 255, .7), rgba(230, 235, 255, .35) 60%, rgba(255, 255, 255, 0)); }
+.kr-helice.disque { background: repeating-conic-gradient(rgba(255, 255, 255, 0) 0deg 30deg, rgba(255, 255, 255, .55) 45deg, rgba(255, 255, 255, 0) 60deg 90deg); }
+.kr-ciel:not(.kr-gare) .kr-helice, .kr-eau:not(.kr-gare) .kr-helice { opacity: 1; }
+.kr-ciel:not(.kr-gare) .kr-helice.v, .kr-eau:not(.kr-gare) .kr-helice.v { animation: kr-helice-v .09s linear infinite alternate; }
+.kr-ciel:not(.kr-gare) .kr-helice.h { animation: kr-helice-h .09s linear infinite alternate; }
+.kr-ciel:not(.kr-gare) .kr-helice.disque { animation: kr-tourne-roue .25s linear infinite; }
+@keyframes kr-helice-v { from { transform: scaleY(.82); opacity: .55; } to { transform: scaleY(1); opacity: .95; } }
+@keyframes kr-helice-h { from { transform: scaleX(.9); opacity: .55; } to { transform: scaleX(1); opacity: .95; } }
+
+/* un animal qui a ses images de marche : de profil pendant la balade, ses deux temps du pas alternent au
+   rythme des rebonds (deux pas par cycle de kr-trot) ; garé, il reprend son image habituelle */
+.kr-f1, .kr-f2 { position: absolute; left: 50%; bottom: 0; height: 100% !important; width: auto !important; max-width: none !important; translate: -50% 0; opacity: 0; pointer-events: none; }
+.kr.marche:not(.kr-gare) .kr-img { opacity: 0; }
+.kr.marche:not(.kr-gare) .kr-f1 { opacity: 1; }
+.kr.marche.deux:is(.kr-va, .kr-vient) .kr-f1 { animation: kr-temps1 .62s step-end infinite; }
+.kr.marche.deux:is(.kr-va, .kr-vient) .kr-f2 { animation: kr-temps2 .62s step-end infinite; }
+@keyframes kr-temps1 { 0% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes kr-temps2 { 0% { opacity: 0; } 50% { opacity: 1; } }
+/* de profil, il ne se penche plus de côté à chaque pas : seulement les rebonds */
+.kr-animal.marche:is(.kr-va, .kr-vient) .kr-pas { animation-name: kr-trot-profil; }
+@keyframes kr-trot-profil { 0%, 50%, 100% { transform: translateY(0) scale(1.03, .97); } 25%, 75% { transform: translateY(-8%) scale(.99, 1.02); } }
+
+/* ce qui flotte (voilier, sous-marin) : il tangue */
+.kr-eau:not(.kr-gare) .kr-pas { animation: kr-tangue 1.6s ease-in-out infinite; }
+@keyframes kr-tangue { 0%, 100% { transform: rotate(-3deg) translateY(0); } 50% { transform: rotate(3deg) translateY(-2%); } }
+/* 15. « Touche pour… » clignote une dizaine de secondes, puis reste allumé */
+html.calme .cr-hint, html.calme .gc-hint { animation-iteration-count: 4; }
+/* 16. la frise : la pastille du moment est agrandie, sans bouger ; les liserés ne pulsent plus */
+html.calme .cr-dot.on .cr-dot-ico { animation: none; }
+html.calme :is(.cr-dot.done, .cr-dot.pause, .cr-dot.gold, .cr-dot.timing)::after { animation: none; opacity: .9; }
+html.calme .cr-dot-spark { display: none; }
+/* 18 et 23. l'anneau du minuteur avance sans lueur qui pulse (on redessinait son ombre à chaque image) */
+html.calme .t-ring { animation: none !important; }
+/* 20. le petit coureur du départ trottine en se déplaçant, sans recalculer la page à chaque image */
+html.calme .d-runner { animation: d-run-calme .45s ease-in-out infinite alternate; }
+@keyframes d-run-calme { to { translate: 0 calc(var(--u) * -1); } }
+/* 21. la carte d'équipe à demander : une lueur fixe */
+html.calme .teamcard-bar.ask { animation: fade-up .5s ease both; box-shadow: inset 0 0 0 2px rgba(255, 210, 63, .9), 0 0 calc(var(--u) * 3) rgba(255, 210, 63, .4); }
+/* 24. la nuit : 6 étoiles, qui scintillent très lentement */
+html.calme .ns-stars i:nth-child(n + 7) { display: none; }
+html.calme .ns-stars i { animation-duration: 14s; }
+
+/* La veille (js/lib/veille.js) : 2 minutes sans toucher l'écran, tout s'arrête sauf le minuteur de la carte,
+   sous un voile sombre ; le premier toucher réveille l'écran */
+html.veille body *:not(.cr-card.timing):not(.cr-card.timing *), html.veille body *::before, html.veille body *::after { animation-play-state: paused !important; }
+html.veille body .cr-card.timing *::before, html.veille body .cr-card.timing *::after { animation-play-state: running !important; }
+html.veille body::after { content: ''; position: fixed; inset: 0; z-index: 9990; pointer-events: none; background: rgba(4, 3, 16, .5); animation: veille-in 2s ease both; }
+html.veille body::before { content: '💤 Touche l’écran pour réveiller Pandi'; position: fixed; left: 50%; bottom: max(calc(var(--u) * 4), env(safe-area-inset-bottom)); z-index: 9991;
+  transform: translateX(-50%); padding: calc(var(--u) * 1.4) calc(var(--u) * 4); border-radius: 999px; background: rgba(20, 16, 48, .8); color: #d9d4ff;
+  font: 600 calc(var(--u) * 3.6) Fredoka, system-ui, sans-serif; white-space: nowrap; pointer-events: none; animation: veille-in 2s ease both; }
+@keyframes veille-in { from { opacity: 0; } }

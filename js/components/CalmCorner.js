@@ -309,7 +309,7 @@ export function CalmCorner({ kids, onClose }) {
 
   // l'exercice proposé a son personnage en 3D : on prépare la scène pendant que l'enfant choisit
   useEffect(() => {
-    if (hasCalmHero(tech?.hero)) preloadCalmStage();
+    if (hasCalmHero(tech?.hero)) preloadCalmStage(tech.hero);
   }, [techId]);
 
   function chooseEmotion(e) {

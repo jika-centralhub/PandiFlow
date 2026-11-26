@@ -8,7 +8,7 @@ import { ItemThumb } from './ItemThumb.js';
 import { Pandi } from './Coin.js';
 import { PandiCounter } from './ui.js';
 import { sfx } from '../lib/sounds.js';
-import { fireworks, coinRain, confettiBurst, flyCoins, dropCoins } from '../anim/fx.js';
+import { fireworks, coinRain, confettiBurst, flyCoins } from '../anim/fx.js';
 import { sleep } from '../lib/util.js';
 import { ROUTINES } from '../domain.js';
 import { Bonjour, FirstEveningOverlay } from './Decouverte.js';
@@ -108,10 +108,9 @@ function SurpriseReveal({ childId, card, team = false, soft = false, onClose }) 
   </div>`;
 }
 
-// Pandi content (pandi offerts) ou triste (pandi retirés), hors des routines
+// Pandi content : des pandi offerts par un parent, hors des routines (un retrait ne montre rien aux enfants)
 function PandiMoment({ childId, amount, note, before, onClose }) {
   const child = useChild(childId);
-  const happy = amount > 0;
   const [shown, setShown] = useState(before);
   const [canClose, setCanClose] = useState(false);
   const pandi = useRef(null);
@@ -119,16 +118,11 @@ function PandiMoment({ childId, amount, note, before, onClose }) {
   useEffect(() => {
     let alive = true;
     (async () => {
-      if (happy) sfx.happy();
-      else sfx.sad();
+      sfx.happy();
       await sleep(800);
       if (!alive) return;
-      if (happy) {
-        await flyCoins(pandi.current, counter.current, amount);
-        confettiBurst(counter.current);
-      } else {
-        dropCoins(counter.current, -amount);
-      }
+      await flyCoins(pandi.current, counter.current, amount);
+      confettiBurst(counter.current);
       setShown(before + amount);
       setCanClose(true);
     })();
@@ -139,24 +133,19 @@ function PandiMoment({ childId, amount, note, before, onClose }) {
     };
   }, []);
   if (!child) return null;
-  return html`<div class=${`pandi-moment ${happy ? 'happy' : 'sad'}`} style=${{ '--kid': child.color }} onClick=${() => canClose && onClose()}>
+  return html`<div class="pandi-moment happy" style=${{ '--kid': child.color }} onClick=${() => canClose && onClose()}>
     <div class="pm-pandi" ref=${pandi}>
-      ${happy
-        ? html`<div class="pm-hearts">${['💖', '⭐', '💛', '✨', '💖'].map((e, i) => html`<span key=${i} style=${{ left: `${10 + i * 19}%`, animationDelay: `${i * 0.35}s` }}>${e}</span>`)}</div>`
-        : html`<svg class="pm-cloud" viewBox="0 0 120 70" aria-hidden="true">
-            <g fill="#C9D3E8"><circle cx="38" cy="30" r="18" /><circle cx="62" cy="22" r="22" /><circle cx="86" cy="32" r="16" /><rect x="30" y="30" width="62" height="18" rx="9" /></g>
-            ${[40, 56, 72, 86].map((x, i) => html`<path key=${x} class="rain-drop" style=${{ animationDelay: `${i * 0.25}s` }} d=${`M${x} 52 q-3 6 0 8 q3 -2 0 -8 Z`} fill="#7FC4FF" />`)}
-          </svg>`}
-      <${Pandi} mood=${happy ? 'happy' : 'sad'} wave=${false} />
+      <div class="pm-hearts">${['💖', '⭐', '💛', '✨', '💖'].map((e, i) => html`<span key=${i} style=${{ left: `${10 + i * 19}%`, animationDelay: `${i * 0.35}s` }}>${e}</span>`)}</div>
+      <${Pandi} mood="happy" wave=${false} />
     </div>
     <div class="pm-text">
       <div class="pm-kid">
-        <div class="kid-avatar"><${Avatar} look=${child.look} equipped=${child.equipped} expr=${happy ? 'joy' : 'focus'} mode="head" seed=${child.id} /></div>
+        <div class="kid-avatar"><${Avatar} look=${child.look} equipped=${child.equipped} expr="joy" mode="head" seed=${child.id} /></div>
         <${PandiCounter} value=${shown} big=${true} counterRef=${counter} />
       </div>
-      <h2>${happy ? `+${amount} pandi pour ${child.name} !` : `−${-amount} pandi pour ${child.name}…`}</h2>
+      <h2>+${amount} pandi pour ${child.name} !</h2>
       ${note && html`<p class="pm-note">${note}</p>`}
-      <p class="pm-sub">${happy ? 'Pandi est super fier de toi ! 🎉' : 'Pandi est un peu triste… On se rattrape vite ?'}</p>
+      <p class="pm-sub">Pandi est super fier de toi ! 🎉</p>
       ${canClose && html`<p class="tap-hint">Touche l'écran pour continuer</p>`}
     </div>
   </div>`;

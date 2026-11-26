@@ -1,0 +1,109 @@
+/* Labo : Pandi en poses illustrées animées par calques (js/components/PandiPose.js).
+   Seulement des animations de transform et d'opacity : la carte graphique les joue seule. */
+.pp { position: relative; height: 100%; max-width: 100%; margin: 0 auto; container-type: inline-size; pointer-events: none; }
+.pp-tout, .pp-souffle, .pp-l { position: absolute; inset: 0; will-change: transform; transform-origin: 50% 97%; }
+.pp-l img { display: block; width: 100%; height: 100%; -webkit-user-drag: none; user-select: none; }
+.pp-coiffe { position: absolute; height: auto; transform-origin: 50% 100%; }
+.pp-panneau { position: absolute; transform: translate(-50%, -50%); line-height: 1; }
+
+/* toujours : il respire et cligne des yeux */
+.pp-souffle { animation: pp-souffle 2.8s ease-in-out infinite; }
+.pp .pl-yeux { opacity: 0; animation: pp-cligne 4.1s linear infinite; }
+@keyframes pp-souffle { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.008, 1.02); } }
+@keyframes pp-cligne { 0%, 92%, 98%, 100% { opacity: 0; } 93.5%, 96.5% { opacity: 1; } }
+
+/* ce que fait tout le corps */
+.pp-dents .pp-tout, .pp-lecture .pp-tout, .pp-calin .pp-tout, .pp-idle .pp-tout, .pp-mains .pp-tout,
+.pp-ok .pp-tout, .pp-coiffer .pp-tout, .pp-manger .pp-tout, .pp-cereales .pp-tout, .pp-pancarte .pp-tout { animation: pp-balance 2.6s ease-in-out infinite alternate; }
+.pp-cartable .pp-tout, .pp-chaussures .pp-tout, .pp-habiller .pp-tout, .pp-pyjama .pp-tout, .pp-ranger .pp-tout { animation: pp-sautille .9s ease-in-out infinite; }
+.pp-dodo .pp-tout, .pp-endormi .pp-tout, .pp-sieste .pp-tout { animation: pp-dort 3.8s ease-in-out infinite; }
+.pp-lever .pp-tout { animation: pp-etire 2.6s ease-in-out infinite; }
+.pp-douche .pp-tout { animation: pp-dandine 1.3s ease-in-out infinite alternate; }
+.pp-bravo .pp-tout { animation: pp-saut .9s cubic-bezier(.4, 0, .6, 1) infinite; }
+.pp-danse .pp-tout { animation: pp-danse 1s ease-in-out infinite; }
+@keyframes pp-balance { from { transform: rotate(-2deg); } to { transform: rotate(2deg); } }
+@keyframes pp-sautille { 0%, 100% { transform: translateY(0) scale(1.02, .98); } 45% { transform: translateY(-3%) scale(.99, 1.02); } 70% { transform: translateY(0) scale(1.03, .97); } }
+@keyframes pp-dort { 0%, 100% { transform: rotate(-1.5deg) scale(1, 1); } 50% { transform: rotate(1.5deg) scale(1.01, 1.03); } }
+@keyframes pp-etire { 0%, 100% { transform: scale(1, 1); } 45%, 60% { transform: scale(.98, 1.04); } }
+@keyframes pp-dandine { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+/* la danse de la fête : il balance les hanches sur deux temps par seconde (la valse de la chanson) */
+@keyframes pp-danse {
+  0%, 100% { transform: rotate(-4deg) translateY(0) scale(1.02, .98); }
+  25% { transform: rotate(0deg) translateY(-3%) scale(.99, 1.02); }
+  50% { transform: rotate(4deg) translateY(0) scale(1.02, .98); }
+  75% { transform: rotate(0deg) translateY(-3%) scale(.99, 1.02); }
+}
+@keyframes pp-saut {
+  0% { transform: translateY(0) scale(1.06, .92); }
+  22% { transform: translateY(0) scale(.95, 1.06); }
+  50% { transform: translateY(-9%) scale(.98, 1.03); }
+  78% { transform: translateY(0) scale(1.05, .93); }
+  100% { transform: translateY(0) scale(1.06, .92); }
+}
+
+/* les parties qui bougent (pivot donné par poses.json) */
+.pp-dents .pl-bras { animation: pp-brosse .2s ease-in-out infinite alternate; }
+.pp-idle .pl-bras { animation: pp-coucou .45s ease-in-out infinite alternate; }
+.pp-douche .pl-bras { animation: pp-eponge .6s ease-in-out infinite; }
+.pp-manger .pl-bras, .pp-cereales .pl-bras { animation: pp-cuillere 1.8s ease-in-out infinite; }
+.pp-coiffer .pl-bras { animation: pp-peigne .38s ease-in-out infinite alternate; }
+.pp-pancarte .pl-bras { animation: pp-pancarte .6s ease-in-out infinite alternate; }
+.pp-danse .pl-bras { animation: pp-danse-bras .5s ease-in-out infinite alternate; }
+.pp-mains .pl-mains { animation: pp-frotte .26s ease-in-out infinite alternate; }
+.pp-ok .pl-mainG { animation: pp-clapG .3s ease-in-out infinite alternate; }
+.pp-ok .pl-mainD { animation: pp-clapD .3s ease-in-out infinite alternate; }
+@keyframes pp-brosse { from { transform: rotate(-2.6deg); } to { transform: rotate(2.4deg) translateY(-.4%); } }
+@keyframes pp-coucou { from { transform: rotate(-7deg); } to { transform: rotate(6deg); } }
+@keyframes pp-eponge { 0% { transform: rotate(-2deg) translate(0, 0); } 25% { transform: rotate(1deg) translate(1%, -.6%); } 50% { transform: rotate(2.5deg) translate(0, -1%); } 75% { transform: rotate(0deg) translate(-1%, -.4%); } 100% { transform: rotate(-2deg) translate(0, 0); } }
+@keyframes pp-cuillere { 0%, 100% { transform: rotate(4deg); } 45%, 60% { transform: rotate(-3deg); } }
+@keyframes pp-peigne { from { transform: rotate(-4deg); } to { transform: rotate(3deg); } }
+@keyframes pp-pancarte { from { transform: rotate(-6deg); } to { transform: rotate(5deg); } }
+@keyframes pp-frotte { from { transform: translateX(-1.4%) rotate(-2.5deg); } to { transform: translateX(1.4%) rotate(2.5deg); } }
+@keyframes pp-clapG { from { transform: rotate(0deg); } to { transform: rotate(-7deg); } }
+/* le bras levé ne va que vers la tête (il la recouvre) : en s'écartant, il laisserait voir sa place vide */
+@keyframes pp-danse-bras { from { transform: rotate(0deg); } to { transform: rotate(8deg); } }
+@keyframes pp-clapD { from { transform: rotate(0deg); } to { transform: rotate(7deg); } }
+
+/* les petits effets */
+.pp-fx { position: absolute; line-height: 1; opacity: 0; will-change: transform, opacity; font-size: 9cqw; }
+.pp-zz { font-weight: 700; color: #7A88D8; font-size: 10cqw; animation: pp-zz 3.3s ease-out infinite; }
+.pp-coeur { animation: pp-monte 2.7s ease-out infinite; }
+.pp-etoile { animation: pp-scintille 1.5s ease-out infinite; }
+.pp-note { animation: pp-monte 2.2s ease-out infinite; }
+.pp-bulle { width: 7cqw; height: 7cqw; border-radius: 50%; animation: pp-bulle 2s ease-out infinite;
+  background: radial-gradient(circle at 32% 30%, #fff 0 18%, rgba(255, 255, 255, .25) 30%, rgba(190, 225, 255, .25) 70%, rgba(150, 200, 255, .55) 100%); box-shadow: inset 0 0 0 1px rgba(150, 200, 255, .7); }
+@keyframes pp-zz { 0% { transform: translate(0, 0) scale(.5); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(40%, -160%) scale(1.15); opacity: 0; } }
+@keyframes pp-monte { 0% { transform: translateY(0) scale(.5); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-140%) scale(1.1); opacity: 0; } }
+@keyframes pp-scintille { 0% { transform: scale(.2) rotate(0); opacity: 0; } 30% { transform: scale(1.1) rotate(40deg); opacity: 1; } 100% { transform: scale(.6) rotate(110deg) translateY(-40%); opacity: 0; } }
+@keyframes pp-bulle { 0% { transform: translateY(0) scale(.3); opacity: 0; } 20% { opacity: 1; } 85% { opacity: .9; } 100% { transform: translateY(-160%) scale(1.1); opacity: 0; } }
+
+/* la chambre en images (Chambre.js) : endormi, il rit en dormant quand on le gratte (fondu selon les
+   chatouilles), assis qui s'étire, debout qui dit bonjour */
+.ch-poses { position: relative; height: 100%; max-width: 100%; margin: 0 auto; container-type: inline-size; transform: translateX(var(--decal, 0)); transition: transform .6s cubic-bezier(.3, 1.2, .5, 1); }
+.chambre.bonjour .ch-poses { transform: none; }
+.ch-poses img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; -webkit-user-drag: none; user-select: none; }
+.ch-poses .ch-pile { position: absolute; inset: 0; will-change: transform; transform-origin: 50% 100%; animation: ch-souffle 3.6s ease-in-out infinite; transition: opacity .35s ease; }
+.ch-poses .l-rit { opacity: 0; }
+/* le jeu du chut (Chambre.js, paintChut) : encore éveillé au début, puis un œil qui s'ouvre, la patte sur l'oreille */
+.ch-poses .l-eveille, .ch-poses .l-oeil, .ch-poses .l-oreille { opacity: 0; transition: opacity .2s linear; }
+.chambre.chut .ch-poses .l-eveille { opacity: 1; }
+.ch-poses .l-reveil, .ch-poses .l-debout { opacity: 0; transition: opacity .35s ease; will-change: transform, opacity; }
+.ch-poses.gigote .ch-pile { animation: ch-gigote .16s ease-in-out infinite alternate; }
+.chambre.eveil .ch-poses .ch-pile { opacity: 0; }
+.chambre.eveil .ch-poses .l-reveil { opacity: 1; animation: ch-etire 1.6s ease-in-out infinite; transform-origin: 50% 100%; }
+.chambre.eveil.bonjour .ch-poses .l-reveil { opacity: 0; }
+.chambre.eveil.bonjour .ch-poses .l-debout { opacity: 1; animation: ch-hop .5s cubic-bezier(.3, 1.6, .5, 1); }
+.chambre.soir .ch-poses { animation: ch-arrive 1.2s ease-out; }
+.ch-poses .pp-fx { font-size: 5cqw; }
+@keyframes ch-souffle { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.003, 1.009); } }
+@keyframes ch-gigote { from { transform: rotate(-.6deg) translateY(0); } to { transform: rotate(.6deg) translateY(-.4%); } }
+@keyframes ch-etire { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(.995, 1.012); } }
+@keyframes ch-hop { 0% { transform: translateY(3%) scale(.98, 1.02); } 100% { transform: none; } }
+@keyframes ch-arrive { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+
+/* la mascotte des petits écrans (Coin.js, Pandi) : la pose tient dans la place carrée, sans flotter en plus */
+.pp-box { display: block; animation: none !important; overflow: visible; }
+.pp-box > .pp { height: 100%; }
+
+.pp-pause, .pp-pause * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) { .pp * { animation: none !important; } .pp .pl-yeux, .pp .pp-fx { opacity: 0; } }

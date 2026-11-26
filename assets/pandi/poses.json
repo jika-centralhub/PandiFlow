@@ -1,0 +1,443 @@
+{
+ "frame": [
+  518,
+  720
+ ],
+ "poses": {
+  "dents": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    },
+    {
+     "name": "bras",
+     "pivot": [
+      17.45,
+      62.17
+     ]
+    }
+   ],
+   "tete": {
+    "x": 51.23,
+    "y": 16.51,
+    "w": 36.8,
+    "rot": -5.3
+   }
+  },
+  "idle": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    },
+    {
+     "name": "bras",
+     "pivot": [
+      21.46,
+      54.58
+     ]
+    }
+   ],
+   "tete": {
+    "x": 50.43,
+    "y": 16.79,
+    "w": 33.94,
+    "rot": -5.7
+   }
+  },
+  "pyjama": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    }
+   ],
+   "tete": {
+    "x": 50.01,
+    "y": 18.8,
+    "w": 35.39,
+    "rot": -7.6
+   }
+  },
+  "habiller": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    }
+   ],
+   "tete": {
+    "x": 49.56,
+    "y": 18.29,
+    "w": 35.42,
+    "rot": -8.0
+   }
+  },
+  "douche": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "bras",
+     "pivot": [
+      18.96,
+      47.36
+     ]
+    }
+   ]
+  },
+  "manger": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    },
+    {
+     "name": "bras",
+     "pivot": [
+      22.47,
+      63.25
+     ]
+    }
+   ],
+   "tete": {
+    "x": 49.96,
+    "y": 18.82,
+    "w": 35.52,
+    "rot": -7.6
+   }
+  },
+  "cereales": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    },
+    {
+     "name": "bras",
+     "pivot": [
+      18.96,
+      57.83
+     ]
+    }
+   ],
+   "tete": {
+    "x": 49.31,
+    "y": 17.78,
+    "w": 31.92,
+    "rot": -4.7
+   }
+  },
+  "cartable": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    }
+   ],
+   "tete": {
+    "x": 49.98,
+    "y": 17.95,
+    "w": 35.37,
+    "rot": -5.5
+   }
+  },
+  "lecture": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    }
+   ],
+   "tete": {
+    "x": 50.0,
+    "y": 20.5,
+    "w": 35.75,
+    "rot": -5.2
+   }
+  },
+  "ranger": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    }
+   ],
+   "tete": {
+    "x": 49.89,
+    "y": 18.78,
+    "w": 35.53,
+    "rot": -7.8
+   }
+  },
+  "dodo": {
+   "layers": [
+    {
+     "name": "corps"
+    }
+   ]
+  },
+  "endormi": {
+   "layers": [
+    {
+     "name": "corps"
+    }
+   ]
+  },
+  "lever": {
+   "layers": [
+    {
+     "name": "corps"
+    }
+   ],
+   "tete": {
+    "x": 53.49,
+    "y": 14.56,
+    "w": 32.07,
+    "rot": 5.1
+   }
+  },
+  "mains": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    },
+    {
+     "name": "mains",
+     "pivot": [
+      45.54,
+      58.92
+     ]
+    }
+   ],
+   "tete": {
+    "x": 50.16,
+    "y": 18.36,
+    "w": 35.93,
+    "rot": -6.0
+   }
+  },
+  "coiffer": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    },
+    {
+     "name": "bras",
+     "pivot": [
+      20.96,
+      53.14
+     ]
+    }
+   ],
+   "tete": {
+    "x": 50.15,
+    "y": 18.8,
+    "w": 35.35,
+    "rot": -7.2
+   }
+  },
+  "chaussures": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    }
+   ],
+   "tete": {
+    "x": 49.95,
+    "y": 16.95,
+    "w": 35.1,
+    "rot": -7.3
+   }
+  },
+  "pancarte": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    },
+    {
+     "name": "bras",
+     "pivot": [
+      23.47,
+      58.92
+     ]
+    }
+   ],
+   "tete": {
+    "x": 53.53,
+    "y": 25.74,
+    "w": 26.99,
+    "rot": 0.8
+   },
+   "panneau": {
+    "x": 18.96,
+    "y": 12.35,
+    "size": 17.05
+   }
+  },
+  "bravo": {
+   "layers": [
+    {
+     "name": "corps"
+    }
+   ],
+   "tete": {
+    "x": 49.82,
+    "y": 11.12,
+    "w": 40.65,
+    "rot": -4.0
+   }
+  },
+  "ok": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    },
+    {
+     "name": "mainG",
+     "pivot": [
+      28.49,
+      63.97
+     ]
+    },
+    {
+     "name": "mainD",
+     "pivot": [
+      83.65,
+      63.97
+     ]
+    }
+   ],
+   "tete": {
+    "x": 50.15,
+    "y": 18.8,
+    "w": 35.35,
+    "rot": -7.2
+   }
+  },
+  "calin": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "yeux"
+    }
+   ],
+   "tete": {
+    "x": 45.7,
+    "y": 18.38,
+    "w": 34.1,
+    "rot": -15.5
+   }
+  },
+  "sieste": {
+   "layers": [
+    {
+     "name": "corps"
+    }
+   ],
+   "tete": {
+    "x": 43.54,
+    "y": 18.34,
+    "w": 33.77,
+    "rot": -25.4
+   }
+  },
+  "danse": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "bras",
+     "pivot": [
+      22.7,
+      53.54
+     ]
+    }
+   ]
+  }
+ },
+ "coiffes": {
+  "espace": {
+   "ratio": 1.032
+  },
+  "magicien": {
+   "ratio": 0.969
+  },
+  "plongeur": {
+   "ratio": 1.026
+  },
+  "chevalier": {
+   "ratio": 1.722
+  },
+  "cowboy": {
+   "ratio": 0.558
+  },
+  "cuisinier": {
+   "ratio": 1.062
+  },
+  "policier": {
+   "ratio": 0.675
+  },
+  "pompier": {
+   "ratio": 0.875
+  }
+ },
+ "lit": {
+  "frame": [
+   1140,
+   760
+  ],
+  "ventre": [
+   31.47,
+   57.88
+  ],
+  "tete": [
+   30.14,
+   29.94
+  ],
+  "decal": 19.43,
+  "chut": [
+   "eveille",
+   "oeil",
+   "oreille"
+  ]
+ }
+}

@@ -21,7 +21,7 @@ import { InstallRow } from '../components/Install.js';
 import { ChutSection } from '../components/ChutSection.js';
 import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
-import { APP_VERSION, CONTACT_EMAIL } from '../config.js';
+import { APP_VERSION, CONTACT_EMAIL, LABO } from '../config.js';
 
 const SECTIONS = [
   { id: 'enfants', label: 'Enfants', icon: '👧' },
@@ -411,6 +411,11 @@ function SettingsSection() {
       <div class="row"><span class="emoji">🧭</span><div class="grow"><div class="title">La visite de l'écran</div><div class="meta">Les 5 bulles qui présentent l'écran de la routine</div></div><button class="p-btn" onClick=${() => { sfx.tap(); actions.replayVisit(); navigate('soiree'); }}>Revoir</button></div>
       <div class="row"><span class="emoji">👋</span><div class="grow"><div class="title">Pandi dit bonjour aux enfants</div><div class="meta">Pandi se présente, à voix haute</div></div><button class="p-btn" onClick=${() => { sfx.tap(); navigate('soiree'); showOverlay('bonjour', {}); }}>Rejouer</button></div>
       <${PerfRow} />
+      ${LABO && html`
+        <a class="row" href="./planche-styles.html" style="text-decoration:none;color:inherit"><span class="emoji">🐼</span><div class="grow"><div class="title">Labo : les trois styles de Pandi</div><div class="meta">La 3D d'aujourd'hui, la marionnette et les poses illustrées côte à côte, avec leur mesure</div></div><span style="padding:0 12px">›</span></a>
+        <button class="row" style="width:100%;text-align:left;font:inherit;border:0;background:none;color:inherit;cursor:pointer" onClick=${() => import('../labo/testFluidite.js').then((m) => m.startFluidityTest())}><span class="emoji">⏱️</span><div class="grow"><div class="title">Labo : test de fluidité (4 min)</div><div class="meta">Ouvre la routine et la mesure en 7 étapes, dont la veille, un minuteur lancé et le brossage sur les deux cartes (effacé à la fin). Ne touche pas l'écran pendant le test</div></div><span style="padding:0 12px">›</span></button>
+        <a class="row" href="./poses.html" style="text-decoration:none;color:inherit"><span class="emoji">🎞️</span><div class="grow"><div class="title">Labo : les poses de Pandi</div><div class="meta">Toutes les poses animées, avec la coiffe de chaque thème</div></div><span style="padding:0 12px">›</span></a>
+      `}
     </div>
 
     <h3 class="section-title" style="color:var(--ink);margin-top:20px">Parents de la famille</h3>

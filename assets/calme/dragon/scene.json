@@ -1,0 +1,89 @@
+{
+ "frame": [
+  1088,
+  720
+ ],
+ "layers": [
+  "fache",
+  "apaise",
+  "inspire",
+  "souffle",
+  "calme",
+  "yeux",
+  "feu",
+  "fache_2",
+  "fache_3",
+  "feu_2",
+  "feu_3",
+  "calme_g",
+  "calme_d"
+ ],
+ "feu": [
+  85.34,
+  36.81
+ ],
+ "gif": {
+  "fache": [
+   [
+    "fache",
+    420
+   ],
+   [
+    "fache_2",
+    420
+   ],
+   [
+    "fache",
+    420
+   ],
+   [
+    "fache_3",
+    420
+   ]
+  ],
+  "feu": [
+   [
+    "feu",
+    140
+   ],
+   [
+    "feu_2",
+    140
+   ],
+   [
+    "feu_3",
+    140
+   ],
+   [
+    "feu_2",
+    140
+   ]
+  ],
+  "calme": [
+   [
+    "calme",
+    190
+   ],
+   [
+    "calme_g",
+    190
+   ],
+   [
+    "calme",
+    190
+   ],
+   [
+    "calme_d",
+    190
+   ]
+  ]
+ },
+ "pandi": [
+  24.79,
+  33.65
+ ],
+ "dragon": [
+  71.23,
+  36.81
+ ]
+}

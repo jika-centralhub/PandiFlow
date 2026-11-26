@@ -1,0 +1,73 @@
+/* Labo : Pandi en marionnette de papier découpé (js/labo/marionnette.js).
+   Uniquement des animations de transform et d'opacity : la carte graphique les joue seule. */
+.mq { position: relative; width: 100%; aspect-ratio: 200 / 240; max-height: 100%; margin: 0 auto; }
+.mq-scene { position: absolute; inset: 0; }
+.mq-p { position: absolute; will-change: transform; }
+.mq-p > svg { display: block; }
+
+/* ce qui ne se voit pas dans un numéro */
+.mq .mq-joie, .mq .mq-brosse-bouche, .mq .mq-bouche-ouverte, .mq .mq-brasBrosse, .mq .mq-bulle1, .mq .mq-bulle2, .mq .mq-bulle3, .mq .mq-etoile { opacity: 0; }
+.mq-dents .mq-brasBrosse, .mq-dents .mq-brosse-bouche { opacity: 1; }
+.mq-dents .mq-brasD, .mq-dents .mq-sourire { opacity: 0; }
+.mq-bravo .mq-joie, .mq-bravo .mq-bouche-ouverte { opacity: 1; }
+.mq-bravo .mq-yeux, .mq-bravo .mq-sourire { opacity: 0; }
+
+/* toujours : il respire, il cligne des yeux, il regarde autour de lui */
+.mq-corps { animation: mq-respire 2.6s ease-in-out infinite; }
+.mq-yeux { animation: mq-cligne 4.3s linear infinite; }
+.mq-pupilles { animation: mq-regard 7s ease-in-out infinite; }
+.mq-perso.mq-pop { animation: mq-pop .32s cubic-bezier(.3, 1.8, .5, 1); }
+
+@keyframes mq-respire { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.012, 1.03); } }
+@keyframes mq-cligne { 0%, 92%, 97%, 100% { transform: scaleY(1); } 94.5% { transform: scaleY(.08); } }
+@keyframes mq-regard { 0%, 30% { transform: translate(0, 0); } 38%, 62% { transform: translate(7%, 3%); } 70%, 100% { transform: translate(-3%, 0); } }
+@keyframes mq-pop { 0% { transform: scale(.86, 1.1); } 100% { transform: scale(1); } }
+
+/* --- Les dents : la brosse frotte vite, la tête suit en rythme, le pied tape, la mousse pétille --- */
+.mq-dents .mq-brasBrosse { animation: mq-frotte .21s ease-in-out infinite alternate; }
+.mq-dents .mq-tete { animation: mq-balance 2.4s ease-in-out infinite alternate; }
+.mq-dents .mq-jambeG { animation: mq-tape .62s ease-in-out infinite; }
+.mq-dents .mq-oreilleD, .mq-dents .mq-oreilleG { animation: mq-oreille .42s ease-in-out infinite alternate; }
+.mq-dents .mq-bulle1 { animation: mq-mousse 1.1s ease-out infinite; }
+.mq-dents .mq-bulle2 { animation: mq-mousse 1.1s ease-out .35s infinite; }
+.mq-dents .mq-bulle3 { animation: mq-mousse 1.1s ease-out .7s infinite; }
+.mq-dents .mq-meche { animation: mq-meche .42s ease-in-out infinite alternate; }
+
+@keyframes mq-frotte { from { transform: translate(-4%, 1%) rotate(-3deg); } to { transform: translate(4%, -1%) rotate(3deg); } }
+@keyframes mq-balance { from { transform: rotate(-5deg); } to { transform: rotate(4deg) translateY(1%); } }
+@keyframes mq-tape { 0%, 55%, 100% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-14%) rotate(-9deg); } }
+@keyframes mq-oreille { from { transform: rotate(-4deg); } to { transform: rotate(5deg); } }
+@keyframes mq-mousse { 0% { transform: scale(.2) translate(0, 0); opacity: 0; } 20% { opacity: 1; } 100% { transform: scale(1.15) translate(-40%, -80%); opacity: 0; } }
+@keyframes mq-meche { from { transform: rotate(-8deg); } to { transform: rotate(10deg); } }
+
+/* --- Bravo : il saute de joie (écrasé, étiré), les bras en l'air, les oreilles qui volent, des étoiles --- */
+.mq-bravo .mq-saut { animation: mq-saut .9s cubic-bezier(.4, 0, .6, 1) infinite; }
+.mq-bravo .mq-ombre { animation: mq-ombre .9s cubic-bezier(.4, 0, .6, 1) infinite; }
+.mq-bravo .mq-brasD { animation: mq-brasD .45s ease-in-out infinite alternate; }
+.mq-bravo .mq-brasG { animation: mq-brasG .45s ease-in-out infinite alternate; }
+.mq-bravo .mq-tete { animation: mq-hoche .45s ease-in-out infinite alternate; }
+.mq-bravo .mq-oreilleD, .mq-bravo .mq-oreilleG { animation: mq-oreille-saut .9s ease-in-out infinite; }
+.mq-bravo .mq-meche { animation: mq-meche .3s ease-in-out infinite alternate; }
+.mq-bravo .mq-jambeD, .mq-bravo .mq-jambeG { animation: mq-jambes .9s ease-in-out infinite; }
+.mq-bravo .mq-etoile { animation: mq-etoile 1.1s ease-out infinite; }
+
+@keyframes mq-saut {
+  0% { transform: translateY(0) scale(1.08, .9); }
+  22% { transform: translateY(0) scale(.94, 1.08); }
+  50% { transform: translateY(-14%) scale(.98, 1.03); }
+  78% { transform: translateY(0) scale(1.07, .91); }
+  100% { transform: translateY(0) scale(1.08, .9); }
+}
+@keyframes mq-ombre { 0%, 22%, 78%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.62); opacity: .55; } }
+@keyframes mq-brasD { from { transform: rotate(138deg); } to { transform: rotate(164deg); } }
+@keyframes mq-brasG { from { transform: rotate(-138deg); } to { transform: rotate(-164deg); } }
+@keyframes mq-hoche { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+@keyframes mq-oreille-saut { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-12deg) translateY(-6%); } }
+@keyframes mq-jambes { 0%, 22%, 78%, 100% { transform: translateY(0); } 50% { transform: translateY(-10%) rotate(6deg); } }
+@keyframes mq-etoile {
+  0% { transform: translate(0, 0) scale(.2) rotate(0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1.1) rotate(170deg); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) { .mq * { animation: none !important; } }

@@ -17,6 +17,8 @@ import { earSupported, openEar } from '../lib/micro.js';
 import { has3D } from './Pandi3D.js';
 import { PandiFlat } from './Coin.js';
 import { FirstEveningCard } from './Decouverte.js';
+import { POSES } from '../config.js';
+import { loadPoses, poseCatalog, POSES_BASE } from './PandiPose.js';
 
 let stage = null;
 const loadStage = () => (stage ||= import('../mascot/stage.js'));
@@ -44,6 +46,11 @@ const listNames = (kids) => kids.map((k) => k.name).join(', ').replace(/, ([^,]*
 
 export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose }) {
   const morning = mode === 'matin';
+  // labo : la chambre en images (le lit, Pandi qui rit en dormant, qui s'étire, qui dit bonjour)
+  const [lit, setLit] = useState(() => (POSES ? poseCatalog()?.lit || null : null));
+  const imgs = POSES && lit;
+  const box = useRef(null);
+  const rit = useRef(null);
   const host = useRef(null);
   const ctl = useRef(null);
   const hand = useRef(null);
@@ -62,7 +69,11 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
   const chutRef = useRef(chut);
   chutRef.current = chut;
   const playing = chut === 'coucher' || chut === 'chut';
-  const [lit, setLit] = useState(0); // les étoiles allumées par le calme
+  const [lights, setLights] = useState(0); // les étoiles allumées par le calme
+  // labo, le jeu du chut en images : éveillé dans son lit, un œil qui s'ouvre, la patte sur l'oreille
+  const eveille = useRef(null);
+  const oeil = useRef(null);
+  const oreille = useRef(null);
 
   // Le soir, l'écran peut s'éteindre (sauf pendant le jeu du chut) ; le matin, il reste allumé pour la routine
   useEffect(() => {
@@ -77,9 +88,22 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
     [],
   );
 
+  useEffect(() => {
+    if (POSES && !lit) loadPoses().then((c) => setLit(c.lit || null)).catch(() => {});
+  }, []);
+  // en images : il ronfle de temps en temps (trois fois au plus par nuit)
+  useEffect(() => {
+    if (!imgs || waking) return;
+    const t = setInterval(() => {
+      if (chutRef.current === 'coucher' || chutRef.current === 'chut') return; // le jeu du chut : aucun bruit
+      if (st.current.snores++ < SNORES) pandiVoice('ronfle');
+    }, 7000);
+    return () => clearInterval(t);
+  }, [imgs, waking]);
+
   // Pandi et son lit en 3D (sans WebGL : le Pandi dessiné)
   useEffect(() => {
-    if (!has3D()) return;
+    if (POSES || !has3D()) return;
     let alive = true;
     loadStage()
       .then((m) => {
@@ -132,6 +156,7 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
         if (e?.name === 'NotAllowedError' || e?.name === 'SecurityError') setEarRefused(true);
         console.warn('Pandi : pas de micro pour le jeu du chut', e?.name || e?.message);
         setChut(null);
+        paintChut(null);
         ctl.current?.play('auLit', { tickle: 0 });
         return;
       }
@@ -148,14 +173,16 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
         view.stir += ((s.noisy ? 1 : 0) - view.stir) * Math.min(1, dt * 3);
         view.paw += ((s.paw ? 1 : 0) - view.paw) * Math.min(1, dt * 2.5);
         ctl.current?.set(view);
+        paintChut(view);
         const n = Math.floor(s.progress * STARS);
-        if (n !== shown) setLit((shown = n));
+        if (n !== shown) setLights((shown = n));
         if (!s.done) return;
         // il dort : le micro se ferme, puis une petite mélodie de bonne nuit
         clearInterval(loop);
         ear.close();
         ear = null;
         saveFloor(s.quietest);
+        paintChut(null);
         setChut('dort');
         ctl.current?.play('auLit', { tickle: 0 });
         setTimeout(() => alive && sfx.bonneNuit(), 700);
@@ -169,6 +196,18 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
     };
   }, [morning]);
 
+  // Le jeu du chut en images (comme le numéro « chut » de la 3D) : encore éveillé, il s'endort à mesure que la
+  // maison reste calme ; un bruit lui fait entrouvrir un œil et gigoter, et parfois il pose une patte sur son
+  // oreille. view null : le jeu est fini, il dort.
+  function paintChut(v) {
+    const set = (r, o) => r.current && (r.current.style.opacity = o.toFixed(2));
+    const awake = v ? 1 - Math.min(1, Math.max(0, (v.sleep - 0.3) / 0.55)) : 0;
+    set(eveille, awake);
+    set(oeil, v ? v.stir * (1 - v.paw) : 0);
+    set(oreille, v ? v.paw : 0);
+    box.current?.classList.toggle('gigote', Boolean(v && v.stir > 0.35));
+  }
+
   // La nuit passe (4 h) alors que l'écran de nuit est resté ouvert : Pandi dort toujours, c'est le matin
   useEffect(() => {
     if (!ready || !morning || st.current.waking) return;
@@ -181,6 +220,13 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
     if (!morning) return;
     let raf = 0, prev = performance.now(), n = 0;
     const loop = (now) => {
+      // en images, la boucle s'arrête quand personne ne le chatouille (l'écran peut se reposer) ; rub() la relance
+      if (POSES && st.current.tickle === 0 && n > 12 && !st.current.waking) {
+        raf = 0;
+        if (rit.current) rit.current.style.opacity = '0';
+        box.current?.classList.remove('gigote');
+        return;
+      }
       raf = requestAnimationFrame(loop);
       const dt = Math.min(0.1, (now - prev) / 1000);
       prev = now;
@@ -188,6 +234,11 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
       if (s.waking) return;
       s.tickle = Math.max(0, s.tickle - dt * 1.3);
       ctl.current?.set({ tickle: s.tickle });
+      // en images : il rit en dormant d'autant plus qu'on le chatouille, et gigote
+      if (rit.current) {
+        rit.current.style.opacity = Math.min(1, s.tickle * 1.6).toFixed(2);
+        box.current?.classList.toggle('gigote', s.tickle > 0.25);
+      }
       if (n++ % 6 === 0 && hand.current) {
         const b = bellyAt();
         if (b) {
@@ -198,11 +249,23 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
       }
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    st.current.relance = () => {
+      if (raf) return;
+      prev = performance.now();
+      raf = requestAnimationFrame(loop);
+    };
+    return () => {
+      cancelAnimationFrame(raf);
+      st.current.relance = null;
+    };
   }, [morning, ready]);
 
   // Le ventre de Pandi à l'écran (coordonnées de la page), ou null tant que la 3D n'est pas prête
   function bellyAt() {
+    if (imgs && box.current) {
+      const r = box.current.getBoundingClientRect();
+      return r.width ? { x: r.left + (r.width * lit.ventre[0]) / 100, y: r.top + (r.height * lit.ventre[1]) / 100 } : null;
+    }
     const c = ctl.current;
     const p = c?.screenOf(BELLY);
     if (!p) return null;
@@ -218,6 +281,7 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
     const w = near ? 1 : FAR;
     s.progress += (tap ? 0.07 : d / H / RUB_TO_WAKE) * w;
     s.tickle = Math.min(1, s.tickle + (tap ? 0.55 : (d / H) * 4) * w);
+    s.relance?.();
     const now = performance.now();
     if (s.tickle > 0.15 && now - s.giggle > (tap ? 150 : 420)) {
       s.giggle = now;
@@ -241,7 +305,7 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
     const c = ctl.current, t0 = performance.now();
     poll.current = setInterval(() => {
       const wall = (performance.now() - t0) / 1000;
-      const t = c && !still ? c.actor.cur.t : wall * 2.5;
+      const t = c && !still ? c.actor.cur.t : wall * (imgs ? 1.25 : 2.5);
       if (t >= WAKE.hello || wall > 7) setHello(true);
       if (t >= WAKE.leave || wall > 9) setLeaving(true);
       if (t >= WAKE.done || wall > 9.6) {
@@ -286,20 +350,30 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
       };
 
   const names = listNames(kids);
-  const cls = ['night-screen', 'chambre', morning ? 'matin' : 'soir', playing ? 'chut' : '', waking ? 'eveil' : '', leaving ? 'leaving' : ''].filter(Boolean).join(' ');
+  const cls = ['night-screen', 'chambre', morning ? 'matin' : 'soir', playing ? 'chut' : '', waking ? 'eveil' : '', hello ? 'bonjour' : '', leaving ? 'leaving' : ''].filter(Boolean).join(' ');
   const text = morning ? (waking ? hello && html`<span class="ch-bonjour">Bonjour ${names} ! ☀️</span>` : 'Chut… Pandi dort encore') : playing ? 'Chut… Pandi s’endort 🤫' : `Bonne nuit ${names} 🌙`;
   const hint = morning ? (waking ? '' : 'Gratte-lui le ventre pour le réveiller !') : playing ? 'Tout doux : quand c’est calme, il s’endort' : 'Touche l’écran pour revenir à la routine';
+  // les images du jeu du chut, si elles existent (poses.json : lit.chut)
+  const chutImg = (name, ref) => imgs && lit.chut?.includes(name) && html`<img class=${`l-${name}`} ref=${ref} src=${`${POSES_BASE}lit/${name}.webp`} alt="" draggable="false" />`;
   return html`<div class=${cls} role="dialog" aria-label=${morning ? 'Pandi dort encore : gratte-lui le ventre pour le réveiller' : playing ? 'Chut, Pandi s’endort' : 'Bonne nuit'} ...${handlers}>
     <div class="ch-sky" aria-hidden="true" />
-    <div class="ns-stars" aria-hidden="true">${Array.from({ length: STARS }, (_, i) => html`<i key=${i} class=${playing && starRank(i) < lit ? 'lit' : ''} style=${{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 70}%`, animationDelay: `${(i % 7) * 0.6}s` }} />`)}</div>
+    <div class="ns-stars" aria-hidden="true">${Array.from({ length: STARS }, (_, i) => html`<i key=${i} class=${playing && starRank(i) < lights ? 'lit' : ''} style=${{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 70}%`, animationDelay: `${(i % 7) * 0.6}s` }} />`)}</div>
     ${morning && html`<div class="ch-sun" aria-hidden="true" />`}
     ${chut === 'chut' && html`<div class="ch-ear" aria-hidden="true">👂 Pandi écoute</div>`}
     <div class="ch-scene ns-pandi">
-      ${has3D() ? html`<span ref=${host} style="display:contents" />` : html`<div class="ch-flat">${waking ? html`<${PandiFlat} mood="happy" />` : html`<${PandiFlat} wave=${false} />${!playing && html`<span class="ch-zz">💤</span>`}`}</div>`}
+      ${imgs
+        ? html`<div class="ch-poses" ref=${box} style=${{ aspectRatio: `${lit.frame[0]} / ${lit.frame[1]}`, '--decal': `${lit.decal || 0}%` }} role="img" aria-label="Pandi dans son lit">
+            <div class="ch-pile"><img src=${`${POSES_BASE}lit/dort.webp`} alt="" draggable="false" /><img class="l-rit" ref=${rit} src=${`${POSES_BASE}lit/rit.webp`} alt="" draggable="false" />${chutImg('eveille', eveille)}${chutImg('oeil', oeil)}${chutImg('oreille', oreille)}</div>
+            <img class="l-reveil" src=${`${POSES_BASE}lit/reveil.webp`} alt="" draggable="false" />
+            <img class="l-debout" src=${`${POSES_BASE}lit/debout.webp`} alt="" draggable="false" />
+            ${!waking && !playing && [0, 1.1, 2.2].map((d, i) => html`<span key=${i} class="pp-fx pp-zz" style=${{ left: `${(lit.tete?.[0] ?? 30) + 6 + i * 4}%`, top: `${(lit.tete?.[1] ?? 30) - 18 - i * 6}%`, animationDelay: `${d}s` }}>${i === 2 ? 'Z' : 'z'}</span>`)}
+          </div>`
+        : POSES ? null
+        : has3D() ? html`<span ref=${host} style="display:contents" />` : html`<div class="ch-flat">${waking ? html`<${PandiFlat} mood="happy" />` : html`<${PandiFlat} wave=${false} />${!playing && html`<span class="ch-zz">💤</span>`}`}</div>`}
     </div>
     <div class="ns-text">${text}</div>
     <div class="ns-hint">${hint}</div>
-    ${morning && !waking && has3D() && html`<div class="ch-hand" ref=${hand} aria-hidden="true"><span>👆</span></div>`}
+    ${morning && !waking && (imgs || (!POSES && has3D())) && html`<div class="ch-hand" ref=${hand} aria-hidden="true"><span>👆</span></div>`}
     ${mot && html`<div class="ns-mot" onClick=${(e) => { e.stopPropagation(); onMotClose(); }}><${FirstEveningCard} date=${mot} onClose=${onMotClose} /></div>`}
   </div>`;
 }
