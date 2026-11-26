@@ -859,20 +859,6 @@ export const ACTS = {
     },
   },
 
-  // Triste (pandi retirés) : tête basse, bras ballants, sourcils inquiets
-  triste: {
-    pose(t, P) {
-      P.headX = 0.26;
-      P.headZ = Math.sin(t * 0.8) * 0.05;
-      P.side = Math.sin(t * 0.8) * 0.03;
-      P.squash = -0.03;
-      P.handR.set(0.45, -0.06, 0.24);
-      P.handL.set(-0.45, -0.06, 0.24);
-      face(P, { smile: -0.9, lidUp: 0.42, lidLo: 0.15, lidTilt: -0.8, lookY: -0.4, lookX: 0 });
-      emit(P, { kind: 'emoji', ch: '💧', rate: 0.35, at: [0.28, 1.08, 0.62], size: 0.12, v: [0.05, -0.25, 0.1] });
-    },
-  },
-
   // --- Humeurs du minuteur ---
 
   // Plus que quelques secondes : il panique, les pattes sur les joues

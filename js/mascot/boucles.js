@@ -23,7 +23,7 @@ export const LOOPS = {
   idle: { L: 9 }, coucou: { L: 4 }, dents: { L: 7 }, manger: { L: 3.4 }, douche: { L: 6 }, habiller: { L: 7.5 },
   cartable: { L: 6.5 }, lecture: { L: 8 }, ranger: { L: 7.8 }, dodo: { L: 8 }, endormi: { L: (2 * Math.PI) / 1.1, from: 4.6 },
   lever: { L: 6.5 }, mains: { L: 6 }, coiffer: { L: 4 }, chaussures: { L: 7.2 }, pancarte: { L: 5 },
-  bravo: { L: 3.6 }, ok: { L: 2.5 }, calin: { L: 3.2 }, triste: { L: (2 * Math.PI) / 0.8 }, alarme: { L: 2.5 },
+  bravo: { L: 3.6 }, ok: { L: 2.5 }, calin: { L: 3.2 }, alarme: { L: 2.5 },
   sieste: { L: (2 * Math.PI) / 1.2 },
 };
 

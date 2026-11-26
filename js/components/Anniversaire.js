@@ -13,6 +13,8 @@ import { Avatar } from '../avatar/Avatar.js';
 import { birthdayGifts } from '../avatar/items.js';
 import { Pandi3D, has3D } from './Pandi3D.js';
 import { PandiFlat } from './Coin.js';
+import { PandiPose } from './PandiPose.js';
+import { POSES } from '../config.js';
 import { activeChildren, accord, birthdayNow, GUEST_HAT } from '../domain.js';
 import { sfx, say, canSay, stopSaying } from '../lib/sounds.js';
 import { fireworks, flyCoins, confettiBurst } from '../anim/fx.js';
@@ -144,7 +146,7 @@ export function BirthdayParty({ childIds = [], gifts = null, onClose }) {
         <span>${k.name}</span>
       </div>`)}
       <div class="bd-pandi" ref=${pandi} style=${{ order: 1 }}>
-        ${has3D() ? html`<${Pandi3D} act="danse" framing="full" sound=${true} class="pandi3d" />` : html`<${PandiFlat} mood="happy" />`}
+        ${POSES ? html`<${PandiPose} act="danse" class="bd-pose" />` : has3D() ? html`<${Pandi3D} act="danse" framing="full" sound=${true} class="pandi3d" />` : html`<${PandiFlat} mood="happy" />`}
       </div>
       ${stars.map((k, i) => html`<div key=${k.id} class="bd-kid bd-star" ref=${(el) => (starEls.current[k.id] = el)} style=${{ '--kid': k.color, '--i': i, order: 2 + i }}>
         <${Avatar} look=${k.look} equipped=${k.equipped} expr="joy" pose="dance" mode="full" seed=${k.id} class="overflow" />

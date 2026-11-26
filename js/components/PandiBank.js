@@ -1,6 +1,6 @@
 // La cagnotte d'un enfant : le parent offre ou retire des pandi en dehors des routines.
 import { html, useState } from '../vendor/preact-htm.js';
-import { useStore } from '../lib/store.js';
+import { useStore, toast } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import { balance, isRepair } from '../domain.js';
 import { Modal, NumberInput, PandiCounter } from './ui.js';
@@ -39,7 +39,9 @@ export function PandiBank({ child, onClose }) {
     const note = custom.trim() || reason || null;
     const res = actions.adjustPandi(child.id, mode === 'add' ? value : -value, note);
     onClose();
-    if (res.applied) showOverlay('pandi', { childId: child.id, amount: res.applied, note, before: res.before });
+    // un bonus : Pandi fête l'enfant sur la télé ; un retrait se fait sans Pandi triste, juste un mot pour le parent
+    if (res.applied > 0) showOverlay('pandi', { childId: child.id, amount: res.applied, note, before: res.before });
+    else if (res.applied < 0) toast(`${-res.applied} pandi retirés à ${child.name}`);
   }
 
   function repaired() {

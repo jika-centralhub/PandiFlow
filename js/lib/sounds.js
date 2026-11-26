@@ -221,11 +221,6 @@ export const sfx = {
     [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, { at: i * 0.08, dur: 0.26, type: 'triangle', vol: 0.26 }));
     [1568, 2093].forEach((f, i) => tone(f, { at: 0.45 + i * 0.07, dur: 0.3, type: 'sine', vol: 0.12 }));
   },
-  // Pandi triste : « wah wah wah waaah » tout doux
-  sad: () => {
-    [392, 370, 349].forEach((f, i) => tone(f, { at: i * 0.32, dur: 0.28, type: 'triangle', vol: 0.22 }));
-    tone(330, { at: 0.96, dur: 0.9, type: 'triangle', vol: 0.22, slide: -40 });
-  },
   // Minuteur lancé : « fiiiou » qui monte, puis « ta-taaa »
   timerStart: () => {
     tone(330, { dur: 0.2, slide: 700, type: 'sine', vol: 0.25 });

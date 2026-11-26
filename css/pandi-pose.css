@@ -20,11 +20,19 @@
 .pp-lever .pp-tout { animation: pp-etire 2.6s ease-in-out infinite; }
 .pp-douche .pp-tout { animation: pp-dandine 1.3s ease-in-out infinite alternate; }
 .pp-bravo .pp-tout { animation: pp-saut .9s cubic-bezier(.4, 0, .6, 1) infinite; }
+.pp-danse .pp-tout { animation: pp-danse 1s ease-in-out infinite; }
 @keyframes pp-balance { from { transform: rotate(-2deg); } to { transform: rotate(2deg); } }
 @keyframes pp-sautille { 0%, 100% { transform: translateY(0) scale(1.02, .98); } 45% { transform: translateY(-3%) scale(.99, 1.02); } 70% { transform: translateY(0) scale(1.03, .97); } }
 @keyframes pp-dort { 0%, 100% { transform: rotate(-1.5deg) scale(1, 1); } 50% { transform: rotate(1.5deg) scale(1.01, 1.03); } }
 @keyframes pp-etire { 0%, 100% { transform: scale(1, 1); } 45%, 60% { transform: scale(.98, 1.04); } }
 @keyframes pp-dandine { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+/* la danse de la fête : il balance les hanches sur deux temps par seconde (la valse de la chanson) */
+@keyframes pp-danse {
+  0%, 100% { transform: rotate(-4deg) translateY(0) scale(1.02, .98); }
+  25% { transform: rotate(0deg) translateY(-3%) scale(.99, 1.02); }
+  50% { transform: rotate(4deg) translateY(0) scale(1.02, .98); }
+  75% { transform: rotate(0deg) translateY(-3%) scale(.99, 1.02); }
+}
 @keyframes pp-saut {
   0% { transform: translateY(0) scale(1.06, .92); }
   22% { transform: translateY(0) scale(.95, 1.06); }
@@ -40,6 +48,7 @@
 .pp-manger .pl-bras, .pp-cereales .pl-bras { animation: pp-cuillere 1.8s ease-in-out infinite; }
 .pp-coiffer .pl-bras { animation: pp-peigne .38s ease-in-out infinite alternate; }
 .pp-pancarte .pl-bras { animation: pp-pancarte .6s ease-in-out infinite alternate; }
+.pp-danse .pl-bras { animation: pp-coucou .5s ease-in-out infinite alternate; }
 .pp-mains .pl-mains { animation: pp-frotte .26s ease-in-out infinite alternate; }
 .pp-ok .pl-mainG { animation: pp-clapG .3s ease-in-out infinite alternate; }
 .pp-ok .pl-mainD { animation: pp-clapD .3s ease-in-out infinite alternate; }
@@ -89,6 +98,10 @@
 @keyframes ch-etire { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(.995, 1.012); } }
 @keyframes ch-hop { 0% { transform: translateY(3%) scale(.98, 1.02); } 100% { transform: none; } }
 @keyframes ch-arrive { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+
+/* la mascotte des petits écrans (Coin.js, Pandi) : la pose tient dans la place carrée, sans flotter en plus */
+.pp-box { display: block; animation: none !important; overflow: visible; }
+.pp-box > .pp { height: 100%; }
 
 .pp-pause, .pp-pause * { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) { .pp * { animation: none !important; } .pp .pl-yeux, .pp .pp-fx { opacity: 0; } }

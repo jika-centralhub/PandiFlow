@@ -18,7 +18,8 @@ export const loadPoses = () => (loading ||= fetch(`${BASE}poses.json`).then((r) 
 // La coiffe du thème (la tenue des thèmes de js/mascot/themeLook.js) ; le chapeau d'anniversaire n'a pas d'image
 const HATS = { antennes: 'espace', chapeau_magicien: 'magicien', masque_plongee: 'plongeur', heaume: 'chevalier', cowboy: 'cowboy', toque: 'cuisinier', casquette_police: 'policier', casque_pompier: 'pompier' };
 // Les numéros de la 3D sans pose à eux
-const ALIAS = { coucou: 'idle', danse: 'bravo', reveil: 'lever', coucher: 'dodo', auLit: 'endormi', panique: 'idle', alarme: 'bravo', triste: 'calin' };
+// (danse : la pose de la fête d'anniversaire, en tenue de fête ; tant que son image manque, bravo)
+const ALIAS = { coucou: 'idle', danse: 'bravo', reveil: 'lever', coucher: 'dodo', auLit: 'endormi', panique: 'idle', alarme: 'bravo' };
 
 // Le test de fluidité (js/labo/testFluidite.js) peut imposer une pose à tous les Pandi
 let forced = null;
@@ -47,6 +48,7 @@ const FX = {
   douche: [['bulle', '', 18, 40, 0], ['bulle', '', 80, 44, 0.5], ['bulle', '', 28, 62, 1], ['bulle', '', 72, 66, 1.5], ['note', '🎵', 78, 12, 0.4]],
   mains: [['bulle', '', 36, 50, 0], ['bulle', '', 62, 52, 0.6], ['bulle', '', 48, 44, 1.2]],
   lever: [['etoile', '✨', 20, 8, 0], ['etoile', '✨', 80, 6, 0.8]],
+  danse: [['coeur', '🎉', 14, 30, 0], ['coeur', '🎈', 82, 24, 0.7], ['coeur', '🎉', 76, 50, 1.4], ['coeur', '🎈', 20, 56, 2.1]],
 };
 
 export function PandiPose({ act = 'idle', ctx = {}, active = true, class: cls = '', label = 'Pandi le panda' }) {
