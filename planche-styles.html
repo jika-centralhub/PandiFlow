@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1a1b4b">
+  <title>Pandi labo · trois styles</title>
+  <link rel="stylesheet" href="css/labo-marionnette.css">
+  <style>
+    @font-face { font-family: Fredoka; src: url(assets/fonts/fredoka.woff2) format('woff2'); font-weight: 300 700; }
+    :root { --ink: #2B2733; --card: #FFFFFF; --bg1: #22205A; --bg2: #4A2C7A; --accent: #FFB24F; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body { font-family: Fredoka, system-ui, sans-serif; color: #fff; background: linear-gradient(160deg, var(--bg1), var(--bg2)); display: flex; flex-direction: column; overflow: hidden;
+      padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
+    header { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    header h1 { font-size: 16px; margin: 0 6px 0 0; font-weight: 600; white-space: nowrap; }
+    header a { color: #FFE2B0; font-size: 13px; margin-left: auto; }
+    .grp { display: flex; gap: 4px; background: rgba(255,255,255,.1); padding: 3px; border-radius: 12px; }
+    button { font: inherit; font-size: 13px; border: 0; border-radius: 9px; padding: 5px 10px; background: transparent; color: #fff; cursor: pointer; }
+    button.on { background: #fff; color: var(--ink); }
+    button.go { background: var(--accent); color: var(--ink); font-weight: 600; }
+    button:disabled { opacity: .5; }
+    .live { font-size: 12px; opacity: .85; font-variant-numeric: tabular-nums; }
+    main { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; min-height: 0; padding-top: 8px; }
+    .col { display: flex; flex-direction: column; min-height: 0; }
+    .col.off { display: none; }
+    main.solo { grid-template-columns: 1fr; }
+    .col h2 { font-size: 14px; margin: 0 0 2px; font-weight: 600; }
+    .col .sub { font-size: 11px; opacity: .75; margin-bottom: 4px; }
+    .stage { flex: 1; min-height: 0; background: var(--card); border-radius: 18px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+    .stage > .fit { height: 92%; aspect-ratio: 200 / 240; position: relative; }
+    .stage canvas.pandi3d { width: 100%; height: 100%; opacity: 1; transform: none; }
+    .wait { color: var(--ink); font-size: 13px; text-align: center; padding: 10px; opacity: .7; }
+    .res { font-size: 11px; margin-top: 4px; min-height: 2.6em; font-variant-numeric: tabular-nums; opacity: .9; }
+    /* les poses illustrées : une image par numéro, qui bouge d'un bloc */
+    .pz { position: absolute; inset: 0; }
+    .pz img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; }
+    .pz .pz-a, .pz .pz-b, .pz .pz-c { position: absolute; inset: 0; will-change: transform; }
+    .pz.dents .i-dents, .pz.bravo .i-bravo { opacity: 1; }
+    .pz.dents .pz-a { animation: pz-balance 2.4s ease-in-out infinite alternate; transform-origin: 50% 95%; }
+    .pz.dents .pz-b { animation: pz-respire 2.6s ease-in-out infinite; transform-origin: 50% 95%; }
+    .pz.dents .pz-c { animation: pz-frotte .21s ease-in-out infinite alternate; transform-origin: 50% 40%; }
+    .pz.bravo .pz-a { animation: mq-saut .9s cubic-bezier(.4, 0, .6, 1) infinite; transform-origin: 50% 95%; }
+    .pz .mq-etoile { opacity: 0; }
+    .pz.bravo .mq-etoile { animation: mq-etoile 1.1s ease-out infinite; }
+    @keyframes pz-balance { from { transform: rotate(-2.5deg); } to { transform: rotate(2.5deg); } }
+    @keyframes pz-respire { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.01, 1.025); } }
+    @keyframes pz-frotte { from { transform: translateX(-.6%) rotate(-.6deg); } to { transform: translateX(.6%) rotate(.6deg); } }
+    .table { position: fixed; inset: auto 10px 10px auto; background: #fff; color: var(--ink); border-radius: 14px; padding: 10px 12px; font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.35); display: none; max-width: 92vw; }
+    .table.show { display: block; }
+    .table table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    .table td, .table th { padding: 2px 8px; text-align: right; }
+    .table td:first-child, .table th:first-child { text-align: left; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Pandi · trois styles</h1>
+    <div class="grp" id="acts">
+      <button data-act="dents" class="on">🪥 Dents</button>
+      <button data-act="bravo">🌟 Bravo</button>
+      <button data-act="auto">🔁 Alterner</button>
+    </div>
+    <div class="grp" id="show">
+      <button data-show="all" class="on">Les trois</button>
+      <button data-show="d3">3D</button>
+      <button data-show="mq">Marionnette</button>
+      <button data-show="pz">Poses</button>
+    </div>
+    <button class="go" id="measure">📏 Mesurer chacun</button>
+    <span class="live" id="live"></span>
+    <a href="./#/soiree">↩ l'app</a>
+  </header>
+  <main id="cols">
+    <section class="col" data-style="d3">
+      <h2>1 · La 3D d'aujourd'hui</h2>
+      <div class="sub">calculée 15 fois par seconde, comme sur les cartes</div>
+      <div class="stage"><div class="fit" id="d3"></div></div>
+      <div class="res" data-res="d3"></div>
+    </section>
+    <section class="col" data-style="mq">
+      <h2>2 · La marionnette</h2>
+      <div class="sub">dessin vectoriel en pièces, animé par la carte graphique</div>
+      <div class="stage"><div class="fit" id="mq"></div></div>
+      <div class="res" data-res="mq"></div>
+    </section>
+    <section class="col" data-style="pz">
+      <h2>3 · Les poses illustrées</h2>
+      <div class="sub">une image par numéro, qui bouge d'un bloc</div>
+      <div class="stage"><div class="fit" id="pz"></div></div>
+      <div class="res" data-res="pz"></div>
+    </section>
+  </main>
+  <div class="table" id="table"></div>
+  <script src="js/vendor/supabase.js"></script>
+  <script type="module" src="js/labo/planche.js"></script>
+</body>
+</html>
