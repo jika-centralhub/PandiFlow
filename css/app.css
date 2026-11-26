@@ -128,10 +128,11 @@ h1, h2, h3, p { margin: 0; }
    la rangée défile sur le côté et s'arrête toujours sur des colonnes entières */
 @media (orientation: landscape) {
   .columns.many { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: calc((100% - var(--u) * 3) / 2);
-    overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding: 0 calc(var(--u) * 3.5); scrollbar-width: none;
-    padding-bottom: calc(var(--u) * 1.2); }
-  .columns.many::-webkit-scrollbar { display: none; }
+    overflow-x: hidden; scroll-snap-type: x mandatory; scroll-padding: 0 calc(var(--u) * 3.5); padding-bottom: calc(var(--u) * 1.2); }
   .columns.many > .kid-col { scroll-snap-align: start; }
+  /* La rangée ne défile pas d'elle-même (sur iPhone et iPad, elle prenait le balayage des tâches) :
+     c'est un balayage sur le bandeau de l'enfant, ou une pastille, qui la fait avancer d'un enfant */
+  .columns.many .kid-head { touch-action: pan-y; }
 }
 .kid-dots { display: none; }
 @media (orientation: landscape) {

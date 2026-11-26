@@ -329,6 +329,16 @@ function ThemeBackdrop({ scene }) {
   return on ? html`<div class="theme-backdrop" aria-hidden="true" style=${{ backgroundImage: `url("${artSrc(scene)}")` }}></div>` : null;
 }
 
+// À partir de 3 enfants, la rangée des colonnes avance d'un enfant (dir = 1) ou recule (dir = -1)
+function stepKids(el, dir) {
+  const cols = el ? [...el.querySelectorAll(':scope > .kid-col')] : [];
+  if (cols.length < 2) return;
+  const step = cols[1].offsetLeft - cols[0].offsetLeft;
+  const max = el.scrollWidth - el.clientWidth;
+  const at = Math.round(el.scrollLeft / step);
+  el.scrollTo({ left: Math.max(0, Math.min(max, (at + dir) * step)), behavior: 'smooth' });
+}
+
 // Une pastille par enfant, à sa couleur, sous la rangée qui défile : celles des enfants à l'écran sont pleines.
 // Toucher une pastille amène la colonne de cet enfant.
 function KidDots({ kids, cols }) {
@@ -350,7 +360,15 @@ function KidDots({ kids, cols }) {
   }, [cols, kids.length]);
   const go = (i) => {
     sfx.tap();
-    cols.current?.querySelectorAll('.kid-col')[i]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    const el = cols.current;
+    const col = el?.querySelectorAll(':scope > .kid-col')[i];
+    if (!col) return;
+    // déjà entièrement à l'écran : rien à faire ; sinon elle arrive à gauche, ou à droite pour la dernière
+    const box = el.getBoundingClientRect();
+    const r = col.getBoundingClientRect();
+    if (r.left >= box.left - 4 && r.right <= box.right + 4) return;
+    const left = el.scrollLeft + (r.left < box.left ? r.left - box.left : r.right - box.right);
+    el.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
   };
   return html`<div class="kid-dots">
     ${kids.map((k, i) => html`<button key=${k.id} class=${seen[i] ? 'on' : ''} style=${{ '--kid': k.color }} onClick=${() => go(i)} aria-label=${`Voir la colonne de ${k.name}`}></button>`)}
@@ -389,6 +407,24 @@ export function Evening() {
   const moodTimers = useRef({});
   const moodsRef = useRef({});
   const colsRef = useRef(null);
+  // Le balayage sur le bandeau d'un enfant fait défiler les enfants (à partir de 3) ; sur les tâches, les tâches
+  const band = useRef(null);
+  const bandSwiped = useRef(false);
+  const bandDown = (e) => { band.current = { x: e.clientX, y: e.clientY }; };
+  const bandUp = (e) => {
+    const st = band.current;
+    band.current = null;
+    if (!st || !many) return;
+    const dx = e.clientX - st.x;
+    if (Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(e.clientY - st.y)) {
+      bandSwiped.current = true;
+      setTimeout(() => (bandSwiped.current = false), 80);
+      sfx.slide();
+      stepKids(colsRef.current, dx < 0 ? 1 : -1);
+    }
+  };
+  // Un balayage qui finit sur le portrait n'ouvre pas le coin de l'enfant
+  const bandClick = (e) => { if (bandSwiped.current) { e.stopPropagation(); e.preventDefault(); } };
   const lastAuto = useRef(currentRoutine());
   const routineRef = useRef(routine);
   routineRef.current = routine;
@@ -735,7 +771,7 @@ export function Evening() {
         const gift = date === today && !night?.asleep ? pendingSurprise(s.settings, child.id, Date.now()) : null;
         const promise = !gift && date === today ? promiseFor(s.settings, child.id, Date.now()) : null;
         return html`<section key=${child.id} class=${`kid-col ${prog.complete ? 'done' : ''} ${night?.asleep ? 'asleep' : ''}`} style=${{ '--kid': child.color }}>
-          <div class=${`kid-head banner ${scene ? 'has-scene' : ''}`}>
+          <div class=${`kid-head banner ${scene ? 'has-scene' : ''}`} onPointerDown=${bandDown} onPointerUp=${bandUp} onPointerCancel=${() => (band.current = null)} onClickCapture=${bandClick}>
             ${scene && html`<span class="kh-scene" aria-hidden="true" style=${{ backgroundImage: `url("${artSrc(scene.img)}")`, backgroundPosition: `center ${scene.y}` }}></span>`}
             <button class="kid-avatar bust" ref=${(n) => (heads.current[child.id] = n)} onClick=${() => navigate(`enfant/${child.id}`)} aria-label=${`Le coin de ${child.name}`}>
               <${Avatar} look=${child.look} equipped=${{ ...child.equipped, pet: null }} expr=${moods[child.id]?.expr || (night?.asleep ? 'sleep' : 'happy')}
