@@ -40,7 +40,17 @@
     .pz.dents .i-dents, .pz.bravo .i-bravo { opacity: 1; }
     .pz.dents .pz-a { animation: pz-balance 2.4s ease-in-out infinite alternate; transform-origin: 50% 95%; }
     .pz.dents .pz-b { animation: pz-respire 2.6s ease-in-out infinite; transform-origin: 50% 95%; }
-    .pz.dents .pz-c { animation: pz-frotte .21s ease-in-out infinite alternate; transform-origin: 50% 40%; }
+    /* le brossage en calques : le corps, les yeux fermés (clignement), le bras qui frotte autour du coude,
+       la mousse qui gonfle et s'envole autour de la bouche (repères : assets/labo/dents-reperes.json) */
+    .pz .calques { position: absolute; inset: 0; opacity: 0; }
+    .pz.dents .calques { opacity: 1; }
+    .pz .calques img { opacity: 1; }
+    .pz .calques .l-bras { transform-origin: 20.61% 60.58%; will-change: transform; animation: pz-brosse .2s ease-in-out infinite alternate; }
+    .pz .calques .l-yeux { animation: pz-cligne 3.9s linear infinite; }
+    .pz .calques .l-mousse { inset: auto; height: auto; opacity: 0; will-change: transform, opacity; animation: pz-mousse 1.3s ease-out infinite; }
+    @keyframes pz-brosse { from { transform: rotate(-2.6deg); } to { transform: rotate(2.4deg) translateY(-.4%); } }
+    @keyframes pz-cligne { 0%, 92%, 98%, 100% { opacity: 0; } 93.5%, 96.5% { opacity: 1; } }
+    @keyframes pz-mousse { 0% { transform: translate(0, 0) scale(.25); opacity: 0; } 18% { opacity: 1; } 70% { opacity: .95; } 100% { transform: translate(var(--dx), var(--dy)) scale(1.1); opacity: 0; } }
     .pz.bravo .pz-a { animation: mq-saut .9s cubic-bezier(.4, 0, .6, 1) infinite; transform-origin: 50% 95%; }
     .pz .mq-etoile { opacity: 0; }
     .pz.bravo .mq-etoile { animation: mq-etoile 1.1s ease-out infinite; }

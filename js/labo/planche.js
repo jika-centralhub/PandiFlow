@@ -1,6 +1,7 @@
 // Labo : la planche des trois styles de Pandi (planche-styles.html).
 // 1. la 3D d'aujourd'hui (stage.js, 15 images par seconde comme sur les cartes) ; 2. la marionnette en
-// papier découpé (marionnette.js) ; 3. les poses illustrées (une image par numéro, assets/labo/).
+// papier découpé (marionnette.js) ; 3. les poses illustrées (assets/labo/ : le brossage en calques animés,
+// fabriqués par tests/local/pose_art_kit.py ; le bravo en une image).
 // « Mesurer chacun » montre chaque style seul 14 s (7 s de dents, 7 s de bravo) et mesure les images par
 // seconde et le temps de calcul. Le résultat part dans perf_reports quand la page est ouverte depuis l'app
 // (même connexion), sinon il reste affiché.
@@ -69,8 +70,17 @@ const styles = {};
   const host = document.getElementById('pz');
   const box = document.createElement('div');
   box.className = `pz ${act}`;
+  // les dents en calques (le bras frotte, la mousse pétille, il cligne des yeux) ; le bravo d'un bloc
+  // [x, y (centre, % du cadre), largeur %, envol x, y (% de la bulle), retard s] : au coin de la bouche, sous le nez
+  const foam = [[47.5, 40.8, 6.5, -70, 25, 0], [53.5, 41.2, 6, 70, 15, 0.33], [50.5, 42.8, 5.5, 10, 70, 0.66], [45.5, 41.8, 6, -90, 55, 0.99]]
+    .map(([x, y, w, dx, dy, d]) => `<img class="l-mousse" alt="" src="assets/labo/mousse.webp" style="left:${x - w / 2}%;top:${y - (w * 0.83) / 2}%;width:${w}%;--dx:${dx}%;--dy:${dy}%;animation-delay:${d}s">`).join('');
   box.innerHTML = `<div class="pz-a"><div class="pz-b"><div class="pz-c">
-      <img class="i-dents" alt="" src="assets/labo/pose-dents.webp">
+      <div class="calques">
+        <img class="l-corps" alt="" src="assets/labo/dents-corps.webp">
+        <img class="l-yeux" alt="" src="assets/labo/dents-yeux.webp">
+        ${foam}
+        <img class="l-bras" alt="" src="assets/labo/dents-bras.webp">
+      </div>
       <img class="i-bravo" alt="" src="assets/labo/pose-bravo.webp">
     </div></div></div>`;
   [[-380, -260, 0], [360, -300, 0.18], [-520, -60, 0.36], [520, -90, 0.54], [40, -420, 0.72]].forEach(([dx, dy, d]) => {
