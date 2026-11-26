@@ -634,15 +634,17 @@ export function reach(arm, target, pole) {
 
 export function neutralFace() {
   // les joues remontent un peu les paupières du bas : il a toujours l'œil qui rit
-  return { open: 0, smile: 0.95, wide: 1.12, teeth: 0, tongue: 0, round: 0, lidUp: 0.08, lidLo: 0.62, lidTilt: 0, lookX: 0, lookY: 0 };
+  // peek : il entrouvre un seul œil (le droit), comme quand un bruit le dérange dans son sommeil
+  return { open: 0, smile: 0.95, wide: 1.12, teeth: 0, tongue: 0, round: 0, lidUp: 0.08, lidLo: 0.62, lidTilt: 0, lookX: 0, lookY: 0, peek: 0 };
 }
 
 export function applyFace(rig, f, blink) {
   rig.mouth.set(f);
   const close = Math.max(f.lidUp, blink);
   for (const e of rig.eyes) {
+    const c = e.sx > 0 && f.peek ? lerp(close, Math.min(close, 0.3), f.peek) : close;
     // paupière du haut : -1,35 rad = grand ouvert, +1,5 = fermé ; inclinée pour froncer ou s'inquiéter
-    e.upPivot.rotation.set(lerp(-1.35, 1.52, close), 0, f.lidTilt * e.sx * 0.5);
+    e.upPivot.rotation.set(lerp(-1.35, 1.52, c), 0, f.lidTilt * e.sx * 0.5);
     e.loPivot.rotation.set(lerp(1.4, -0.35, f.lidLo * (1 - blink * 0.5)), 0, 0);
     e.ball.rotation.set(-f.lookY * 0.35, f.lookX * 0.4, 0);
   }

@@ -1,6 +1,8 @@
 // La chambre de Pandi, en plein écran : le cycle de la journée.
 // Le soir, quand tous les enfants ont dit bonne nuit, Pandi bâille, saute dans son lit, remonte sa couette
-// et s'endort (l'écran de nuit ; on le touche pour revenir à la routine).
+// et s'endort (l'écran de nuit ; on le touche pour revenir à la routine). Avec le jeu « Chut, Pandi
+// s'endort » (Réglages, js/lib/chut.js), il ne s'endort que si la maison reste calme : le micro écoute
+// le temps du jeu, des étoiles s'allument, et un bruit le fait juste remuer.
 // Le matin, à la première ouverture de l'app sur cet appareil, Pandi dort encore : les enfants le
 // réveillent en lui grattant le ventre (il rit en dormant, gigote… puis saute du lit), et la routine
 // du matin apparaît.
@@ -9,6 +11,9 @@ import { eveningDate } from '../lib/dates.js';
 import { prefersReducedMotion } from '../lib/util.js';
 import { pandiVoice, sfx } from '../lib/sounds.js';
 import { keepScreenOn, releaseScreen } from '../lib/device.js';
+import { getState } from '../lib/store.js';
+import { chutSettings, createChut, savedFloor, saveFloor, earRefused, setEarRefused } from '../lib/chut.js';
+import { earSupported, openEar } from '../lib/micro.js';
 import { has3D } from './Pandi3D.js';
 import { PandiFlat } from './Coin.js';
 import { FirstEveningCard } from './Decouverte.js';
@@ -27,6 +32,14 @@ const SNORES = 3; // ronflements au plus par nuit : la télé peut rester allum�
 const RUB_TO_WAKE = 2;
 const FAR = 0.4;
 
+// « Chut, Pandi s'endort » : le micro s'ouvre quand il est sous sa couette (le numéro « coucher »)
+const CHUT_AT = 4.8;
+const STARS = 28;
+// l'ordre dans lequel les étoiles s'allument, éparpillées dans le ciel (11 et 28 sont premiers entre eux)
+const starRank = (i) => (i * 11) % STARS;
+// le jeu ce soir ? (réglage de la famille, micro possible et pas refusé sur cet appareil)
+const chutTonight = () => chutSettings(getState().settings).on && earSupported() && !earRefused();
+
 const listNames = (kids) => kids.map((k) => k.name).join(', ').replace(/, ([^,]*)$/, ' et $1');
 
 export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose }) {
@@ -43,12 +56,19 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
   const st = useRef({ progress: 0, tickle: 0, last: null, giggle: 0, snores: 0, waking: false });
   const exitRef = useRef(onAwake);
   exitRef.current = onAwake;
+  // Le jeu du chut : 'coucher' (il se couche) -> 'chut' (le micro écoute) -> 'dort' ; null : pas de jeu
+  const [chutPhase, setChut] = useState(() => (!morning && chutTonight() ? 'coucher' : null));
+  const chut = morning ? null : chutPhase;
+  const chutRef = useRef(chut);
+  chutRef.current = chut;
+  const playing = chut === 'coucher' || chut === 'chut';
+  const [lit, setLit] = useState(0); // les étoiles allumées par le calme
 
-  // Le soir, l'écran peut s'éteindre ; le matin, il reste allumé pour la routine
+  // Le soir, l'écran peut s'éteindre (sauf pendant le jeu du chut) ; le matin, il reste allumé pour la routine
   useEffect(() => {
-    if (morning) keepScreenOn();
+    if (morning || playing) keepScreenOn();
     else releaseScreen();
-  }, [morning]);
+  }, [morning, playing]);
   useEffect(
     () => () => {
       keepScreenOn();
@@ -64,11 +84,13 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
     loadStage()
       .then((m) => {
         if (!alive || !host.current) return;
+        const act = chutRef.current === 'chut' ? 'chut' : morning || still ? 'auLit' : 'coucher';
         ctl.current = m.mountPandi(host.current, {
-          act: morning || still ? 'auLit' : 'coucher', ctx: { tickle: 0 }, framing: 'auto', base: 'full',
+          act, ctx: { tickle: 0 }, framing: 'auto', base: 'full',
           still, fps: still ? 4 : 0, exclusive: true, maxDpr: 1.5, date: eveningDate(),
           className: 'ch-pandi', label: 'Pandi dans son lit',
           onCue: (cue) => {
+            if (chutRef.current === 'chut') return; // le micro écoute : Pandi ne fait aucun bruit
             if (cue === 'ronfle' && st.current.snores++ >= SNORES) return;
             pandiVoice(cue);
           },
@@ -84,12 +106,68 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
     };
   }, []);
 
-  // Le soir, une fois endormi, la caméra se rapproche doucement de son lit
+  // Le soir, une fois endormi, la caméra se rapproche doucement de son lit (avec le jeu du chut, c'est le
+  // jeu qui la rapproche)
   useEffect(() => {
-    if (!ready || morning || still) return;
+    if (!ready || morning || still || chutRef.current) return;
     const t = setTimeout(() => ctl.current?.play('auLit', { tickle: 0 }), 7500);
     return () => clearTimeout(t);
   }, [ready, morning]);
+
+  // « Chut, Pandi s'endort » : une fois sous sa couette, le micro s'ouvre ; Pandi s'endort à mesure que
+  // la maison reste calme, et un bruit le fait juste remuer. À la fin, le micro se ferme et il dort.
+  useEffect(() => {
+    if (morning || chutRef.current !== 'coucher') return;
+    let alive = true, ear = null, loop = 0;
+    const cfg = chutSettings(getState().settings);
+    const game = createChut({ seconds: cfg.seconds, sens: cfg.sens, floor: savedFloor() });
+    let level = null;
+    const view = { sleep: 0, stir: 0, paw: 0 };
+    const start = setTimeout(async () => {
+      try {
+        ear = await openEar((db) => (level = db));
+      } catch (e) {
+        if (!alive) return;
+        // refusé : on ne le redemande plus sur cet appareil (rallumer le jeu dans Réglages le redemande)
+        if (e?.name === 'NotAllowedError' || e?.name === 'SecurityError') setEarRefused(true);
+        console.warn('Pandi : pas de micro pour le jeu du chut', e?.name || e?.message);
+        setChut(null);
+        ctl.current?.play('auLit', { tickle: 0 });
+        return;
+      }
+      if (!alive) return ear.close();
+      setChut('chut');
+      ctl.current?.play('chut', view);
+      let prev = performance.now(), shown = 0;
+      loop = setInterval(() => {
+        const now = performance.now();
+        const dt = (now - prev) / 1000;
+        prev = now;
+        const s = game.step(dt, level);
+        view.sleep = s.progress;
+        view.stir += ((s.noisy ? 1 : 0) - view.stir) * Math.min(1, dt * 3);
+        view.paw += ((s.paw ? 1 : 0) - view.paw) * Math.min(1, dt * 2.5);
+        ctl.current?.set(view);
+        const n = Math.floor(s.progress * STARS);
+        if (n !== shown) setLit((shown = n));
+        if (!s.done) return;
+        // il dort : le micro se ferme, puis une petite mélodie de bonne nuit
+        clearInterval(loop);
+        ear.close();
+        ear = null;
+        saveFloor(s.quietest);
+        setChut('dort');
+        ctl.current?.play('auLit', { tickle: 0 });
+        setTimeout(() => alive && sfx.bonneNuit(), 700);
+      }, 100);
+    }, (still ? 0.5 : CHUT_AT) * 1000);
+    return () => {
+      alive = false;
+      clearTimeout(start);
+      clearInterval(loop);
+      ear?.close();
+    };
+  }, [morning]);
 
   // La nuit passe (4 h) alors que l'écran de nuit est resté ouvert : Pandi dort toujours, c'est le matin
   useEffect(() => {
@@ -208,16 +286,19 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
       };
 
   const names = listNames(kids);
-  const cls = ['night-screen', 'chambre', morning ? 'matin' : 'soir', waking ? 'eveil' : '', leaving ? 'leaving' : ''].filter(Boolean).join(' ');
-  return html`<div class=${cls} role="dialog" aria-label=${morning ? 'Pandi dort encore : gratte-lui le ventre pour le réveiller' : 'Bonne nuit'} ...${handlers}>
+  const cls = ['night-screen', 'chambre', morning ? 'matin' : 'soir', playing ? 'chut' : '', waking ? 'eveil' : '', leaving ? 'leaving' : ''].filter(Boolean).join(' ');
+  const text = morning ? (waking ? hello && html`<span class="ch-bonjour">Bonjour ${names} ! ☀️</span>` : 'Chut… Pandi dort encore') : playing ? 'Chut… Pandi s’endort 🤫' : `Bonne nuit ${names} 🌙`;
+  const hint = morning ? (waking ? '' : 'Gratte-lui le ventre pour le réveiller !') : playing ? 'Tout doux : quand c’est calme, il s’endort' : 'Touche l’écran pour revenir à la routine';
+  return html`<div class=${cls} role="dialog" aria-label=${morning ? 'Pandi dort encore : gratte-lui le ventre pour le réveiller' : playing ? 'Chut, Pandi s’endort' : 'Bonne nuit'} ...${handlers}>
     <div class="ch-sky" aria-hidden="true" />
-    <div class="ns-stars" aria-hidden="true">${Array.from({ length: 28 }, (_, i) => html`<i key=${i} style=${{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 70}%`, animationDelay: `${(i % 7) * 0.6}s` }} />`)}</div>
+    <div class="ns-stars" aria-hidden="true">${Array.from({ length: STARS }, (_, i) => html`<i key=${i} class=${playing && starRank(i) < lit ? 'lit' : ''} style=${{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 70}%`, animationDelay: `${(i % 7) * 0.6}s` }} />`)}</div>
     ${morning && html`<div class="ch-sun" aria-hidden="true" />`}
+    ${chut === 'chut' && html`<div class="ch-ear" aria-hidden="true">👂 Pandi écoute</div>`}
     <div class="ch-scene ns-pandi">
-      ${has3D() ? html`<span ref=${host} style="display:contents" />` : html`<div class="ch-flat">${waking ? html`<${PandiFlat} mood="happy" />` : html`<${PandiFlat} wave=${false} /><span class="ch-zz">💤</span>`}</div>`}
+      ${has3D() ? html`<span ref=${host} style="display:contents" />` : html`<div class="ch-flat">${waking ? html`<${PandiFlat} mood="happy" />` : html`<${PandiFlat} wave=${false} />${!playing && html`<span class="ch-zz">💤</span>`}`}</div>`}
     </div>
-    <div class="ns-text">${morning ? (waking ? hello && html`<span class="ch-bonjour">Bonjour ${names} ! ☀️</span>` : 'Chut… Pandi dort encore') : `Bonne nuit ${names} 🌙`}</div>
-    <div class="ns-hint">${morning ? (waking ? '' : 'Gratte-lui le ventre pour le réveiller !') : 'Touche l’écran pour revenir à la routine'}</div>
+    <div class="ns-text">${text}</div>
+    <div class="ns-hint">${hint}</div>
     ${morning && !waking && has3D() && html`<div class="ch-hand" ref=${hand} aria-hidden="true"><span>👆</span></div>`}
     ${mot && html`<div class="ns-mot" onClick=${(e) => { e.stopPropagation(); onMotClose(); }}><${FirstEveningCard} date=${mot} onClose=${onMotClose} /></div>`}
   </div>`;

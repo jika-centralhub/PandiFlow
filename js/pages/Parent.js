@@ -18,6 +18,7 @@ import { SurpriseParent } from '../components/Surprise.js';
 import { ThemeParent } from '../components/Themes.js';
 import { showOverlay } from '../components/Overlays.js';
 import { InstallRow } from '../components/Install.js';
+import { ChutSection } from '../components/ChutSection.js';
 import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
 import { APP_VERSION, CONTACT_EMAIL } from '../config.js';
@@ -370,6 +371,8 @@ function SettingsSection() {
       <div class="row"><span class="emoji">${TEAM_CARD.top.face}</span><div class="grow"><div class="title">${TEAM_CARD.top.label}</div><div class="meta">La même pour tous les enfants, quand toutes les tâches du soir sont notées : pandi versés dans la cagnotte commune</div></div><${NumberInput} value=${s.settings.teamCard.top} onChange=${(v) => actions.updateSettings({ teamCard: { ...s.settings.teamCard, top: v } })} max=${50} /></div>
       <div class="row"><span class="emoji">${TEAM_CARD.demain.face}</span><div class="grow"><div class="title">${TEAM_CARD.demain.label}</div><div class="meta">Rien n'est retiré</div></div><b style="padding:0 12px">0</b></div>
     </div>
+
+    <${ChutSection} />
 
     <h3 class="section-title" style="color:var(--ink);margin-top:20px">Équipe</h3>
     <div class="row-list">

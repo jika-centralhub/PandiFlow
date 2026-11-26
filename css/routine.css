@@ -338,6 +338,15 @@
 .ch-hand span { display: inline-block; transform: translate(-50%, 0); animation: ch-rub .9s ease-in-out infinite; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .35)); }
 @keyframes ch-rub { 0%, 100% { transform: translate(-85%, 0) rotate(-14deg); } 50% { transform: translate(-15%, 0) rotate(14deg); } }
 .chambre.leaving { opacity: 0; transition: opacity .6s ease; }
+/* « Chut, Pandi s'endort » (js/lib/chut.js) : tant que c'est calme, le ciel s'allume étoile par étoile ;
+   l'écran ne s'assombrit qu'une fois Pandi endormi */
+.chambre.chut :is(.ns-pandi, .ns-text) { animation: none; }
+.chambre.chut .ns-stars i { animation: none; opacity: .05; transition: opacity .8s ease; }
+.chambre.chut .ns-stars i.lit { opacity: .85; animation: ch-star 1.2s ease-out both; animation-delay: 0s !important; box-shadow: 0 0 calc(var(--u) * 1.2) rgba(255, 246, 200, .9); }
+@keyframes ch-star { from { transform: scale(3.2); opacity: 0; } 40% { opacity: 1; } }
+/* le micro est ouvert : on le voit à l'écran (pas seulement au point orange de l'iPhone) */
+.ch-ear { position: absolute; top: calc(var(--u) * 2.5); right: calc(var(--u) * 3); z-index: 2; padding: calc(var(--u) * .8) calc(var(--u) * 2); border-radius: 999px;
+  background: rgba(255, 255, 255, .08); color: #d9d4ff; font-size: calc(var(--u) * 2.8); font-weight: 600; opacity: .75; pointer-events: none; animation: ch-pop .6s ease both; }
 .ch-flat { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
 .ch-flat .mascot { width: auto; height: 80%; }
 .ch-zz { position: absolute; right: 32%; top: 6%; font-size: calc(var(--u) * 8); animation: ns-twinkle 3s ease-in-out infinite; }
