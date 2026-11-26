@@ -118,8 +118,8 @@ html.calme .kr.loin { translate: var(--far) 0; }
 .kr-f1, .kr-f2 { position: absolute; left: 50%; bottom: 0; height: 100% !important; width: auto !important; max-width: none !important; translate: -50% 0; opacity: 0; pointer-events: none; }
 .kr.marche:not(.kr-gare) .kr-img { opacity: 0; }
 .kr.marche:not(.kr-gare) .kr-f1 { opacity: 1; }
-.kr.marche:is(.kr-va, .kr-vient) .kr-f1 { animation: kr-temps1 .62s step-end infinite; }
-.kr.marche:is(.kr-va, .kr-vient) .kr-f2 { animation: kr-temps2 .62s step-end infinite; }
+.kr.marche.deux:is(.kr-va, .kr-vient) .kr-f1 { animation: kr-temps1 .62s step-end infinite; }
+.kr.marche.deux:is(.kr-va, .kr-vient) .kr-f2 { animation: kr-temps2 .62s step-end infinite; }
 @keyframes kr-temps1 { 0% { opacity: 1; } 50% { opacity: 0; } }
 @keyframes kr-temps2 { 0% { opacity: 0; } 50% { opacity: 1; } }
 /* de profil, il ne se penche plus de côté à chaque pas : seulement les rebonds */
