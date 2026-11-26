@@ -48,7 +48,7 @@
 .pp-manger .pl-bras, .pp-cereales .pl-bras { animation: pp-cuillere 1.8s ease-in-out infinite; }
 .pp-coiffer .pl-bras { animation: pp-peigne .38s ease-in-out infinite alternate; }
 .pp-pancarte .pl-bras { animation: pp-pancarte .6s ease-in-out infinite alternate; }
-.pp-danse .pl-bras { animation: pp-coucou .5s ease-in-out infinite alternate; }
+.pp-danse .pl-bras { animation: pp-danse-bras .5s ease-in-out infinite alternate; }
 .pp-mains .pl-mains { animation: pp-frotte .26s ease-in-out infinite alternate; }
 .pp-ok .pl-mainG { animation: pp-clapG .3s ease-in-out infinite alternate; }
 .pp-ok .pl-mainD { animation: pp-clapD .3s ease-in-out infinite alternate; }
@@ -60,6 +60,8 @@
 @keyframes pp-pancarte { from { transform: rotate(-6deg); } to { transform: rotate(5deg); } }
 @keyframes pp-frotte { from { transform: translateX(-1.4%) rotate(-2.5deg); } to { transform: translateX(1.4%) rotate(2.5deg); } }
 @keyframes pp-clapG { from { transform: rotate(0deg); } to { transform: rotate(-7deg); } }
+/* le bras levé ne va que vers la tête (il la recouvre) : en s'écartant, il laisserait voir sa place vide */
+@keyframes pp-danse-bras { from { transform: rotate(0deg); } to { transform: rotate(8deg); } }
 @keyframes pp-clapD { from { transform: rotate(0deg); } to { transform: rotate(7deg); } }
 
 /* les petits effets */

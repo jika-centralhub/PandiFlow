@@ -378,6 +378,20 @@
     "w": 33.77,
     "rot": -25.4
    }
+  },
+  "danse": {
+   "layers": [
+    {
+     "name": "corps"
+    },
+    {
+     "name": "bras",
+     "pivot": [
+      22.7,
+      53.54
+     ]
+    }
+   ]
   }
  },
  "coiffes": {
@@ -419,6 +433,11 @@
    30.14,
    29.94
   ],
-  "decal": 19.43
+  "decal": 19.43,
+  "chut": [
+   "eveille",
+   "oeil",
+   "oreille"
+  ]
  }
 }
