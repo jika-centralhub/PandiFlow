@@ -7,7 +7,7 @@ import { useStore, setPrefs, getState, visitPending } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import * as timers from '../lib/timers.js';
 import { timerKey } from '../lib/countdown.js';
-import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, TEAM_CARD, findTeamCard, teamCardLevel, pendingSurprise, promiseFor, firstEveningDue, activeThemeEntry, birthdayNow } from '../domain.js';
+import { activeChildren, tasksForChild, routineProgress, findRating, pointsFor, COLOR_META, TEAM_CARD, findTeamCard, teamCardLevel, pendingSurprise, promiseFor, firstEveningDue, activeThemeEntry, pendingThemeEntry, birthdayNow } from '../domain.js';
 import { routineDate, currentRoutine, addDays, formatLong, eveningDate } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { Modal, Logo } from '../components/ui.js';
@@ -19,7 +19,7 @@ import { DepartureBar } from '../components/Departure.js';
 import { CalmCorner } from '../components/CalmCorner.js';
 import { TeamPill, TeamSheet } from '../components/Team.js';
 import { Visite, GreetBar } from '../components/Decouverte.js';
-import { FunFactBar } from '../components/ThemeAsk.js';
+import { ThemeAsk, FunFactBar } from '../components/ThemeAsk.js';
 import { BirthdayBar } from '../components/Anniversaire.js';
 import { Chambre } from '../components/Chambre.js';
 import { funFact, getTheme } from '../avatar/themes.js';
@@ -310,6 +310,9 @@ const readWoke = () => {
 // « Plus tard » sur le bonjour de Pandi : on le repropose au prochain lancement de l'app
 let greetLater = false;
 
+// « Plus tard » sur l'annonce du thème : on la repropose au prochain lancement de l'app
+let themeLater = null;
+
 // Prochaine tâche sans note après celle du centre (on boucle au début si besoin)
 // Un moment de l'avatar de l'enfant dans son bandeau (voir setMood dans Evening)
 const mood = (expr, ms, pose = 'idle') => ({ expr, pose, ms });
@@ -379,6 +382,7 @@ export function Evening() {
   const [firstMot, setFirstMot] = useState(null); // la soirée dont le mot de première soirée est montré la nuit
   const [later, setLater] = useState(greetLater);
   const [woke, setWoke] = useState(readWoke);
+  const [askLater, setAskLater] = useState(themeLater);
   const [, setTick] = useState(0); // redessine chaque minute : un paquet de Pandi arrive à son heure
   const cards = useRef({});
   const heads = useRef({});
@@ -700,6 +704,9 @@ export function Evening() {
   const bedroom = nightScreen || morningBed;
   const visiting = visitPending(s) && kids.length > 0 && !nightScreen;
   const showGreet = Boolean(s.settings.firstDay && !s.settings.greeted) && !visitPending(s) && !later && kids.length > 0 && date === today;
+  // Le thème programmé par les parents : annoncé aux enfants le premier jour, il commence quand un parent le lance
+  const proposed = date === today && kids.length > 0 && !visiting && !bedroom ? pendingThemeEntry(s.settings, date) : null;
+  const asking = proposed && askLater !== proposed.id ? proposed : null;
   // L'anniversaire d'un enfant ce soir : la fête à lancer, ou à rejouer une fois lancée
   const birthdays = evening && date === today && !visiting && !nightScreen ? kids.map((k) => ({ k, b: birthdayNow(k, s) })).filter(({ b }) => b?.party === date) : [];
   const partyToStart = birthdays.filter(({ b }) => b.tonight).map(({ k }) => k);
@@ -764,6 +771,7 @@ export function Evening() {
       })}
     </div>
     ${many && html`<${KidDots} kids=${kids} cols=${colsRef} />`}
+    ${asking && html`<${ThemeAsk} key=${asking.id} entry=${asking} kids=${kids} onLater=${() => { themeLater = asking.id; setAskLater(asking.id); }} />`}
     ${pickerChild && pickerTask && html`<${TimerPicker}
       child=${pickerChild}
       task=${pickerTask}

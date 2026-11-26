@@ -553,11 +553,16 @@ export const cancelSurprise = (id) => surpriseOp({ type: 'cancel', id });
 export function launchTheme(themeId, start, days = domain.THEME_DAYS) {
   const end = addDays(start, Math.max(1, days) - 1);
   if (domain.themeOverlaps(getState().settings, start, end)) return { error: 'Un autre thème est déjà prévu à ces dates.' };
-  // Le parent décide pour les enfants : le thème commence à sa date, sans question sur la télé
-  const entry = { id: uid(), theme: themeId, start, end };
+  // ask : le premier jour, l'écran de la routine l'annonce aux enfants et un parent le lance (ou pas)
+  const entry = { id: uid(), theme: themeId, start, end, ask: true };
   listOp('themes', { type: 'add', entry });
-  ensureThemeOutfits(); // lancé pour aujourd'hui : la tenue de chaque enfant est gardée tout de suite
   return { entry };
+}
+
+// Le parent a décidé devant les enfants : lancé, le thème commence (on garde leur tenue de côté) ; sinon il est annulé
+export function answerTheme(id, yes) {
+  listOp('themes', { type: yes ? 'agree' : 'decline', id, at: new Date().toISOString() });
+  if (yes) ensureThemeOutfits();
 }
 
 export function stopTheme(id) {

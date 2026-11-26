@@ -18,6 +18,27 @@
 .vt-book { margin-top: calc(var(--u) * 3); }
 
 
+/* Le premier jour, l'écran de la routine annonce le thème aux enfants ; un parent le lance ou pas */
+.theme-ask { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; padding: calc(var(--u) * 3); overflow: auto;
+  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c), transparent 60%), transparent 65%), rgba(10, 8, 40, .9); animation: fade-in .3s ease; }
+.ta-card { width: min(100%, calc(var(--u) * 150)); max-height: 100%; overflow: auto; padding: calc(var(--u) * 4) calc(var(--u) * 5); border-radius: calc(var(--u) * 7);
+  background: linear-gradient(170deg, #ffffff, color-mix(in srgb, var(--c), #fff 84%)); color: var(--ink); box-shadow: 0 calc(var(--u) * 3) calc(var(--u) * 10) rgba(0, 0, 0, .45);
+  animation: sheet-in .45s cubic-bezier(.3, 1.4, .5, 1); }
+.ta-top { display: flex; align-items: center; gap: calc(var(--u) * 3); }
+.ta-emoji { font-size: calc(var(--u) * 10); animation: rc-bob 3s ease-in-out infinite; }
+.ta-card h2 { font-size: calc(var(--u) * 6); line-height: 1.1; }
+/* Les enfants, une petite tête chacun : la rangée passe à la ligne s'ils sont nombreux */
+.ta-kids { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(var(--u) * 2); margin-top: calc(var(--u) * 2.4); }
+.ta-head { width: calc(var(--u) * 13); height: calc(var(--u) * 13); border-radius: 50%; overflow: hidden; background: var(--kid);
+  box-shadow: 0 0 0 calc(var(--u) * .6) #fff, 0 calc(var(--u) * 1) calc(var(--u) * 3) rgba(0, 0, 0, .2); animation: stage-in .7s cubic-bezier(.3, 1.5, .5, 1) both; }
+.ta-head .avatar { width: 100%; height: 100%; }
+.ta-list { list-style: none; margin: calc(var(--u) * 2.4) 0 0; padding: 0; display: grid; gap: calc(var(--u) * 1); font-size: calc(var(--u) * 3.7); line-height: 1.35; }
+.ta-parent { margin-top: calc(var(--u) * 3); text-align: center; font-weight: 700; font-size: calc(var(--u) * 3.8); color: color-mix(in srgb, var(--c), #000 35%); }
+.ta-card .sheet-actions { margin-top: calc(var(--u) * 2); flex-wrap: wrap; justify-content: center; align-items: center; gap: calc(var(--u) * 2); }
+/* Les trois choix tiennent sur une ligne en paysage */
+.ta-card .btn-big { min-height: calc(var(--u) * 12); font-size: calc(var(--u) * 4.6); padding: 0 calc(var(--u) * 4.4); }
+.ta-card .btn-ghost { padding-left: calc(var(--u) * 3); padding-right: calc(var(--u) * 3); }
+
 /* « Le savais-tu ? » à la fin de chaque routine pendant un thème */
 .ff-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: calc(var(--u) * 3); background: rgba(10, 8, 40, .82); animation: fade-in .3s ease; }
 .ff-card { position: relative; width: min(100%, calc(var(--u) * 130)); max-height: 100%; overflow: auto; padding: calc(var(--u) * 5) calc(var(--u) * 6) calc(var(--u) * 4); border-radius: calc(var(--u) * 7);

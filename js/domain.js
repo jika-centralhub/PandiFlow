@@ -804,18 +804,18 @@ export const THEME_HISTORY = 30;
 const themesOf = (settings) => (Array.isArray(settings?.themes) ? settings.themes : []);
 const byStart = (a, b) => String(a.start).localeCompare(String(b.start));
 
-// C'est le parent qui décide du thème (Espace parent → Thèmes) : il commence à la date choisie, sans
-// question aux enfants. (De la v1.20 à la v1.35, les enfants devaient dire oui : les thèmes de ce temps-là
-// encore en attente de réponse comptent eux aussi comme acceptés.)
-export const themeOn = (t) => Boolean(t);
-export const activeThemeEntry = (settings, today) => themesOf(settings).find((t) => t.start <= today && today <= t.end) || null;
+// Un thème programmé par les parents (ask) est annoncé aux enfants sur l'écran de la routine le premier
+// jour, et ne commence que quand un parent l'y lance (agreed). Ceux d'avant la v1.20, et ceux lancés en
+// v1.36.0 (sans ask), comptent comme lancés. Tant qu'il n'est pas lancé, l'interface reste normale.
+export const themeOn = (t) => Boolean(t && (!t.ask || t.agreed));
+export const activeThemeEntry = (settings, today) => themesOf(settings).find((t) => t.start <= today && today <= t.end && themeOn(t)) || null;
+export const pendingThemeEntry = (settings, today) => themesOf(settings).find((t) => t.start <= today && today <= t.end && !themeOn(t)) || null;
 
 // Les thèmes à venir (déjà programmés) et ceux qui sont finis (et ont eu lieu), du plus récent au plus ancien
 export const upcomingThemes = (settings, today) => themesOf(settings).filter((t) => t.start > today).sort(byStart);
-export const pastThemes = (settings, today) => themesOf(settings).filter((t) => t.end < today).sort(byStart).reverse();
+export const pastThemes = (settings, today) => themesOf(settings).filter((t) => t.end < today && themeOn(t)).sort(byStart).reverse();
 
-// Le jour du thème (0 le premier jour où il a eu lieu : son début, ou le jour du oui des enfants pour un
-// thème d'avant la v1.36 accepté en retard)
+// Le jour du thème (0 le premier jour où il a eu lieu : le jour où le parent l'a lancé, sinon son début)
 export function themeDay(entry, date) {
   const base = entry.agreed ? toISODate(new Date(entry.agreed)) : entry.start;
   const from = base > entry.start ? base : entry.start;
@@ -845,7 +845,8 @@ export function themeGiftOf(owned, childId, entry) {
 }
 
 // add (un thème programmé ou lancé), stop (il s'arrête aujourd'hui : il finit hier, ou disparaît s'il
-// n'avait pas commencé), photo (la photo du livre, une seule fois), before (la tenue d'un enfant gardée
+// n'avait pas commencé), agree (un parent l'a lancé sur l'écran de la routine, une seule fois), decline
+// (il ne l'a pas lancé : le thème est annulé), photo (la photo du livre, une seule fois), before (la tenue d'un enfant gardée
 // au début du thème, une seule fois : before[childId] = equipped), restored (cette tenue lui a été
 // rendue à la fin : restored[childId] = date). Fonction pure, rejouée sur les réglages les plus récents
 // du serveur comme pour les surprises.
@@ -861,6 +862,10 @@ export function applyThemeOp(list, desc) {
     const end = addDays(desc.today, -1);
     if (end < x.start) out.splice(i, 1);
     else if (end < x.end) out[i] = { ...x, end };
+  } else if (x && desc.type === 'agree') {
+    if (!themeOn(x)) out[i] = { ...x, agreed: desc.at || true };
+  } else if (x && desc.type === 'decline') {
+    if (!themeOn(x)) out.splice(i, 1);
   } else if (x && desc.type === 'photo') {
     if (!x.photo && desc.photo) out[i] = { ...x, photo: desc.photo };
   } else if (x && desc.type === 'before') {
