@@ -540,7 +540,7 @@ h1, h2, h3, p { margin: 0; }
 }
 
 /* Pièce et mascotte */
-.coin svg, .fly-coin svg { width: 100%; height: 100%; }
+.coin img, .fly-coin img { display: block; width: 100%; height: 100%; -webkit-user-drag: none; user-select: none; }
 .pandi-wave { animation: pandi-wave 1.1s ease-in-out infinite alternate; }
 @keyframes pandi-wave { from { transform: rotate(-12deg); } to { transform: rotate(18deg); } }
 .pandi-eyes { animation: av-blink 4s infinite; }

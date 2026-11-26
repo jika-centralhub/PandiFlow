@@ -1,4 +1,4 @@
-// La pièce "pandi" (tête de panda dorée) et Pandi, la mascotte panda.
+// La pièce "pandi" (une pièce d'or avec le visage de Pandi) et Pandi, la mascotte panda.
 import { html } from '../vendor/preact-htm.js';
 import { Pandi3D, has3D } from './Pandi3D.js';
 import { PandiPose } from './PandiPose.js';
@@ -6,10 +6,13 @@ import { POSES } from '../config.js';
 
 let n = 0;
 
-export const COIN_SVG = `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="pc-g" cx="38%" cy="32%" r="70%"><stop offset="0%" stop-color="#FFF6C4"/><stop offset="55%" stop-color="#FFD23F"/><stop offset="100%" stop-color="#E09A00"/></radialGradient></defs><circle cx="32" cy="32" r="30" fill="url(#pc-g)" stroke="#C98600" stroke-width="3"/><circle cx="32" cy="32" r="23" fill="none" stroke="#FFF0A0" stroke-width="2" opacity=".8"/><circle cx="20" cy="20" r="6.5" fill="#2B2B33"/><circle cx="44" cy="20" r="6.5" fill="#2B2B33"/><circle cx="32" cy="34" r="16" fill="#FFFDF5"/><ellipse cx="25.5" cy="32" rx="4.6" ry="5.6" fill="#2B2B33" transform="rotate(-25 25.5 32)"/><ellipse cx="38.5" cy="32" rx="4.6" ry="5.6" fill="#2B2B33" transform="rotate(25 38.5 32)"/><circle cx="26" cy="31.5" r="1.7" fill="#fff"/><circle cx="38" cy="31.5" r="1.7" fill="#fff"/><ellipse cx="32" cy="39" rx="2.8" ry="2" fill="#2B2B33"/><path d="M29 42 Q32 45 35 42" stroke="#2B2B33" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M14 18 Q20 9 30 8" stroke="#fff" stroke-width="3" fill="none" opacity=".7" stroke-linecap="round"/></svg>`;
+// La pièce en image façon film d'animation, le même Pandi que ses poses (faite par tests/local/piece_art.py)
+export const COIN_SRC = new URL('../../assets/pandi/piece.webp', import.meta.url).href;
+// pour les pièces qui volent (js/anim/fx.js), créées hors de Preact
+export const COIN_HTML = `<img src="${COIN_SRC}" alt="" draggable="false">`;
 
 export function Coin({ class: cls = 'coin' }) {
-  return html`<span class=${cls} style="display:inline-block" dangerouslySetInnerHTML=${{ __html: COIN_SVG }} />`;
+  return html`<span class=${cls} style="display:inline-block"><img src=${COIN_SRC} alt="" draggable="false" /></span>`;
 }
 
 // Pandi, la mascotte : en poses illustrées (labo), sinon en 3D quand le téléphone sait le faire, sinon le

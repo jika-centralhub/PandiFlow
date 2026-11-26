@@ -1,5 +1,5 @@
 // Effets spéciaux : pièces qui volent, étoiles qui éclatent, confettis, feux d'artifice.
-import { COIN_SVG } from '../components/Coin.js';
+import { COIN_HTML } from '../components/Coin.js';
 import { prefersReducedMotion, rand, sleep } from '../lib/util.js';
 import { sfx } from '../lib/sounds.js';
 
@@ -34,7 +34,7 @@ export async function flyCoins(fromEl, toEl, count, onEach) {
   for (let i = 0; i < n; i++) {
     const coin = document.createElement('div');
     coin.className = 'fly-coin';
-    coin.innerHTML = COIN_SVG;
+    coin.innerHTML = COIN_HTML;
     layer().appendChild(coin);
     const sx = from.x + rand(-30, 30);
     const sy = from.y + rand(-20, 20);
@@ -156,7 +156,7 @@ export function coinRain(duration = 2200) {
   for (let i = 0; i < n; i++) {
     const coin = document.createElement('div');
     coin.className = 'fly-coin';
-    coin.innerHTML = COIN_SVG;
+    coin.innerHTML = COIN_HTML;
     layer().appendChild(coin);
     const x = rand(0, innerWidth);
     gsap().fromTo(
