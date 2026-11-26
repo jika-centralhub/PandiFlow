@@ -391,10 +391,12 @@ export function applyPurchase(state, { familyId, childId, item, now = new Date()
   };
 }
 
-// --- Carte d'équipe de fin de soirée ------------------------------------------------------------
+// --- Carte d'équipe de fin de routine (soir et matin) ------------------------------------------
 // La même pour tous les enfants (elle remplace l'ancienne carte Comportement de chacun, dont les
 // pandi déjà gagnés restent). Elle ne peut qu'ajouter : « La meilleure équipe ! » verse
 // settings.teamCard.top pandi dans la cagnotte commune, « On fera mieux demain » ne retire rien.
+// Une carte le soir et une le matin : celle du matin porte « -matin » au bout de son id (la table
+// ledger n'a pas de colonne pour la routine).
 export const TEAM_CARD = {
   top: { label: 'La meilleure équipe !', face: '🏆' },
   demain: { label: 'On fera mieux demain', face: '🌙' },
@@ -402,16 +404,19 @@ export const TEAM_CARD = {
 // L'id porte la famille : la table ledger est partagée par toutes les familles, et un id commun
 // (« teamcard-<date> ») empêchait une deuxième famille d'enregistrer sa carte le même soir.
 // On la retrouve par sa soirée, ce qui reconnaît aussi les cartes écrites avec l'ancien id.
-export const teamCardId = (familyId, date) => `teamcard-${familyId}-${date}`;
-export const findTeamCard = (ledger, date) => ledger.find((l) => l.kind === 'teamcard' && l.evening_date === date) || null;
+const MORNING_CARD = '-matin';
+const cardRoutine = (row) => (String(row.id || '').endsWith(MORNING_CARD) ? 'matin' : 'soir');
+export const teamCardId = (familyId, date, routine = 'soir') => `teamcard-${familyId}-${date}${routine === 'matin' ? MORNING_CARD : ''}`;
+export const findTeamCard = (ledger, date, routine = 'soir') =>
+  ledger.find((l) => l.kind === 'teamcard' && l.evening_date === date && cardRoutine(l) === routine) || null;
 export const teamCardLevel = (row) => (!row ? null : row.note === TEAM_CARD.demain.label ? 'demain' : 'top');
 
-// level : 'top' | 'demain' | null (effacer). Une carte par soirée pour toute la fratrie.
-export function applyTeamCard(state, { familyId, date, level, now = new Date().toISOString() }) {
+// level : 'top' | 'demain' | null (effacer). Une carte par routine (soir, matin) pour toute la fratrie.
+export function applyTeamCard(state, { familyId, date, level, routine = 'soir', now = new Date().toISOString() }) {
   const kids = activeChildren(state.children);
-  const id = teamCardId(familyId, date);
-  const old = findTeamCard(state.ledger, date);
-  let ledger = state.ledger.filter((l) => !(l.kind === 'teamcard' && l.evening_date === date));
+  const id = teamCardId(familyId, date, routine);
+  const old = findTeamCard(state.ledger, date, routine);
+  let ledger = state.ledger.filter((l) => !(l.kind === 'teamcard' && l.evening_date === date && cardRoutine(l) === routine));
   const ops = [];
   let amount = 0;
   // Une carte de cette soirée avec un autre id (ancien format) est remplacée

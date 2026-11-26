@@ -1,10 +1,14 @@
 /* ===== Pandi — carte d'équipe, bonne nuit, espace équipe et moments d'équipe ===== */
 
-/* Carte d'équipe de fin de soirée (la même pour toute la fratrie), sous la barre du haut */
+/* Carte d'équipe de fin de routine, soir et matin (la même pour toute la fratrie), sous la barre du haut.
+   Toujours sur une ligne : sur deux ou trois lignes, la pilule faisait un gros paquet sur téléphone. */
 .teamcard-bar { flex: 1; display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 2.4); min-width: 0; padding: calc(var(--u) * 1.6) calc(var(--u) * 4);
   border-radius: 999px; background: rgba(255, 255, 255, .14); box-shadow: inset 0 0 0 2px rgba(255, 210, 63, .55); color: #fff; font-weight: 700; font-size: calc(var(--u) * 4.2);
   animation: fade-up .5s ease both; cursor: pointer; }
 .teamcard-bar .tcb-ico { font-size: calc(var(--u) * 6); }
+.teamcard-bar .tcb-ico { flex: none; line-height: 1; }
+.teamcard-bar .tcb-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.teamcard-bar .tcb-text b { color: var(--gold); margin-right: calc(var(--u) * .8); }
 .teamcard-bar.ask { animation: fade-up .5s ease both, tcb-glow 2.4s ease-in-out .5s infinite alternate; }
 .teamcard-bar.top { background: linear-gradient(90deg, rgba(255, 210, 63, .35), rgba(255, 210, 63, .12)); }
 @keyframes tcb-glow { to { box-shadow: inset 0 0 0 2px rgba(255, 210, 63, .9), 0 0 calc(var(--u) * 4) rgba(255, 210, 63, .45); } }
@@ -107,3 +111,18 @@
 .treasure-jar .jar-step.on { background: #fff; box-shadow: 0 0 calc(var(--u) * 1) rgba(255, 210, 63, .9); }
 .treasure-jar span { z-index: 2; }
 .coffre-rule { font-size: calc(var(--u) * 3.8); }
+
+/* Téléphone en portrait : le départ à l'école prend sa ligne, la carte d'équipe et « Le savais-tu ? » la suivante,
+   et les deux choix de la carte d'équipe sont des lignes (image à gauche) au lieu de deux hautes colonnes */
+@media (orientation: portrait) {
+  .strip { flex-wrap: wrap; row-gap: calc(var(--u) * 1.6); }
+  .strip > .departure, .strip > .greet-bar { flex: 1 1 100%; }
+  .strip > .teamcard-bar { flex: 1 1 0; }
+  .teamcard-bar { padding: calc(var(--u) * 1.2) calc(var(--u) * 3); gap: calc(var(--u) * 1.6); font-size: calc(var(--u) * 3.6); }
+  .teamcard-bar .tcb-ico { font-size: calc(var(--u) * 5); }
+  .teamcard-sheet .rate-choices.two { grid-template-columns: 1fr; gap: calc(var(--u) * 2.4); }
+  .teamcard-sheet .rate-choice { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: calc(var(--u) * 3); row-gap: 0;
+    justify-items: start; align-content: center; text-align: left; min-height: 0; height: auto; aspect-ratio: auto; padding: calc(var(--u) * 2.4) calc(var(--u) * 4); }
+  .teamcard-sheet .rate-choice .face { grid-row: 1 / span 2; font-size: calc(var(--u) * 10); }
+  .teamcard-sheet .rate-choice .sub { grid-column: 2; }
+}

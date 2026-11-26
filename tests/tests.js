@@ -388,6 +388,18 @@ test('carte d’équipe : un id propre à chaque famille, et l’ancien id du m�
   eq(r.ops.map((o) => o.op), ['del', 'put'], 'l’ancienne ligne est effacée, la nouvelle écrite');
   eq(d.applyTeamCard(old, { familyId: 'f', date: TUESDAY, level: null }).ops, [{ op: 'del', table: 'ledger', match: { id: `teamcard-${TUESDAY}` } }]);
 });
+test('carte d’équipe : une le matin et une le soir, le même jour, chacune de son côté', () => {
+  let s = fixture();
+  s = { ...s, ledger: d.applyTeamCard(s, { familyId: 'f', date: TUESDAY, level: 'top' }).ledger };
+  const r = d.applyTeamCard(s, { familyId: 'f', date: TUESDAY, level: 'top', routine: 'matin' });
+  s = { ...s, ledger: r.ledger };
+  eq([s.ledger.length, d.potBalance(s), r.ops.map((o) => o.op)], [2, 10, ['put']], 'la carte du matin n’efface pas celle du soir');
+  eq(d.teamCardId('f', TUESDAY, 'matin'), `teamcard-f-${TUESDAY}-matin`);
+  s = { ...s, ledger: d.applyTeamCard(s, { familyId: 'f', date: TUESDAY, level: 'demain', routine: 'matin' }).ledger };
+  eq([d.teamCardLevel(d.findTeamCard(s.ledger, TUESDAY, 'matin')), d.teamCardLevel(d.findTeamCard(s.ledger, TUESDAY)), d.potBalance(s)], ['demain', 'top', 5]);
+  s = { ...s, ledger: d.applyTeamCard(s, { familyId: 'f', date: TUESDAY, level: null, routine: 'matin' }).ledger };
+  eq([d.findTeamCard(s.ledger, TUESDAY, 'matin'), d.teamCardLevel(d.findTeamCard(s.ledger, TUESDAY))], [null, 'top']);
+});
 test('coffre de l’équipe : 🌟 et 👍 font une pierre, ✋ et ⏸️ non, depuis le début choisi', () => {
   const { state } = rateAll(fixture(), [['c1', 't1', MONDAY, 'green'], ['c2', 't2', TUESDAY, 'green'], ['c1', 't2', TUESDAY, 'red']]);
   eq(d.treasureProgress(state).count, 2);

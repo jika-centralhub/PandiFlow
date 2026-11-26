@@ -313,14 +313,15 @@ function HistorySection() {
           })}</span>`;
         })}
       </div>`)}
-      ${kids.length > 1 && (() => {
-        const level = teamCardLevel(findTeamCard(s.ledger, d));
-        return html`<div class="history-line">
-          <span class="who"><span class="kid-chip on"><i />Équipe</span></span>
-          <span class="history-routine"><em title="Carte d'équipe du soir">🤝</em><button class=${`dot-btn ${level === 'top' ? 'gold' : level ? 'pause' : ''}`} title=${`Carte d'équipe${level ? ` : ${TEAM_CARD[level].label}` : ''}`}
-            onClick=${() => { sfx.tap(); actions.setTeamCard(d, NEXT_TEAM_CARD[level]); }}>${level ? TEAM_CARD[level].face : '🤝'}</button></span>
-        </div>`;
-      })()}</div>
+      ${kids.length > 1 && html`<div class="history-line">
+        <span class="who"><span class="kid-chip on"><i />Équipe</span></span>
+        ${['matin', 'soir'].map((routine) => {
+          const level = teamCardLevel(findTeamCard(s.ledger, d, routine));
+          const when = routine === 'matin' ? 'du matin' : 'du soir';
+          return html`<span key=${routine} class="history-routine"><em title=${`Carte d'équipe ${when}`}>${ROUTINES[routine].icon}</em><button class=${`dot-btn ${level === 'top' ? 'gold' : level ? 'pause' : ''}`} title=${`Carte d'équipe ${when}${level ? ` : ${TEAM_CARD[level].label}` : ''}`}
+            onClick=${() => { sfx.tap(); actions.setTeamCard(d, NEXT_TEAM_CARD[level], routine); }}>${level ? TEAM_CARD[level].face : '🤝'}</button></span>`;
+        })}
+      </div>`}</div>
     </div>`)}
     ${adjust && html`<${PandiBank} child=${adjust} onClose=${() => setAdjust(null)} />`}
   </div>`;

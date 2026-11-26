@@ -293,10 +293,10 @@ export function rate(childId, taskId, date, color) {
   return result;
 }
 
-// --- Carte d'équipe de fin de soirée (la même pour tous, versée dans la cagnotte commune) ------------
-export function setTeamCard(date, level) {
+// --- Carte d'équipe de fin de routine, soir ou matin (la même pour tous, versée dans la cagnotte commune)
+export function setTeamCard(date, level, routine = 'soir') {
   const s = getState();
-  const res = domain.applyTeamCard(s, { familyId: familyId(), date, level });
+  const res = domain.applyTeamCard(s, { familyId: familyId(), date, level, routine });
   setState({ ledger: res.ledger });
   commit(res.ops);
   return res;

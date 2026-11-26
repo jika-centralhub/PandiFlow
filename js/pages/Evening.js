@@ -260,22 +260,29 @@ function RatingSheet({ child, task, current, timerResult, onPick, onClose }) {
   <//>`;
 }
 
-// Carte d'équipe de fin de soirée : la même pour toute la fratrie, elle ne peut qu'ajouter
-function TeamCardBar({ level, ready, onOpen }) {
+// Carte d'équipe de fin de routine (soir et matin) : la même pour toute la fratrie, elle ne peut qu'ajouter.
+// Sur une seule ligne : la question est courte (le détail est dans la fenêtre qui s'ouvre).
+const TEAM_WORDS = {
+  soir: { ask: 'La soirée ensemble ?', title: "La soirée de l'équipe", when: 'ensemble ce soir' },
+  matin: { ask: 'Le matin ensemble ?', title: "Le matin de l'équipe", when: 'ensemble ce matin' },
+};
+function TeamCardBar({ level, ready, routine, onOpen }) {
   if (level) {
     return html`<button class=${`teamcard-bar ${level}`} onClick=${onOpen} aria-label=${`Carte d'équipe : ${TEAM_CARD[level].label}`}>
-      <span class="tcb-ico">${TEAM_CARD[level].face}</span>${TEAM_CARD[level].label}
+      <span class="tcb-ico">${TEAM_CARD[level].face}</span><span class="tcb-text">${TEAM_CARD[level].label}</span>
     </button>`;
   }
   if (!ready) return null;
-  return html`<button class="teamcard-bar ask" onClick=${onOpen}><span class="tcb-ico">🤝</span>Carte d'équipe : comment s'est passée la soirée ensemble ?</button>`;
+  return html`<button class="teamcard-bar ask" onClick=${onOpen} aria-label=${`Carte d'équipe : ${TEAM_WORDS[routine].ask}`}>
+    <span class="tcb-ico">🤝</span><span class="tcb-text"><b>Carte d'équipe</b> ${TEAM_WORDS[routine].ask}</span>
+  </button>`;
 }
 
-function TeamCardSheet({ kids, current, onPick, onClose }) {
+function TeamCardSheet({ kids, current, routine, onPick, onClose }) {
   return html`<${Modal} onClose=${onClose} class="rate-sheet teamcard-sheet">
     <div>
-      <div class="rate-title"><span class="big-emoji">🤝</span> La soirée de l'équipe</div>
-      <p class="rate-sub">${kids.map((k) => k.name).join(', ').replace(/, ([^,]*)$/, ' et $1')}, ensemble ce soir :</p>
+      <div class="rate-title"><span class="big-emoji">🤝</span> ${TEAM_WORDS[routine].title}</div>
+      <p class="rate-sub">${kids.map((k) => k.name).join(', ').replace(/, ([^,]*)$/, ' et $1')}, ${TEAM_WORDS[routine].when} :</p>
       <div class="rate-choices two">
         <button class=${`rate-choice top ${current === 'top' ? 'current' : ''}`} onClick=${() => onPick('top')}>
           <span class="face">${TEAM_CARD.top.face}</span>${TEAM_CARD.top.label}<span class="sub">Un trésor pour la cagnotte commune</span>
@@ -610,11 +617,11 @@ export function Evening() {
 
   async function pickTeamCard(level) {
     setTeamCardOpen(false);
-    const before = teamCardLevel(findTeamCard(s.ledger, date));
-    actions.setTeamCard(date, level);
+    const before = teamCardLevel(findTeamCard(s.ledger, date, routine));
+    actions.setTeamCard(date, level, routine);
     if (!level) return sfx.pop();
     if (level === 'top' && before !== 'top') {
-      await showOverlay('team', { kind: 'teamcard', kids: kids.map((k) => k.id), soft: true });
+      await showOverlay('team', { kind: 'teamcard', kids: kids.map((k) => k.id), soft: evening });
     } else sfx.pop();
   }
 
@@ -734,7 +741,7 @@ export function Evening() {
     .filter((t) => t.key !== stageKey && !t.finished && t.date === date)
     .map((t) => ({ timer: t, child: kids.find((k) => k.id === t.childId), task: s.tasks.find((x) => x.id === t.taskId) }))
     .filter((o) => o.child && o.task);
-  const teamCard = evening && kids.length > 1 ? teamCardLevel(findTeamCard(s.ledger, date)) : null;
+  const teamCard = kids.length > 1 ? teamCardLevel(findTeamCard(s.ledger, date, routine)) : null;
   // Pandi dort encore dans son lit : la première ouverture de ce matin sur cet appareil
   const morningBed = routine === 'matin' && date === today && kids.length > 0 && !visitPending(s) && woke !== today;
   const bedroom = nightScreen || morningBed;
@@ -757,7 +764,7 @@ export function Evening() {
       ${partyToStart.length > 0 && html`<${BirthdayBar} kids=${partyToStart} onStart=${() => startParty(partyToStart)} />`}
       ${!partyToStart.length && partyDone.length > 0 && !doux && html`<${BirthdayBar} kids=${partyDone} done=${true} onStart=${() => { sfx.tap(); showOverlay('anniversaire', { childIds: partyDone.map((k) => k.id), gifts: null }); }} />`}
       ${routine === 'matin' && date === today && html`<${DepartureBar} date=${date} />`}
-      ${evening && kids.length > 1 && html`<${TeamCardBar} level=${teamCard} ready=${allDone} onOpen=${() => { sfx.tap(); setTeamCardOpen(true); }} />`}
+      ${kids.length > 1 && html`<${TeamCardBar} level=${teamCard} ready=${allDone} routine=${routine} onOpen=${() => { sfx.tap(); setTeamCardOpen(true); }} />`}
       ${fact && allDone && html`<${FunFactBar} onOpen=${() => { sfx.tap(); showOverlay('funfact', { themeId: themeEntry.theme, fact }); }} />`}
     </div>
     <div class=${`columns ${many ? 'many' : ''}`} ref=${colsRef} style=${{ '--n': Math.max(1, kids.length) }}>
@@ -838,7 +845,7 @@ export function Evening() {
     />`}
     ${calm && html`<${CalmCorner} kids=${kids} onClose=${() => setCalm(false)} />`}
     ${team && html`<${TeamSheet} onClose=${() => setTeam(false)} />`}
-    ${teamCardOpen && html`<${TeamCardSheet} kids=${kids} current=${teamCard} onPick=${pickTeamCard} onClose=${() => setTeamCardOpen(false)} />`}
+    ${teamCardOpen && html`<${TeamCardSheet} kids=${kids} current=${teamCard} routine=${routine} onPick=${pickTeamCard} onClose=${() => setTeamCardOpen(false)} />`}
     ${bedroom && html`<${Chambre} mode=${morningBed ? 'matin' : 'soir'} kids=${morningBed ? kids : withTasks} onExit=${wake} onAwake=${awake}
       mot=${morningBed ? null : firstMot} onMotClose=${() => { sfx.tap(); setFirstMot(null); }} />`}
     ${visiting && html`<${Visite} kids=${kids} onDone=${() => actions.endVisit()} />`}

@@ -564,7 +564,7 @@ canvas.pandi3d.ready { opacity: 1; transform: none; }
   .evening .topbar { flex-wrap: wrap; row-gap: calc(var(--u) * 2); }
   .evening .topbar .date-switch { order: 10; flex: 1 1 100%; }
   .evening .topbar .date-switch button { flex: 1; }
-  .evening .topbar .spacer:nth-of-type(2), .evening .topbar .fs-btn { display: none; }
+  .evening .topbar .fs-btn { display: none; }
   .child-page .topbar, .parent-page .topbar { flex-wrap: wrap; }
 }
 
