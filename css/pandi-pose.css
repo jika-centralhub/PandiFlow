@@ -14,7 +14,7 @@
 
 /* ce que fait tout le corps */
 .pp-dents .pp-tout, .pp-lecture .pp-tout, .pp-calin .pp-tout, .pp-idle .pp-tout, .pp-mains .pp-tout,
-.pp-ok .pp-tout, .pp-coiffer .pp-tout, .pp-manger .pp-tout, .pp-pancarte .pp-tout { animation: pp-balance 2.6s ease-in-out infinite alternate; }
+.pp-ok .pp-tout, .pp-coiffer .pp-tout, .pp-manger .pp-tout, .pp-cereales .pp-tout, .pp-pancarte .pp-tout { animation: pp-balance 2.6s ease-in-out infinite alternate; }
 .pp-cartable .pp-tout, .pp-chaussures .pp-tout, .pp-habiller .pp-tout, .pp-pyjama .pp-tout, .pp-ranger .pp-tout { animation: pp-sautille .9s ease-in-out infinite; }
 .pp-dodo .pp-tout, .pp-endormi .pp-tout, .pp-sieste .pp-tout { animation: pp-dort 3.8s ease-in-out infinite; }
 .pp-lever .pp-tout { animation: pp-etire 2.6s ease-in-out infinite; }
@@ -37,7 +37,7 @@
 .pp-dents .pl-bras { animation: pp-brosse .2s ease-in-out infinite alternate; }
 .pp-idle .pl-bras { animation: pp-coucou .45s ease-in-out infinite alternate; }
 .pp-douche .pl-bras { animation: pp-eponge .6s ease-in-out infinite; }
-.pp-manger .pl-bras { animation: pp-cuillere 1.8s ease-in-out infinite; }
+.pp-manger .pl-bras, .pp-cereales .pl-bras { animation: pp-cuillere 1.8s ease-in-out infinite; }
 .pp-coiffer .pl-bras { animation: pp-peigne .38s ease-in-out infinite alternate; }
 .pp-pancarte .pl-bras { animation: pp-pancarte .6s ease-in-out infinite alternate; }
 .pp-mains .pl-mains { animation: pp-frotte .26s ease-in-out infinite alternate; }
@@ -65,6 +65,27 @@
 @keyframes pp-monte { 0% { transform: translateY(0) scale(.5); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-140%) scale(1.1); opacity: 0; } }
 @keyframes pp-scintille { 0% { transform: scale(.2) rotate(0); opacity: 0; } 30% { transform: scale(1.1) rotate(40deg); opacity: 1; } 100% { transform: scale(.6) rotate(110deg) translateY(-40%); opacity: 0; } }
 @keyframes pp-bulle { 0% { transform: translateY(0) scale(.3); opacity: 0; } 20% { opacity: 1; } 85% { opacity: .9; } 100% { transform: translateY(-160%) scale(1.1); opacity: 0; } }
+
+/* la chambre en images (Chambre.js) : endormi, il rit en dormant quand on le gratte (fondu selon les
+   chatouilles), assis qui s'étire, debout qui dit bonjour */
+.ch-poses { position: relative; height: 100%; max-width: 100%; margin: 0 auto; container-type: inline-size; transform: translateX(var(--decal, 0)); transition: transform .6s cubic-bezier(.3, 1.2, .5, 1); }
+.chambre.bonjour .ch-poses { transform: none; }
+.ch-poses img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; -webkit-user-drag: none; user-select: none; }
+.ch-poses .ch-pile { position: absolute; inset: 0; will-change: transform; transform-origin: 50% 100%; animation: ch-souffle 3.6s ease-in-out infinite; transition: opacity .35s ease; }
+.ch-poses .l-rit { opacity: 0; }
+.ch-poses .l-reveil, .ch-poses .l-debout { opacity: 0; transition: opacity .35s ease; will-change: transform, opacity; }
+.ch-poses.gigote .ch-pile { animation: ch-gigote .16s ease-in-out infinite alternate; }
+.chambre.eveil .ch-poses .ch-pile { opacity: 0; }
+.chambre.eveil .ch-poses .l-reveil { opacity: 1; animation: ch-etire 1.6s ease-in-out infinite; transform-origin: 50% 100%; }
+.chambre.eveil.bonjour .ch-poses .l-reveil { opacity: 0; }
+.chambre.eveil.bonjour .ch-poses .l-debout { opacity: 1; animation: ch-hop .5s cubic-bezier(.3, 1.6, .5, 1); }
+.chambre.soir .ch-poses { animation: ch-arrive 1.2s ease-out; }
+.ch-poses .pp-fx { font-size: 5cqw; }
+@keyframes ch-souffle { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.003, 1.009); } }
+@keyframes ch-gigote { from { transform: rotate(-.6deg) translateY(0); } to { transform: rotate(.6deg) translateY(-.4%); } }
+@keyframes ch-etire { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(.995, 1.012); } }
+@keyframes ch-hop { 0% { transform: translateY(3%) scale(.98, 1.02); } 100% { transform: none; } }
+@keyframes ch-arrive { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
 
 .pp-pause, .pp-pause * { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) { .pp * { animation: none !important; } .pp .pl-yeux, .pp .pp-fx { opacity: 0; } }

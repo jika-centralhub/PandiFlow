@@ -11,6 +11,8 @@ import { themeLookFor } from '../mascot/themeLook.js';
 const BASE = new URL('../../assets/pandi/', import.meta.url).href;
 let catalog = null;
 let loading = null;
+export const poseCatalog = () => catalog;
+export const POSES_BASE = BASE;
 export const loadPoses = () => (loading ||= fetch(`${BASE}poses.json`).then((r) => r.json()).then((c) => (catalog = c)));
 
 // La coiffe du thème (la tenue des thèmes de js/mascot/themeLook.js) ; le chapeau d'anniversaire n'a pas d'image
@@ -20,6 +22,7 @@ const ALIAS = { coucou: 'idle', danse: 'bravo', reveil: 'lever', coucher: 'dodo'
 
 export function poseFor(act, ctx = {}) {
   if (act === 'habiller') return ctx.variant === 'pyjama' ? 'pyjama' : 'habiller';
+  if (act === 'manger' && ctx.variant === 'cereales' && catalog?.poses.cereales) return 'cereales';
   if (catalog?.poses[act]) return act;
   return ALIAS[act] || 'idle';
 }

@@ -399,7 +399,7 @@ function SettingsSection() {
       <div class="row"><span class="emoji">👋</span><div class="grow"><div class="title">Pandi dit bonjour aux enfants</div><div class="meta">Pandi se présente, à voix haute</div></div><button class="p-btn" onClick=${() => { sfx.tap(); navigate('soiree'); showOverlay('bonjour', {}); }}>Rejouer</button></div>
       <${PerfRow} />
       <a class="row" href="./planche-styles.html" style="text-decoration:none;color:inherit"><span class="emoji">🐼</span><div class="grow"><div class="title">Labo : les trois styles de Pandi</div><div class="meta">La 3D d'aujourd'hui, la marionnette et les poses illustrées côte à côte, avec leur mesure</div></div><span style="padding:0 12px">›</span></a>
-      <a class="row" href="./poses.html" style="text-decoration:none;color:inherit"><span class="emoji">🎞️</span><div class="grow"><div class="title">Labo : les 20 poses de Pandi</div><div class="meta">Toutes les poses animées, avec la coiffe de chaque thème</div></div><span style="padding:0 12px">›</span></a>
+      <a class="row" href="./poses.html" style="text-decoration:none;color:inherit"><span class="emoji">🎞️</span><div class="grow"><div class="title">Labo : les poses de Pandi</div><div class="meta">Toutes les poses animées, avec la coiffe de chaque thème</div></div><span style="padding:0 12px">›</span></a>
     </div>
 
     <h3 class="section-title" style="color:var(--ink);margin-top:20px">Parents de la famille</h3>

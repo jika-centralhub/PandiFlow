@@ -26,7 +26,7 @@
 </head>
 <body>
   <header>
-    <h1>Pandi · les 20 poses</h1>
+    <h1>Pandi · les poses</h1>
     <select id="theme" aria-label="Thème de la semaine">
       <option value="">Sans thème</option>
       <option value="antennes">Astronaute</option><option value="chapeau_magicien">Magicien</option>
@@ -42,10 +42,10 @@
     import { html, render } from './js/vendor/preact-htm.js';
     import { PandiPose, loadPoses } from './js/components/PandiPose.js';
     import { setThemeLooks } from './js/mascot/themeLook.js';
-    const NAMES = { dents: 'Dents', idle: 'Coucou', pyjama: 'Pyjama', habiller: "S'habiller", douche: 'Douche', manger: 'Dîner', cartable: 'Cartable',
+    const NAMES = { dents: 'Dents', idle: 'Coucou', pyjama: 'Pyjama', habiller: "S'habiller", douche: 'Douche', manger: 'Dîner', cereales: 'Petit-déj', cartable: 'Cartable',
       lecture: 'Lecture', ranger: 'Ranger', dodo: 'Au lit', endormi: 'Il dort', lever: 'Lever', mains: 'Les mains', coiffer: 'Coiffer',
       chaussures: 'Chaussures', pancarte: 'Pancarte', bravo: 'Bravo', ok: 'Applaudit', calin: 'Câlin', sieste: 'Sieste (pause)' };
-    const ACT = { pyjama: ['habiller', { variant: 'pyjama' }], pancarte: ['pancarte', { emoji: '🎨' }] };
+    const ACT = { pyjama: ['habiller', { variant: 'pyjama' }], cereales: ['manger', { variant: 'cereales' }], pancarte: ['pancarte', { emoji: '🎨' }] };
     const grille = document.getElementById('grille');
     const theme = document.getElementById('theme');
     const fond = document.getElementById('fond');

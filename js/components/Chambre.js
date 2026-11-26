@@ -12,6 +12,8 @@ import { keepScreenOn, releaseScreen } from '../lib/device.js';
 import { has3D } from './Pandi3D.js';
 import { PandiFlat } from './Coin.js';
 import { FirstEveningCard } from './Decouverte.js';
+import { POSES } from '../config.js';
+import { loadPoses, poseCatalog, POSES_BASE } from './PandiPose.js';
 
 let stage = null;
 const loadStage = () => (stage ||= import('../mascot/stage.js'));
@@ -31,6 +33,11 @@ const listNames = (kids) => kids.map((k) => k.name).join(', ').replace(/, ([^,]*
 
 export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose }) {
   const morning = mode === 'matin';
+  // labo : la chambre en images (le lit, Pandi qui rit en dormant, qui s'étire, qui dit bonjour)
+  const [lit, setLit] = useState(() => (POSES ? poseCatalog()?.lit || null : null));
+  const imgs = POSES && lit;
+  const box = useRef(null);
+  const rit = useRef(null);
   const host = useRef(null);
   const ctl = useRef(null);
   const hand = useRef(null);
@@ -57,9 +64,21 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
     [],
   );
 
+  useEffect(() => {
+    if (POSES && !lit) loadPoses().then((c) => setLit(c.lit || null)).catch(() => {});
+  }, []);
+  // en images : il ronfle de temps en temps (trois fois au plus par nuit)
+  useEffect(() => {
+    if (!imgs || waking) return;
+    const t = setInterval(() => {
+      if (st.current.snores++ < SNORES) pandiVoice('ronfle');
+    }, 7000);
+    return () => clearInterval(t);
+  }, [imgs, waking]);
+
   // Pandi et son lit en 3D (sans WebGL : le Pandi dessiné)
   useEffect(() => {
-    if (!has3D()) return;
+    if (POSES || !has3D()) return;
     let alive = true;
     loadStage()
       .then((m) => {
@@ -110,6 +129,11 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
       if (s.waking) return;
       s.tickle = Math.max(0, s.tickle - dt * 1.3);
       ctl.current?.set({ tickle: s.tickle });
+      // en images : il rit en dormant d'autant plus qu'on le chatouille, et gigote
+      if (rit.current) {
+        rit.current.style.opacity = Math.min(1, s.tickle * 1.6).toFixed(2);
+        box.current?.classList.toggle('gigote', s.tickle > 0.25);
+      }
       if (n++ % 6 === 0 && hand.current) {
         const b = bellyAt();
         if (b) {
@@ -125,6 +149,10 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
 
   // Le ventre de Pandi à l'écran (coordonnées de la page), ou null tant que la 3D n'est pas prête
   function bellyAt() {
+    if (imgs && box.current) {
+      const r = box.current.getBoundingClientRect();
+      return r.width ? { x: r.left + (r.width * lit.ventre[0]) / 100, y: r.top + (r.height * lit.ventre[1]) / 100 } : null;
+    }
     const c = ctl.current;
     const p = c?.screenOf(BELLY);
     if (!p) return null;
@@ -163,7 +191,7 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
     const c = ctl.current, t0 = performance.now();
     poll.current = setInterval(() => {
       const wall = (performance.now() - t0) / 1000;
-      const t = c && !still ? c.actor.cur.t : wall * 2.5;
+      const t = c && !still ? c.actor.cur.t : wall * (imgs ? 1.25 : 2.5);
       if (t >= WAKE.hello || wall > 7) setHello(true);
       if (t >= WAKE.leave || wall > 9) setLeaving(true);
       if (t >= WAKE.done || wall > 9.6) {
@@ -208,17 +236,25 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
       };
 
   const names = listNames(kids);
-  const cls = ['night-screen', 'chambre', morning ? 'matin' : 'soir', waking ? 'eveil' : '', leaving ? 'leaving' : ''].filter(Boolean).join(' ');
+  const cls = ['night-screen', 'chambre', morning ? 'matin' : 'soir', waking ? 'eveil' : '', hello ? 'bonjour' : '', leaving ? 'leaving' : ''].filter(Boolean).join(' ');
   return html`<div class=${cls} role="dialog" aria-label=${morning ? 'Pandi dort encore : gratte-lui le ventre pour le réveiller' : 'Bonne nuit'} ...${handlers}>
     <div class="ch-sky" aria-hidden="true" />
     <div class="ns-stars" aria-hidden="true">${Array.from({ length: 28 }, (_, i) => html`<i key=${i} style=${{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 70}%`, animationDelay: `${(i % 7) * 0.6}s` }} />`)}</div>
     ${morning && html`<div class="ch-sun" aria-hidden="true" />`}
     <div class="ch-scene ns-pandi">
-      ${has3D() ? html`<span ref=${host} style="display:contents" />` : html`<div class="ch-flat">${waking ? html`<${PandiFlat} mood="happy" />` : html`<${PandiFlat} wave=${false} /><span class="ch-zz">💤</span>`}</div>`}
+      ${imgs
+        ? html`<div class="ch-poses" ref=${box} style=${{ aspectRatio: `${lit.frame[0]} / ${lit.frame[1]}`, '--decal': `${lit.decal || 0}%` }} role="img" aria-label="Pandi dans son lit">
+            <div class="ch-pile"><img src=${`${POSES_BASE}lit/dort.webp`} alt="" draggable="false" /><img class="l-rit" ref=${rit} src=${`${POSES_BASE}lit/rit.webp`} alt="" draggable="false" /></div>
+            <img class="l-reveil" src=${`${POSES_BASE}lit/reveil.webp`} alt="" draggable="false" />
+            <img class="l-debout" src=${`${POSES_BASE}lit/debout.webp`} alt="" draggable="false" />
+            ${!waking && [0, 1.1, 2.2].map((d, i) => html`<span key=${i} class="pp-fx pp-zz" style=${{ left: `${(lit.tete?.[0] ?? 30) + 6 + i * 4}%`, top: `${(lit.tete?.[1] ?? 30) - 18 - i * 6}%`, animationDelay: `${d}s` }}>${i === 2 ? 'Z' : 'z'}</span>`)}
+          </div>`
+        : POSES ? null
+        : has3D() ? html`<span ref=${host} style="display:contents" />` : html`<div class="ch-flat">${waking ? html`<${PandiFlat} mood="happy" />` : html`<${PandiFlat} wave=${false} /><span class="ch-zz">💤</span>`}</div>`}
     </div>
     <div class="ns-text">${morning ? (waking ? hello && html`<span class="ch-bonjour">Bonjour ${names} ! ☀️</span>` : 'Chut… Pandi dort encore') : `Bonne nuit ${names} 🌙`}</div>
     <div class="ns-hint">${morning ? (waking ? '' : 'Gratte-lui le ventre pour le réveiller !') : 'Touche l’écran pour revenir à la routine'}</div>
-    ${morning && !waking && has3D() && html`<div class="ch-hand" ref=${hand} aria-hidden="true"><span>👆</span></div>`}
+    ${morning && !waking && (imgs || (!POSES && has3D())) && html`<div class="ch-hand" ref=${hand} aria-hidden="true"><span>👆</span></div>`}
     ${mot && html`<div class="ns-mot" onClick=${(e) => { e.stopPropagation(); onMotClose(); }}><${FirstEveningCard} date=${mot} onClose=${onMotClose} /></div>`}
   </div>`;
 }
