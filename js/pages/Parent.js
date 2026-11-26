@@ -2,11 +2,11 @@
 import { html, useState, useEffect } from '../vendor/preact-htm.js';
 import { useStore, setPrefs } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { SEXES, ageOf, validBirthdate, nextBirthday, activeChildren, tasksForChild, findRating, balance, challengesForChild, COLOR_META, ROUTINES, routineOf, TEAM_CARD, findTeamCard, teamCardLevel, surpriseBoard } from '../domain.js';
+import { SEXES, ageOf, validBirthdate, nextBirthday, activeChildren, tasksForChild, findRating, balance, challengesForChild, COLOR_META, ROUTINES, routineOf, TEAM_CARD, findTeamCard, teamCardLevel, surpriseBoard, RELIGIONS, religionOf, giftWords } from '../domain.js';
 import { eveningDate, addDays, formatLong, WEEKDAYS_SHORT, currentRoutine } from '../lib/dates.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { CHILD_COLORS } from '../avatar/palette.js';
-import { ITEMS, SLOTS, rewardItems, getItem } from '../avatar/items.js';
+import { ITEMS, SLOTS, rewardItems, getItem, religionOfItem } from '../avatar/items.js';
 import { ItemThumb } from '../components/ItemThumb.js';
 import { Modal, Toggle, NumberInput, ColorPicker, SexPicker, BirthdateInput } from '../components/ui.js';
 import { PinPad } from '../components/PinGate.js';
@@ -18,9 +18,10 @@ import { SurpriseParent } from '../components/Surprise.js';
 import { ThemeParent } from '../components/Themes.js';
 import { showOverlay } from '../components/Overlays.js';
 import { InstallRow } from '../components/Install.js';
+import { ChutSection } from '../components/ChutSection.js';
 import { sfx } from '../lib/sounds.js';
 import { navigate } from '../router.js';
-import { APP_VERSION } from '../config.js';
+import { APP_VERSION, CONTACT_EMAIL } from '../config.js';
 
 const SECTIONS = [
   { id: 'enfants', label: 'Enfants', icon: '👧' },
@@ -200,7 +201,9 @@ function ChallengeForm({ challenge, onClose }) {
   const [bonus, setBonus] = useState(challenge?.bonus ?? 10);
   const [childId, setChildId] = useState(challenge?.child_id || null);
   const [restart, setRestart] = useState(false);
-  const rewards = [...rewardItems(), ...ITEMS.filter((i) => !i.exclusive && i.price >= 60)];
+  // Les objets religieux seulement pour les familles qui les ont choisis (ou s'ils sont déjà la récompense)
+  const religion = religionOf(s.settings);
+  const rewards = [...rewardItems(), ...ITEMS.filter((i) => !i.exclusive && i.price >= 60 && (!religionOfItem(i) || religionOfItem(i) === religion || i.id === challenge?.reward_item))];
   function save() {
     const task = tasks.find((t) => t.id === taskId);
     actions.saveChallenge({
@@ -369,6 +372,8 @@ function SettingsSection() {
       <div class="row"><span class="emoji">${TEAM_CARD.demain.face}</span><div class="grow"><div class="title">${TEAM_CARD.demain.label}</div><div class="meta">Rien n'est retiré</div></div><b style="padding:0 12px">0</b></div>
     </div>
 
+    <${ChutSection} />
+
     <h3 class="section-title" style="color:var(--ink);margin-top:20px">Équipe</h3>
     <div class="row-list">
       <div class="row"><span class="emoji">🧰</span><div class="grow"><div class="title">Coffre de l'équipe : un palier toutes les … tâches faites</div><div class="meta">Chaque 🌟 ou 👍 de n'importe quel enfant met une pierre dans le coffre ; rien ne repart à zéro chaque semaine</div></div><${NumberInput} value=${s.settings.team.step} onChange=${(v) => actions.updateSettings({ team: { ...s.settings.team, step: v } })} min=${5} max=${1000} step=${5} /></div>
@@ -389,6 +394,13 @@ function SettingsSection() {
           return html`<button key=${d} class=${`day ${on ? 'on' : ''}`} onClick=${() => actions.updateSettings({ departureDays: on ? s.settings.departureDays.filter((x) => x !== d) : [...s.settings.departureDays, d] })}>${WEEKDAYS_SHORT[d]}</button>`;
         })}</div></div>`}
     </div>
+
+    <h3 class="section-title" style="color:var(--ink);margin-top:20px">Contenus religieux</h3>
+    <div class="row-list">
+      ${Object.entries(RELIGIONS).map(([id, r]) => html`<div key=${id} class="row"><span class="emoji">${r.icon}</span><div class="grow"><div class="title">${r.label}</div><div class="meta">${r.meta}</div></div>
+        <${Toggle} on=${religionOf(s.settings) === id} label=${r.label} onChange=${(on) => actions.updateSettings({ religion: on ? id : null })} /></div>`)}
+    </div>
+    <p class="hint" style="margin-top:8px">Sans contenu religieux, la boîte de tsedaka s'appelle « Dons », avec des mots de tous les jours. Les objets déjà achetés restent à l'enfant. Une autre tradition à ajouter ? Écrivez-nous : ${CONTACT_EMAIL}</p>
 
     <h3 class="section-title" style="color:var(--ink);margin-top:20px">Sur cet appareil</h3>
     <div class="row-list">
@@ -413,6 +425,8 @@ function SettingsSection() {
         : html`<div class="row"><span class="emoji">🧪</span><div class="grow"><div class="title">Mode démo</div><div class="meta">Les données restent dans ce navigateur et les invitations sont factices.</div></div><button class="p-btn danger" onClick=${() => confirm('Remettre la démo à zéro ?') && actions.resetDemo()}>Remettre à zéro</button></div>`}
       <div class="row"><span class="emoji">🔐</span><div class="grow"><div class="title">Code parent</div></div><button class="p-btn" onClick=${() => setChangingPin(true)}>Changer le code</button></div>
       <div class="row"><span class="emoji">💾</span><div class="grow"><div class="title">Sauvegarde</div><div class="meta">Télécharger toutes les données (fichier JSON)</div></div><button class="p-btn" onClick=${actions.exportBackup}>Télécharger</button></div>
+      <div class="row"><span class="emoji">🛡️</span><div class="grow"><div class="title">Confidentialité</div><div class="meta">Ce que Pandi garde, où, et pour combien de temps</div></div><a class="p-btn" href="confidentialite.html" target="_blank" rel="noopener">Lire</a></div>
+      <div class="row"><span class="emoji">🗑️</span><div class="grow"><div class="title">Supprimer toutes nos données</div><div class="meta">Écrivez à ${CONTACT_EMAIL} depuis l'adresse de votre compte : tout est effacé sous 7 jours (comptes, enfants, notes, personnages 3D)</div></div><a class="p-btn danger" href=${`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Supprimer les données de ma famille')}`}>Écrire</a></div>
       ${s.settings.photoConsent && html`<div class="row"><span class="emoji">📸</span><div class="grow"><div class="title">Consentement photo donné</div><div class="meta">Les photos passent par Claude et OpenAI puis sont oubliées ; seuls les visages 3D créés sont gardés.</div></div><button class="p-btn" onClick=${() => actions.updateSettings({ photoConsent: false })}>Retirer</button></div>`}
     </div>
     <p class="hint" style="margin-top:16px;text-align:center">Pandi v${APP_VERSION}</p>
@@ -447,7 +461,7 @@ export function ParentPage({ section = 'enfants' }) {
     actions.checkAdmin().then((v) => live && setAdmin(v));
     return () => { live = false; };
   }, [s.user?.id]);
-  const sections = admin ? [...SECTIONS, PILOTAGE] : SECTIONS;
+  const sections = (admin ? [...SECTIONS, PILOTAGE] : SECTIONS).map((x) => (x.id === 'tsedaka' ? { ...x, label: giftWords(s.settings).tab } : x));
   const current = sections.some((x) => x.id === section) ? section : 'enfants';
   const promises = surpriseBoard(s.settings).toKeep.reduce((n, g) => n + (g.surprise.team ? 1 : g.cards.length), 0);
 

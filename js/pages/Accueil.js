@@ -18,7 +18,7 @@ import { InstallHelp } from '../components/Install.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { shareInvite, fmtCode, fmtDate } from '../components/FamilyMembers.js';
 import { CHILD_COLORS, KID_PALETTE } from '../avatar/palette.js';
-import { COLOR_META, PETIT_AGE, activeChildren, scaleOf, pointsFor, weeklyStones, routineOf, validBirthdate } from '../domain.js';
+import { COLOR_META, PETIT_AGE, activeChildren, scaleOf, pointsFor, weeklyStones, routineOf, validBirthdate, RELIGIONS, religionOf } from '../domain.js';
 import { DEFAULT_TASKS, EXTRA_TASKS, DEFAULT_MORNING_TASKS, fitsAge } from '../lib/seed.js';
 import { WEEKDAYS_SHORT } from '../lib/dates.js';
 import { canFullscreen, isInstalled } from '../lib/device.js';
@@ -145,7 +145,7 @@ export function AccueilDebut({ onJoin }) {
       <div class="row-list ac-how">
         <div class="row"><span class="emoji">📺</span><div class="grow"><div class="title">Ton téléphone, sur la télé</div><div class="meta">Tu ouvres Pandi sur ton téléphone et tu l'affiches sur la télé : les enfants voient leurs tâches, toi tu notes.</div></div></div>
         <div class="row"><span class="emoji">🌟</span><div class="grow"><div class="title">Tu notes la coopération</div><div class="meta">À chaque tâche, un geste : du premier coup, après un rappel, ou il a fallu répéter.</div></div></div>
-        <div class="row"><span class="emoji">🛍️</span><div class="grow"><div class="title">Ils gagnent des pandi</div><div class="meta">Ils les dépensent dans la boutique : habits, objets et compagnons pour leur personnage.</div></div></div>
+        <div class="row"><span class="emoji">🛍️</span><div class="grow"><div class="title">Ils gagnent des pandi</div><div class="meta">Ils les dépensent dans la boutique : habits, objets et compagnons pour leur personnage. Des objets religieux (juifs, pour l'instant) peuvent s'y ajouter depuis les Réglages.</div></div></div>
         <div class="row"><span class="emoji">🧰</span><div class="grow"><div class="title">En équipe</div><div class="meta">Chaque tâche faite remplit le coffre de l'équipe, qui mène à une vraie récompense en famille.</div></div></div>
       </div>
       <p class="ac-alt">L'autre parent a déjà créé la famille ? Choisis « J'ai un code » et entre le code de son invitation.</p>
@@ -492,6 +492,8 @@ function StepPret({ s, kids }) {
       <div class="row"><span class="emoji">🔐</span><div class="grow"><div class="title">${s.settings.pinHash ? 'Code parent choisi' : 'Pas encore de code parent'}</div>
         <div class="meta">${s.settings.pinHash ? 'Pour noter et changer les réglages' : 'Il sera demandé à la première note'}</div></div></div>
       <div class="row"><span class="emoji">🧰</span><div class="grow"><div class="title">${t.reward}</div><div class="meta">Au bout du coffre de l'équipe : ${t.goal} pierres</div></div></div>
+      <div class="row"><span class="emoji">🕊️</span><div class="grow"><div class="title">Contenus religieux : ${religionOf(s.settings) ? RELIGIONS[religionOf(s.settings)].label : 'aucun'}</div>
+        <div class="meta">Les objets et les fêtes juives (kippas, Chabbat, boîte de tsedaka) s'ajoutent quand tu veux : ⚙️ Espace parent → Réglages → Contenus religieux</div></div></div>
       <div class="row"><span class="emoji">📲</span><div class="grow"><div class="title">${installed ? "Pandi est sur l'écran d'accueil" : "L'écran d'accueil : pas encore"}</div>
         <div class="meta">${toIcon ? 'Ouvre-le depuis son icône (reconnecte-toi la première fois)' : installed ? "Il s'ouvre d'un geste, en plein écran" : "Plus tard : ⚙️ Espace parent → Réglages → « L'app sur l'écran d'accueil »"}</div></div></div>
     </div>

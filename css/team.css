@@ -86,8 +86,9 @@
   background: radial-gradient(circle at 50% 45%, rgba(155, 108, 240, .97), rgba(30, 18, 72, .98) 72%); animation: fade-in .4s ease; text-align: center; }
 .tm-treasure { background: radial-gradient(circle at 50% 45%, rgba(255, 196, 70, .97), rgba(60, 30, 90, .98) 72%); }
 .tm-help, .tm-gift { background: radial-gradient(circle at 50% 45%, rgba(255, 126, 182, .97), rgba(60, 24, 90, .98) 72%); }
-.tm-stage { display: flex; align-items: flex-end; justify-content: center; gap: calc(var(--u) * 2); }
-.tm-kid { width: calc(var(--u) * 42); height: calc(var(--u) * 50); animation: stage-in .8s cubic-bezier(.3, 1.5, .5, 1) both; animation-delay: calc(var(--i) * 120ms); }
+.tm-stage { display: flex; align-items: flex-end; justify-content: center; gap: calc(var(--u) * 2); max-width: 100%; }
+/* À partir de 3 enfants, chacun rétrécit un peu pour que toute l'équipe tienne sur l'écran */
+.tm-kid { width: calc(var(--u) * 42); height: calc(var(--u) * 50); flex: 0 1 auto; min-width: 0; animation: stage-in .8s cubic-bezier(.3, 1.5, .5, 1) both; animation-delay: calc(var(--i) * 120ms); }
 .tm-center { display: grid; place-items: center; align-self: center; }
 .tm-emoji { font-size: calc(var(--u) * 20); animation: tm-clap 1s ease-in-out infinite; }
 .tm-item { width: calc(var(--u) * 30); height: calc(var(--u) * 30); border-radius: calc(var(--u) * 6); background: radial-gradient(circle, #fff, #fff3b0); display: grid; place-items: center; box-shadow: 0 0 calc(var(--u) * 10) rgba(255, 236, 150, .8); animation: stage-in .9s cubic-bezier(.3, 1.6, .5, 1) .3s both; }

@@ -315,7 +315,8 @@ const readWoke = () => {
 
 // « Plus tard » sur le bonjour de Pandi : on le repropose au prochain lancement de l'app
 let greetLater = false;
-// « Plus tard » sur le thème proposé aux enfants : idem, au prochain lancement
+
+// « Plus tard » sur l'annonce du thème : on la repropose au prochain lancement de l'app
 let themeLater = null;
 
 // Prochaine tâche sans note après celle du centre (on boucle au début si besoin)
@@ -332,6 +333,34 @@ function ThemeBackdrop({ scene }) {
     return () => sky?.classList.remove('covered');
   }, [on]);
   return on ? html`<div class="theme-backdrop" aria-hidden="true" style=${{ backgroundImage: `url("${artSrc(scene)}")` }}></div>` : null;
+}
+
+// Une pastille par enfant, à sa couleur, sous la rangée qui défile : celles des enfants à l'écran sont pleines.
+// Toucher une pastille amène la colonne de cet enfant.
+function KidDots({ kids, cols }) {
+  const [seen, setSeen] = useState([]);
+  useEffect(() => {
+    const el = cols.current;
+    if (!el) return undefined;
+    const update = () => {
+      const box = el.getBoundingClientRect();
+      setSeen([...el.children].filter((c) => c.classList.contains('kid-col')).map((c) => {
+        const r = c.getBoundingClientRect();
+        return r.left >= box.left - 4 && r.right <= box.right + 4;
+      }));
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => { el.removeEventListener('scroll', update); window.removeEventListener('resize', update); };
+  }, [cols, kids.length]);
+  const go = (i) => {
+    sfx.tap();
+    cols.current?.querySelectorAll('.kid-col')[i]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+  };
+  return html`<div class="kid-dots">
+    ${kids.map((k, i) => html`<button key=${k.id} class=${seen[i] ? 'on' : ''} style=${{ '--kid': k.color }} onClick=${() => go(i)} aria-label=${`Voir la colonne de ${k.name}`}></button>`)}
+  </div>`;
 }
 
 function nextOpen(list, from, isRated) {
@@ -358,13 +387,14 @@ export function Evening() {
   const [moods, setMoods] = useState({});
   const [firstMot, setFirstMot] = useState(null); // la soirée dont le mot de première soirée est montré la nuit
   const [later, setLater] = useState(greetLater);
-  const [askLater, setAskLater] = useState(themeLater);
   const [woke, setWoke] = useState(readWoke);
+  const [askLater, setAskLater] = useState(themeLater);
   const [, setTick] = useState(0); // redessine chaque minute : un paquet de Pandi arrive à son heure
   const cards = useRef({});
   const heads = useRef({});
   const moodTimers = useRef({});
   const moodsRef = useRef({});
+  const colsRef = useRef(null);
   const lastAuto = useRef(currentRoutine());
   const routineRef = useRef(routine);
   routineRef.current = routine;
@@ -408,6 +438,8 @@ export function Evening() {
   }, [date]);
 
   const kids = activeChildren(s.children);
+  // À partir de 3 enfants, chaque colonne garde la largeur qu'elle a à 2 et la rangée défile sur le côté
+  const many = kids.length > 2;
   const today = routineDate(routine);
   const canTime = date === today;
   const timerFor = (childId, taskId) => s.timers.find((t) => t.key === timerKey(childId, taskId) && t.date === date && !t.finished) || null;
@@ -678,7 +710,7 @@ export function Evening() {
   const bedroom = nightScreen || morningBed;
   const visiting = visitPending(s) && kids.length > 0 && !nightScreen;
   const showGreet = Boolean(s.settings.firstDay && !s.settings.greeted) && !visitPending(s) && !later && kids.length > 0 && date === today;
-  // Le thème programmé par les parents commence quand les enfants ont dit oui
+  // Le thème programmé par les parents : annoncé aux enfants le premier jour, il commence quand un parent le lance
   const proposed = date === today && kids.length > 0 && !visiting && !bedroom ? pendingThemeEntry(s.settings, date) : null;
   const asking = proposed && askLater !== proposed.id ? proposed : null;
   // L'anniversaire d'un enfant ce soir : la fête à lancer, ou à rejouer une fois lancée
@@ -698,7 +730,7 @@ export function Evening() {
       ${evening && kids.length > 1 && html`<${TeamCardBar} level=${teamCard} ready=${allDone} onOpen=${() => { sfx.tap(); setTeamCardOpen(true); }} />`}
       ${fact && allDone && html`<${FunFactBar} onOpen=${() => { sfx.tap(); showOverlay('funfact', { themeId: themeEntry.theme, fact }); }} />`}
     </div>
-    <div class="columns" style=${{ '--n': Math.max(1, kids.length) }}>
+    <div class=${`columns ${many ? 'many' : ''}`} ref=${colsRef} style=${{ '--n': Math.max(1, kids.length) }}>
       ${kids.length === 0 && html`<div class="empty-col">Ajoute un enfant dans l'espace parent ⚙️ pour commencer !</div>`}
       ${kids.map((child, index) => {
         const prog = progress[child.id];
@@ -744,6 +776,8 @@ export function Evening() {
         </section>`;
       })}
     </div>
+    ${many && html`<${KidDots} kids=${kids} cols=${colsRef} />`}
+    ${asking && html`<${ThemeAsk} key=${asking.id} entry=${asking} kids=${kids} onLater=${() => { themeLater = asking.id; setAskLater(asking.id); }} />`}
     ${pickerChild && pickerTask && html`<${TimerPicker}
       child=${pickerChild}
       task=${pickerTask}
@@ -778,6 +812,5 @@ export function Evening() {
     ${bedroom && html`<${Chambre} mode=${morningBed ? 'matin' : 'soir'} kids=${morningBed ? kids : withTasks} onExit=${wake} onAwake=${awake}
       mot=${morningBed ? null : firstMot} onMotClose=${() => { sfx.tap(); setFirstMot(null); }} />`}
     ${visiting && html`<${Visite} kids=${kids} onDone=${() => actions.endVisit()} />`}
-    ${asking && html`<${ThemeAsk} key=${asking.id} entry=${asking} kids=${kids} onLater=${() => { themeLater = asking.id; setAskLater(asking.id); }} />`}
   </div>`;
 }

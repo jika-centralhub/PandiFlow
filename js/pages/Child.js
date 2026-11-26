@@ -2,7 +2,7 @@
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js';
 import { useStore, toast } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
-import { balance, isOwned, challengesForChild, activeChildren, accord, sexOf, tasksForChild, findRating, COLOR_META, ROUTINES, activeThemeEntry, themeGiftOf, pastThemes, birthdayNow } from '../domain.js';
+import { balance, isOwned, challengesForChild, activeChildren, accord, sexOf, tasksForChild, findRating, COLOR_META, ROUTINES, activeThemeEntry, themeGiftOf, pastThemes, birthdayNow, religionOf, giftWords } from '../domain.js';
 import { routineDate, toISODate } from '../lib/dates.js';
 import { getTheme, giftOptions, vitrineItems, waitsForTheme } from '../avatar/themes.js';
 import { ThemeBook } from '../components/Themes.js';
@@ -146,7 +146,7 @@ function PlainHead({ icon, label, color, onBack = null }) {
 function Vitrine({ child, theme, owned, bal, gift, giftOpts, hasBook, onBook, onPick, onGiftPick, onEquip }) {
   const giftItem = gift && getItem(gift);
   // Tant que le cadeau n'est pas choisi, ses objets ne sont proposés qu'en cadeau (pas à acheter)
-  const items = vitrineItems(theme, child).filter((it) => gift || !giftOpts.some((g) => g.id === it.id));
+  const items = vitrineItems(theme, child, religionOf(useStore().settings)).filter((it) => gift || !giftOpts.some((g) => g.id === it.id));
   let i = 0;
   return html`<div class="vitrine" style=${{ '--c': theme.color }}>
     <${PlainHead} icon=${theme.emoji} label=${`La vitrine de Pandi : ${theme.name}`} color=${theme.color} />
@@ -185,8 +185,9 @@ function BirthdayGifts({ child, birthday, owned, onPick }) {
 function Shop({ child, owned, bal, rayon, onRayon, onPick, theme = null, gift = null, giftOpts = [], hasBook = false, onGiftPick, onEquip, birthday = null, onBirthdayPick }) {
   const [affordableOnly, setAffordableOnly] = useState(false);
   const sex = sexOf(child);
+  const religion = religionOf(useStore().settings);
   const bySlot = (slot) => shopItems()
-    .filter((it) => rayonOf(it) === slot && !owned.has(it.id) && offeredTo(it, sex))
+    .filter((it) => rayonOf(it) === slot && !owned.has(it.id) && offeredTo(it, sex, religion))
     .sort((a, b) => Number(starredFor(b, sex)) - Number(starredFor(a, sex)) || a.price - b.price);
   const slots = SLOT_ORDER.filter((slot) => slot !== 'magic' && bySlot(slot).length);
   const gifts = html`<${BirthdayGifts} child=${child} birthday=${birthday} owned=${owned} onPick=${onBirthdayPick} />`;
@@ -329,7 +330,7 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
   const themeEntry = activeThemeEntry(s.settings, today);
   const theme = themeEntry ? getTheme(themeEntry.theme) : null;
   const gift = theme ? themeGiftOf(s.owned, child.id, themeEntry) : null;
-  const giftOpts = theme && !gift ? giftOptions(theme, child, owned) : [];
+  const giftOpts = theme && !gift ? giftOptions(theme, child, owned, religionOf(s.settings)) : [];
   const hasBook = pastThemes(s.settings, today).some((t) => t.photo);
   // Son anniversaire : le fond de fête dans sa scène, et la boutique entière pour choisir son cadeau
   // (même pendant un thème : la vitrine laisse alors la place à tous les rayons)
@@ -337,7 +338,8 @@ export function ChildPage({ childId, tab = 'boutique', rayon = null }) {
   const party = Boolean(bday?.festive);
   // Son frère ou sa sœur, qui monte avec lui dans le wagon du petit train de fête
   const friend = activeChildren(s.children).find((k) => k.id !== child.id) || null;
-  const tabs = activeChildren(s.children).length > 1 ? TABS : TABS.filter((t) => t.id !== 'equipe');
+  // La boîte à dons s'appelle « Tsedaka » dans les familles qui ont choisi les contenus juifs
+  const tabs = (activeChildren(s.children).length > 1 ? TABS : TABS.filter((t) => t.id !== 'equipe')).map((t) => (t.id === 'tsedaka' ? { ...t, label: giftWords(s.settings).tab } : t));
   const current = tabs.some((t) => t.id === tab) ? tab : 'boutique';
   const garage = hasGarage(child.equipped);
   const toShop = () => navigate(`enfant/${child.id}?onglet=boutique&rayon=vehicle`);

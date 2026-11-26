@@ -529,6 +529,52 @@ export const ACTS = {
     },
   },
 
+  // « Chut, Pandi s'endort » (Chambre.js, js/lib/chut.js) : couché, il s'endort à mesure que la maison
+  // reste calme. ctx.sleep (0 -> 1) : il s'endort ; ctx.stir (0 -> 1) : un bruit le dérange, il entrouvre
+  // un œil ; ctx.paw (0 -> 1) : il pose doucement une patte sur son oreille. Jamais fâché ni triste, et
+  // aucun bruit de sa part (le micro écoute).
+  chut: {
+    frame: 'litProche',
+    pose(t, P, ctx) {
+      const k = clamp(ctx.sleep || 0, 0, 1);
+      const stir = clamp(ctx.stir || 0, 0, 1);
+      const paw = clamp(ctx.paw || 0, 0, 1);
+      inBed(P, 1);
+      bed(P, { cover: 1, body: 1, wob: stir * 0.15 });
+      nightcap(P);
+      // encore éveillé : il regarde autour de lui, les paupières de plus en plus lourdes
+      const awake = 1 - ramp(k, 0.3, 0.85);
+      gaze(t, P, 3);
+      P.face.lookX *= awake * 0.6;
+      P.face.lookY *= awake * 0.4;
+      face(P, { lidUp: lerp(0.2, 0.75, ramp(k, 0, 0.6)), lidLo: lerp(0.55, 0.7, k), smile: 0.85 });
+      P.handR.set(0.24, 0.2, 0.55);
+      P.handL.set(-0.24, 0.2, 0.55);
+      P.poleR.set(1, -0.5, 0.1);
+      P.poleL.set(-1, -0.5, 0.1);
+      // de grands bâillements, de moins en moins souvent éveillé
+      const c = t % 9;
+      const yawn = win(c, 0.6, 2.4, 0.5) * (k > 0.08 && k < 0.8 ? 1 : 0) * (1 - stir);
+      P.headX -= 0.15 * yawn;
+      face(P, { open: 0.1, round: 1, lidUp: 0.95, lidLo: 0.45 }, yawn);
+      // puis il s'endort : les yeux fermés, les mains sur le ventre, et les 💤 à la fin
+      sleeping(t, P, ramp(k, 0.45, 1), ramp(k, 0.8, 1) * (1 - stir));
+      // un bruit : il entrouvre un œil et tourne un peu la tête, sans se fâcher
+      if (stir > 0) {
+        P.face.peek = stir;
+        P.face.smile = lerp(P.face.smile, 0.45, stir);
+        P.headX -= 0.06 * stir;
+        P.headY += 0.18 * stir;
+      }
+      // … et pose doucement une patte sur son oreille (ses bras sont courts : il penche la tête vers elle)
+      if (paw > 0) {
+        P.headZ += 0.45 * paw;
+        P.anchorL = { bone: 'head', off: [-0.44, 0.32, 0.24], w: paw };
+        P.poleL.lerp(V(-1, -1, 0), paw);
+      }
+    },
+  },
+
   // Le matin : il ouvre les yeux en riant, s'assoit, s'étire, rejette sa couette et saute du lit
   reveil: {
     frame: 'lit',

@@ -244,6 +244,7 @@ export function Login() {
         <button class="btn btn-big btn-google" style="width:100%" disabled=${busy} onClick=${withGoogle}>${GOOGLE_G} Continuer avec Google</button>
       </div>`}
       <div class="sheet-actions"><a class="p-btn" href="?demo=1#/soiree">Essayer en mode démo</a></div>
+      <p class="hint" style="text-align:center;color:var(--ink-soft);margin-top:8px"><a href="confidentialite.html" target="_blank" rel="noopener" style="color:inherit">Confidentialité : ce que Pandi garde</a></p>
     </div>
   </div>`;
 }

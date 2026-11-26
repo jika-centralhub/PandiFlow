@@ -62,7 +62,9 @@ export function BirthdayParty({ childIds = [], gifts = null, onClose }) {
   const s = getState();
   const kids = activeChildren(s.children);
   const stars = childIds.map((id) => kids.find((k) => k.id === id)).filter(Boolean);
-  const others = kids.filter((k) => !childIds.includes(k.id)).slice(0, 2);
+  // Tous les frères et sœurs font la fête : la première moitié à gauche de Pandi, les autres tout à droite
+  const others = kids.filter((k) => !childIds.includes(k.id));
+  const leftCount = Math.ceil(others.length / 2);
   const ownedOf = (k) => new Set(s.owned.filter((o) => o.child_id === k.id).map((o) => o.item_id));
   const single = stars.length === 1 ? stars[0] : null;
   const choices = single ? birthdayGifts(single, ownedOf(single)).length : 3;
@@ -136,7 +138,7 @@ export function BirthdayParty({ childIds = [], gifts = null, onClose }) {
     <div class="bd-lights" aria-hidden="true">${Array.from({ length: 14 }, (_, i) => html`<i key=${i} style=${{ '--i': i }} />`)}</div>
     <h1 class="bd-title"><span aria-hidden="true">🎂</span> ${text.wish}</h1>
     <div class="bd-stage">
-      ${others.map((k, i) => html`<div key=${k.id} class=${`bd-kid bd-other ${giving ? 'giving' : ''}`} style=${{ '--kid': k.color, '--i': i, order: i ? 4 : 0 }}>
+      ${others.map((k, i) => html`<div key=${k.id} class=${`bd-kid bd-other ${i >= leftCount ? 'right' : ''} ${giving ? 'giving' : ''}`} style=${{ '--kid': k.color, '--i': i, order: i >= leftCount ? 4 : 0 }}>
         <${Avatar} look=${k.look} equipped=${k.equipped} tryOn=${{ slot: 'hat', itemId: GUEST_HAT }} expr="joy" pose=${giving ? 'idle' : 'dance'} mode="full" seed=${k.id} class="overflow" />
         ${giving && html`<span class="bd-box" aria-hidden="true">🎁</span>`}
         <span>${k.name}</span>

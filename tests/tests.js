@@ -465,9 +465,9 @@ test('accords : féminin pour une fille, masculin sinon', () => {
 test('boutique : kippas et talit katan proposés aux garçons seulement, mis en avant pour eux', () => {
   const kippa = getItem('kippa_velours');
   ok(kippa && rayonOf(kippa) === 'judaica' && kippa.slot === 'hat');
-  ok(!offeredTo(kippa, 'fille') && offeredTo(kippa, 'garcon') && offeredTo(kippa, null));
+  ok(!offeredTo(kippa, 'fille', 'juif') && offeredTo(kippa, 'garcon', 'juif') && offeredTo(kippa, null, 'juif'));
   ok(starredFor(kippa, 'garcon') && !starredFor(kippa, null));
-  ok(starredFor(getItem('bougies_chabbat'), 'fille') && offeredTo(getItem('bougies_chabbat'), 'garcon'));
+  ok(starredFor(getItem('bougies_chabbat'), 'fille') && offeredTo(getItem('bougies_chabbat'), 'garcon', 'juif'));
 });
 
 // --- Tsedaka ----------------------------------------------------------------------------------------
@@ -499,10 +499,54 @@ test('tsedaka : à verser par association, en euros au taux des parents, puis ve
   eq(d.applyTsedakaCancel(s, { id: 'z1' }).ops.length, 1);
 });
 test('tsedaka : badges de mitsva accordés', () => {
-  const s = { ledger: [{ id: 'z', child_id: 'c1', kind: 'tsedaka', amount: -260 }] };
+  const s = { ledger: [{ id: 'z', child_id: 'c1', kind: 'tsedaka', amount: -260 }], settings: { religion: 'juif' } };
   const b = d.tsedakaBadges({ id: 'c1', sex: 'fille' }, s);
   eq(b.filter((x) => x.got).length, 4);
   eq(b[3].label, 'Petite tsadéket');
+  eq(b[0].label, 'Première mitsva');
+});
+
+// --- Contenus religieux ----------------------------------------------------------------------------------
+test('contenus religieux : aucun par défaut, le judaïsme seulement si les parents l’ont choisi', () => {
+  eq(d.mergeSettings({}).religion, null);
+  eq(d.religionOf({}), null);
+  eq(d.religionOf({ religion: 'juif' }), 'juif');
+  eq(d.religionOf({ religion: 'inconnue' }), null, 'une valeur inconnue ne montre rien');
+});
+test('contenus religieux : le rayon Judaïsme et le costume de rabbin seulement pour les familles qui les ont choisis', () => {
+  for (const id of ['kippa_velours', 'talit_katan', 'bougies_chabbat', 'sefer_torah', 'rabbin']) {
+    const it = getItem(id);
+    ok(it, `${id} existe`);
+    ok(!offeredTo(it, null) && !offeredTo(it, 'garcon', null), `${id} caché sans contenus religieux`);
+    ok(offeredTo(it, null, 'juif'), `${id} proposé avec le judaïsme`);
+  }
+  ok(offeredTo(getItem('maillot_israel'), null) && offeredTo(getItem('drapeau_israel'), null), 'les drapeaux et maillots de pays restent pour tous');
+  ok(shopItems().filter((it) => offeredTo(it, 'garcon')).every((it) => rayonOf(it) !== 'judaica'), 'aucun objet du rayon sans contenus religieux');
+});
+test('contenus religieux : la boîte à dons et ses badges ont des mots neutres sans le judaïsme', () => {
+  eq(d.giftWords({}).tab, 'Dons');
+  eq(d.giftWords({ religion: 'juif' }).tab, 'Tsedaka');
+  const s = { ledger: [{ id: 'z', child_id: 'c1', kind: 'tsedaka', amount: -260 }], settings: {} };
+  const labels = d.tsedakaBadges({ id: 'c1', sex: 'fille' }, s).map((b) => b.label).join(' ');
+  ok(!/mitsva|tsad/i.test(labels), `badges neutres : ${labels}`);
+  ok(labels.includes('Championne du partage') && labels.includes('Premier don'));
+});
+test('contenus religieux : les cartes de départ ne parlent du Chabbat qu’avec le judaïsme', () => {
+  const neutral = d.privilegeDeck(d.mergeSettings({})).map((p) => p.text).join(' ');
+  ok(!/chabbat|tsedaka/i.test(neutral), 'aucune carte juive sans le judaïsme');
+  const jewish = d.privilegeDeck(d.mergeSettings({ religion: 'juif' })).map((p) => p.text).join(' ');
+  ok(/Chabbat/.test(jewish) && /tsedaka/.test(jewish), 'les cartes du Chabbat avec le judaïsme');
+  eq(d.privilegeDeck(d.mergeSettings({})).length, d.DEFAULT_PRIVILEGES.length, 'autant de cartes');
+  ok(d.privilegeDeck(d.mergeSettings({})).every((p) => !('neutre' in p)), 'le texte neutre ne reste pas dans la carte');
+  const custom = [{ id: 'x', family: 'choix', emoji: '🎁', text: 'Dessert de Chabbat' }];
+  eq(d.privilegeDeck({ privileges: custom }), custom, 'le paquet écrit par les parents ne change pas');
+});
+test('contenus religieux : un cadeau de thème n’est jamais un objet religieux sans le judaïsme', () => {
+  for (const t of THEME_CATALOG) {
+    const owned = new Set([...(t.gifts || []), ...(t.items || [])]);
+    const opts = giftOptions(t, { id: 'c1', sex: 'garcon' }, owned);
+    ok(opts.every((it) => rayonOf(it) !== 'judaica' && it.id !== 'rabbin'), `cadeaux ${t.id} : ${opts.map((it) => it.id)}`);
+  }
 });
 
 // --- Surprise de Pandi ---------------------------------------------------------------------------------
@@ -619,28 +663,28 @@ test('thème : arrêter le thème en cours le fait finir hier ; un thème à ven
   eq(d.mergeSettings({ themes: 'abîmé' }).themes, []);
 });
 
-test('thème : il ne commence qu’avec le oui des enfants ; un non l’annule', () => {
+test('thème : annoncé aux enfants le premier jour, il ne commence que lancé par un parent', () => {
   const ask = (list, id, start, end) => d.applyThemeOp(list, { type: 'add', entry: { id, theme: 'espace', start, end, ask: true } });
   let list = ask([], 't1', '2026-11-01', '2026-11-07');
   const s = () => ({ themes: list });
-  eq(d.activeThemeEntry(s(), '2026-11-01'), null, 'pas encore de oui : interface normale');
-  eq(d.pendingThemeEntry(s(), '2026-11-01').id, 't1', 'la question est posée');
+  eq(d.activeThemeEntry(s(), '2026-11-01'), null, 'pas encore lancé : interface normale');
+  eq(d.pendingThemeEntry(s(), '2026-11-01').id, 't1', 'l’annonce est sur l’écran de la routine');
   eq(d.pendingThemeEntry(s(), '2026-10-31'), null, 'pas avant le premier jour');
-  eq(themeLooks(list).length, 0, 'Pandi ne porte pas la tenue avant le oui');
+  eq(themeLooks(list).length, 0, 'Pandi ne porte pas la tenue avant le lancement');
   list = d.applyThemeOp(list, { type: 'agree', id: 't1', at: '2026-11-02T17:00:00.000Z' });
-  eq(d.activeThemeEntry(s(), '2026-11-02').id, 't1', 'oui : le thème a lieu');
+  eq(d.activeThemeEntry(s(), '2026-11-02').id, 't1', 'lancé : le thème a lieu');
   eq(d.pendingThemeEntry(s(), '2026-11-02'), null);
   eq(themeLooks(list).length, 1);
-  eq(d.themeDay(d.activeThemeEntry(s(), '2026-11-02'), '2026-11-02'), 0, 'le premier fun fact le jour du oui');
+  eq(d.themeDay(d.activeThemeEntry(s(), '2026-11-02'), '2026-11-02'), 0, 'le premier fun fact le jour du lancement');
   eq(d.themeDay(list[0], '2026-11-05'), 3);
   list = d.applyThemeOp(list, { type: 'decline', id: 't1' });
-  eq(list.length, 1, 'un non après le oui ne change rien');
-  // Un non annule le thème ; un thème d'avant la v1.20 (sans ask) compte comme accepté
+  eq(list.length, 1, 'un « pas cette fois » après le lancement ne change rien');
+  // « Pas cette fois » annule le thème ; un thème sans ask (d'avant la v1.20, ou lancé en v1.36.0) compte comme lancé
   let other = d.applyThemeOp(ask([], 't2', '2026-11-01', '2026-11-07'), { type: 'decline', id: 't2' });
-  eq(other, [], 'non : le thème est annulé');
+  eq(other, [], 'pas lancé : le thème est annulé');
   other = themeAdd([], 'old', '2026-11-01', '2026-11-07');
   eq(d.activeThemeEntry({ themes: other }, '2026-11-03').id, 'old');
-  // Jamais accepté : il ne rejoint pas le livre des thèmes
+  // Jamais lancé : il ne rejoint pas le livre des thèmes
   other = ask([], 't3', '2026-11-01', '2026-11-07');
   eq(d.pastThemes({ themes: other }, '2026-11-20'), []);
 });

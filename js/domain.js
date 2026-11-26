@@ -49,7 +49,22 @@ export const DEFAULT_SETTINGS = {
   firstEvening: null,
   // Le soir de son anniversaire, l'enfant reçoit ces pandi (en plus d'un cadeau choisi dans tout le catalogue)
   birthday: { pandi: 50 },
+  // Contenus religieux choisis par les parents (Réglages) : null = aucun, 'juif' = rayon Judaïsme, costume de
+  // rabbin, boîte de tsedaka et cartes du Chabbat. Sans eux, la boîte devient « Dons », avec des mots neutres.
+  religion: null,
 };
+
+export const RELIGIONS = {
+  juif: { label: 'Judaïsme', icon: '✡️', meta: 'Rayon Judaïsme (kippas, talit katan, livres, bougies de Chabbat), costume de rabbin, boîte de tsedaka et cartes du Chabbat' },
+};
+export const religionOf = (settings) => (settings?.religion && RELIGIONS[settings.religion] ? settings.religion : null);
+
+// Les mots de la boîte à dons, selon les contenus religieux de la famille
+const GIFT_WORDS = {
+  juif: { tab: 'Tsedaka', box: 'Ma boîte de tsedaka', bravo: 'Quelle belle mitsva !', done: 'Mitsva !', badges: 'Mes badges de mitsva' },
+  neutre: { tab: 'Dons', box: 'Ma boîte à dons', bravo: 'Quel beau geste !', done: 'Quel beau geste !', badges: 'Mes badges du cœur' },
+};
+export const giftWords = (settings) => (religionOf(settings) === 'juif' ? GIFT_WORDS.juif : GIFT_WORDS.neutre);
 
 // Deux routines : le soir et le matin avant l'école. Même barème, même cagnotte, mêmes défis.
 export const ROUTINES = {
@@ -606,17 +621,18 @@ export function applyTsedakaCancel(state, { id }) {
   return { ledger: state.ledger.filter((l) => l.id !== id), ops: [{ op: 'del', table: 'ledger', match: { id } }], row };
 }
 
-// Badges de mitsva, selon le total donné (en pandi)
+// Badges de mitsva, selon le total donné (en pandi) ; neutre : le nom du badge sans contenus juifs
 export const TSEDAKA_BADGES = [
-  { min: 1, icon: '🌱', label: 'Première mitsva' },
+  { min: 1, icon: '🌱', label: 'Première mitsva', neutre: 'Premier don' },
   { min: 30, icon: '💛', label: 'Cœur généreux' },
   { min: 100, icon: '🤲', label: 'Main tendue' },
-  { min: 250, icon: '⭐', label: '{Petit tsadik|Petite tsadéket}' },
+  { min: 250, icon: '⭐', label: '{Petit tsadik|Petite tsadéket}', neutre: '{Champion|Championne} du partage' },
   { min: 500, icon: '🕯️', label: 'Lumière du monde' },
 ];
 export const tsedakaBadges = (child, state) => {
   const given = tsedakaGiven(child.id, state);
-  return TSEDAKA_BADGES.map((b) => ({ ...b, label: accorder(b.label, child), got: given >= b.min }));
+  const jewish = religionOf(state.settings) === 'juif';
+  return TSEDAKA_BADGES.map(({ neutre, ...b }) => ({ ...b, label: accorder(jewish || !neutre ? b.label : neutre, child), got: given >= b.min }));
 };
 
 // --- La surprise de Pandi -----------------------------------------------------------------------------
@@ -643,14 +659,14 @@ export const NEVER_AT_STAKE = [
 // age : 'tous', 'petit' (moins de 6 ans) ou 'grand'
 export const DEFAULT_PRIVILEGES = [
   { id: 'pv-histoire', family: 'choix', emoji: '📖', text: 'Tu choisis l’histoire du soir', age: 'tous' },
-  { id: 'pv-dessert', family: 'choix', emoji: '🍰', text: 'Tu choisis le dessert de Chabbat', age: 'tous' },
+  { id: 'pv-dessert', family: 'choix', emoji: '🍰', text: 'Tu choisis le dessert de Chabbat', neutre: 'Tu choisis le dessert du week-end', age: 'tous' },
   { id: 'pv-petitdej', family: 'choix', emoji: '🥐', text: 'Tu choisis le petit-déjeuner du dimanche', age: 'tous' },
   { id: 'pv-musique', family: 'choix', emoji: '🎵', text: 'Tu choisis la musique dans la voiture', age: 'tous' },
   { id: 'pv-jeu', family: 'choix', emoji: '🎲', text: 'Tu choisis le jeu de société de la famille', age: 'tous' },
   { id: 'pv-place', family: 'choix', emoji: '🪑', text: 'Tu choisis ta place à table ce soir', age: 'tous' },
   { id: 'pv-depart', family: 'mission', emoji: '🚦', text: 'Tu donnes le signal du départ pour l’école', age: 'tous' },
-  { id: 'pv-table', family: 'mission', emoji: '🍽️', text: 'Tu aides à mettre la table de Chabbat', age: 'tous' },
-  { id: 'pv-tsedaka', family: 'mission', emoji: '🪙', text: 'Tu mets la pièce dans la boîte de tsedaka', age: 'tous' },
+  { id: 'pv-table', family: 'mission', emoji: '🍽️', text: 'Tu aides à mettre la table de Chabbat', neutre: 'Tu décores la table pour le dîner', age: 'tous' },
+  { id: 'pv-tsedaka', family: 'mission', emoji: '🪙', text: 'Tu mets la pièce dans la boîte de tsedaka', neutre: 'Tu choisis l’association de notre prochain don', age: 'tous' },
   { id: 'pv-lumiere', family: 'mission', emoji: '💡', text: 'Tu éteins la lumière du salon ce soir', age: 'tous' },
   { id: 'pv-plantes', family: 'mission', emoji: '🪴', text: 'Tu arroses les plantes avec l’arrosoir', age: 'petit' },
   { id: 'pv-minuteur', family: 'mission', emoji: '⏱️', text: 'Tu lances toi-même ton minuteur', age: 'grand' },
@@ -658,16 +674,21 @@ export const DEFAULT_PRIVILEGES = [
   { id: 'pv-crepes', family: 'ensemble', emoji: '🥞', text: 'Des crêpes ensemble dimanche', age: 'tous' },
   { id: 'pv-jeuplus', family: 'ensemble', emoji: '🧩', text: 'Un jeu de société en plus avec Papa ou Maman', age: 'tous' },
   { id: 'pv-velo', family: 'ensemble', emoji: '🚲', text: 'Une balade à vélo ensemble', age: 'tous' },
-  { id: 'pv-gateau', family: 'ensemble', emoji: '🎂', text: 'On fait le gâteau de Chabbat ensemble', age: 'tous' },
+  { id: 'pv-gateau', family: 'ensemble', emoji: '🎂', text: 'On fait le gâteau de Chabbat ensemble', neutre: 'On fait un gâteau ensemble ce week-end', age: 'tous' },
   { id: 'pv-parc', family: 'ensemble', emoji: '🛝', text: 'Un détour par le parc en rentrant', age: 'tous' },
-  { id: 'pv-eq-dessert', family: 'equipe', emoji: '🍰', text: 'Vous choisissez ensemble le dessert de Chabbat', age: 'tous' },
+  { id: 'pv-eq-dessert', family: 'equipe', emoji: '🍰', text: 'Vous choisissez ensemble le dessert de Chabbat', neutre: 'Vous choisissez ensemble le dessert du week-end', age: 'tous' },
   { id: 'pv-eq-cabane', family: 'equipe', emoji: '⛺', text: 'On construit une cabane dans le salon, tous ensemble', age: 'tous' },
   { id: 'pv-eq-piquenique', family: 'equipe', emoji: '🧺', text: 'Un pique-nique sur le tapis du salon', age: 'tous' },
   { id: 'pv-eq-chasse', family: 'equipe', emoji: '🗺️', text: 'Une chasse au trésor dans la maison', age: 'tous' },
   { id: 'pv-eq-boum', family: 'equipe', emoji: '💃', text: 'Une boum dans le salon avant le dîner', age: 'tous' },
 ];
 
-export const privilegeDeck = (settings) => (Array.isArray(settings?.privileges) ? settings.privileges : DEFAULT_PRIVILEGES);
+// Les cartes de départ parlent du Chabbat seulement aux familles qui ont choisi les contenus juifs (neutre sinon)
+export const privilegeDeck = (settings) => {
+  if (Array.isArray(settings?.privileges)) return settings.privileges;
+  const jewish = religionOf(settings) === 'juif';
+  return DEFAULT_PRIVILEGES.map(({ neutre, ...p }) => (jewish || !neutre ? p : { ...p, text: neutre }));
+};
 
 // Les cartes qui conviennent : celles de l'équipe pour une surprise d'équipe, sinon celles de l'âge de l'enfant
 export function privilegesFor(child, settings, team = false) {
@@ -783,8 +804,9 @@ export const THEME_HISTORY = 30;
 const themesOf = (settings) => (Array.isArray(settings?.themes) ? settings.themes : []);
 const byStart = (a, b) => String(a.start).localeCompare(String(b.start));
 
-// Un thème lancé depuis la v1.20 (ask) ne commence que quand les enfants ont dit oui (agreed) ; ceux
-// d'avant comptent comme acceptés. Tant qu'ils n'ont pas répondu, l'interface reste normale.
+// Un thème programmé par les parents (ask) est annoncé aux enfants sur l'écran de la routine le premier
+// jour, et ne commence que quand un parent l'y lance (agreed). Ceux d'avant la v1.20, et ceux lancés en
+// v1.36.0 (sans ask), comptent comme lancés. Tant qu'il n'est pas lancé, l'interface reste normale.
 export const themeOn = (t) => Boolean(t && (!t.ask || t.agreed));
 export const activeThemeEntry = (settings, today) => themesOf(settings).find((t) => t.start <= today && today <= t.end && themeOn(t)) || null;
 export const pendingThemeEntry = (settings, today) => themesOf(settings).find((t) => t.start <= today && today <= t.end && !themeOn(t)) || null;
@@ -793,7 +815,7 @@ export const pendingThemeEntry = (settings, today) => themesOf(settings).find((t
 export const upcomingThemes = (settings, today) => themesOf(settings).filter((t) => t.start > today).sort(byStart);
 export const pastThemes = (settings, today) => themesOf(settings).filter((t) => t.end < today && themeOn(t)).sort(byStart).reverse();
 
-// Le jour du thème (0 le premier jour où il a eu lieu : le jour du oui des enfants, sinon son début)
+// Le jour du thème (0 le premier jour où il a eu lieu : le jour où le parent l'a lancé, sinon son début)
 export function themeDay(entry, date) {
   const base = entry.agreed ? toISODate(new Date(entry.agreed)) : entry.start;
   const from = base > entry.start ? base : entry.start;
@@ -823,8 +845,8 @@ export function themeGiftOf(owned, childId, entry) {
 }
 
 // add (un thème programmé ou lancé), stop (il s'arrête aujourd'hui : il finit hier, ou disparaît s'il
-// n'avait pas commencé), agree (les enfants ont dit oui, une seule fois), decline (ils ont dit non : le
-// thème est annulé), photo (la photo du livre, une seule fois), before (la tenue d'un enfant gardée
+// n'avait pas commencé), agree (un parent l'a lancé sur l'écran de la routine, une seule fois), decline
+// (il ne l'a pas lancé : le thème est annulé), photo (la photo du livre, une seule fois), before (la tenue d'un enfant gardée
 // au début du thème, une seule fois : before[childId] = equipped), restored (cette tenue lui a été
 // rendue à la fin : restored[childId] = date). Fonction pure, rejouée sur les réglages les plus récents
 // du serveur comme pour les surprises.

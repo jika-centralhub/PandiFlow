@@ -1,48 +1,45 @@
-// Le thème proposé par les parents : le jour venu, Pandi demande aux enfants, tous ensemble devant
-// l'écran de la routine, s'ils sont d'accord. Il faut le oui de chacun ; un non annule le thème et
-// l'interface reste normale. Et le « Le savais-tu ? » du thème, à la fin de chaque routine.
-import { html, useState } from '../vendor/preact-htm.js';
+// Le thème programmé par les parents : le premier jour, l'écran de la routine l'annonce aux enfants, et
+// c'est le parent qui décide pour eux, devant eux, de le lancer ou pas (un seul choix, pas de vote).
+// Et le « Le savais-tu ? » du thème, à la fin de chaque routine.
+import { html } from '../vendor/preact-htm.js';
 import * as actions from '../lib/actions.js';
 import { Avatar } from '../avatar/Avatar.js';
 import { getTheme } from '../avatar/themes.js';
 import { sfx } from '../lib/sounds.js';
 
+const joinNames = (kids) => kids.map((k) => k.name).join(', ').replace(/, ([^,]*)$/, ' et $1');
+
 export function ThemeAsk({ entry, kids, onLater }) {
   const theme = getTheme(entry.theme);
-  const [answers, setAnswers] = useState({}); // childId -> true (oui) / false (non)
   if (!theme) return null;
   const one = kids.length === 1;
-  const all = kids.every((k) => answers[k.id] != null);
-  const yes = all && kids.every((k) => answers[k.id]);
-  const answer = (k, v) => {
-    sfx.tap();
-    setAnswers((a) => ({ ...a, [k.id]: v }));
-  };
-  function done() {
-    if (yes) sfx.chest();
-    else sfx.pop();
-    actions.answerTheme(entry.id, yes);
+  function launch() {
+    sfx.chest();
+    actions.answerTheme(entry.id, true);
   }
-  return html`<div class="theme-ask" role="dialog" aria-label=${`Pandi propose le thème ${theme.name}`} style=${{ '--c': theme.color }}>
+  function decline() {
+    // Un enfant peut toucher l'écran : on demande confirmation avant d'annuler le thème
+    if (!confirm(`Ne pas lancer le thème ${theme.name} ? Il est annulé et la boutique reste comme d’habitude.`)) return;
+    sfx.pop();
+    actions.answerTheme(entry.id, false);
+  }
+  return html`<div class="theme-ask" role="dialog" aria-label=${`Pandi annonce le thème ${theme.name}`} style=${{ '--c': theme.color }}>
     <div class="ta-card">
-      <div class="ta-top"><span class="ta-emoji">${theme.emoji}</span><h2>Pandi ${one ? 'te' : 'vous'} propose un thème : ${theme.name} !</h2></div>
+      <div class="ta-top"><span class="ta-emoji">${theme.emoji}</span><h2>Une semaine ${theme.name} pour ${one ? 'toi' : 'vous'}, ${joinNames(kids)} !</h2></div>
+      <div class="ta-kids">${kids.map((k) => html`<span key=${k.id} class="ta-head" style=${{ '--kid': k.color }}>
+        <${Avatar} look=${k.look} equipped=${k.equipped} expr="joy" mode="head" seed=${k.id} />
+      </span>`)}</div>
       <ul class="ta-list">
-        <li>🛍️ Une semaine où la boutique devient la vitrine ${theme.name}, avec un cadeau pour ${one ? 'toi' : 'chacun'}</li>
-        <li>🖼️ ${one ? 'Ta scène prend' : 'Vos scènes prennent'} le décor du thème</li>
+        <li>🛍️ La boutique devient la vitrine ${theme.name}, avec un cadeau pour ${one ? 'toi' : 'chacun'}</li>
+        <li>🖼️ ${one ? 'Ta scène prend' : 'Vos scènes prennent'} le décor du thème, et Pandi se déguise</li>
         <li>💡 Un « Le savais-tu ? » à la fin de chaque routine</li>
         <li>🔁 Après le thème, tout redevient comme avant</li>
       </ul>
-      <h3 class="ta-q">${one ? 'Tu es d’accord ?' : 'Vous êtes d’accord ? Il faut le oui de chacun.'}</h3>
-      <div class="ta-kids">${kids.map((k) => html`<div key=${k.id} class="ta-kid" style=${{ '--kid': k.color }}>
-        <span class="ta-head"><${Avatar} look=${k.look} equipped=${k.equipped} expr=${answers[k.id] === false ? 'encourage' : 'happy'} mode="head" seed=${k.id} /></span>
-        <span class="ta-name">${k.name}</span>
-        <button class=${`ta-yes ${answers[k.id] === true ? 'on' : ''}`} onClick=${() => answer(k, true)}>👍 Oui !</button>
-        <button class=${`ta-no ${answers[k.id] === false ? 'on' : ''}`} onClick=${() => answer(k, false)}>🙅 Non merci</button>
-      </div>`)}</div>
-      ${all && html`<p class="ta-result">${yes ? `${theme.emoji} C’est parti pour une semaine ${theme.name} !` : 'D’accord : pas de thème cette fois, la boutique reste comme d’habitude.'}</p>`}
+      <p class="ta-parent">👪 C’est un parent qui décide de lancer le thème.</p>
       <div class="sheet-actions">
         <button class="btn btn-ghost" onClick=${() => { sfx.tap(); onLater(); }}>Plus tard</button>
-        ${all && html`<button class=${`btn btn-big ${yes ? 'btn-gold' : 'btn-green'}`} onClick=${done}>${yes ? '🚀 C’est parti !' : 'D’accord'}</button>`}
+        <button class="btn btn-ghost" onClick=${decline}>Pas cette fois</button>
+        <button class="btn btn-big btn-gold" onClick=${launch}>🚀 On lance le thème !</button>
       </div>
     </div>
   </div>`;

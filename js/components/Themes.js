@@ -71,7 +71,7 @@ export function ThemeParent() {
       return;
     }
     sfx.sparkle();
-    toast(start === today ? `Pandi va proposer le thème ${getTheme(themeId).name} aux enfants sur l’écran de la routine ${getTheme(themeId).emoji}` : `Thème programmé ${period(res.entry)} : Pandi le proposera aux enfants le premier jour`);
+    toast(start === today ? `Le thème ${getTheme(themeId).name} ${getTheme(themeId).emoji} est annoncé aux enfants sur l’écran de la routine : lancez-le avec eux` : `Thème programmé ${period(res.entry)} : il sera annoncé aux enfants le premier jour`);
     setStart(nextThemeStart(getState().settings, today));
     setThemeId(suggestedTheme(getState().settings.themes));
   }
@@ -85,7 +85,7 @@ export function ThemeParent() {
 
   return html`<div class="themes-parent">
     <h2>Thèmes de la boutique</h2>
-    <p class="hint">Une vitrine de Pandi pendant ${THEME_DAYS} jours, une semaine sur deux. Le premier jour, Pandi demande aux enfants sur l’écran de la routine s’ils sont d’accord : il faut le oui de chacun, sinon le thème est annulé. Pendant le thème, la boutique n’a qu’une rubrique : la vitrine, avec tous les objets du thème ; chaque enfant choisit un cadeau parmi ${GIFT_CHOICES} (${GIFT_MAX} pandi au plus), sans condition. Pandi porte la tenue du thème sur la télé, la scène de l’enfant prend son décor (ses autres décors attendent), et un « Le savais-tu ? » s’affiche à la fin de chaque routine. À la fin, tout revient comme avant : les rayons, et la tenue que chaque enfant avait au début du thème (les objets du thème restent à lui). Une photo rejoint le livre des thèmes.</p>
+    <p class="hint">Une vitrine de Pandi pendant ${THEME_DAYS} jours, une semaine sur deux. Le premier jour, l’écran de la routine l’annonce aux enfants, et c’est vous qui le lancez devant eux (ou pas : il est alors annulé). Pendant le thème, la boutique n’a qu’une rubrique : la vitrine, avec tous les objets du thème ; chaque enfant choisit un cadeau parmi ${GIFT_CHOICES} (${GIFT_MAX} pandi au plus), sans condition. Pandi porte la tenue du thème sur la télé, la scène de l’enfant prend son décor (ses autres décors attendent), et un « Le savais-tu ? » s’affiche à la fin de chaque routine. À la fin, tout revient comme avant : les rayons, et la tenue que chaque enfant avait au début du thème (les objets du thème restent à lui). Une photo rejoint le livre des thèmes.</p>
 
     ${current && (() => {
       const theme = getTheme(current.theme);
@@ -107,8 +107,8 @@ export function ThemeParent() {
       return html`<div class="row theme-now" style=${{ '--c': theme?.color }}>
         <span class="emoji">${theme?.emoji}</span>
         <div class="grow">
-          <div class="title">${theme?.name} : proposé aux enfants, ${period(waiting)}</div>
-          <div class="meta">Ils n’ont pas encore répondu : Pandi leur pose la question sur l’écran de la routine.</div>
+          <div class="title">${theme?.name} : annoncé aux enfants, ${period(waiting)}</div>
+          <div class="meta">Pas encore lancé : touchez « On lance le thème ! » avec eux sur l’écran de la routine.</div>
         </div>
         <button class="p-btn danger" onClick=${() => stop(waiting)}>Annuler</button>
       </div>`;

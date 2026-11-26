@@ -6,7 +6,10 @@
 export const SUPABASE_URL = 'https://kyhhkhmwdostzdaksxzw.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable__E61F1zKiN431iU2AlKySQ_PZOsOtgi';
 
-export const APP_VERSION = '1.32.0-labo.8';
+export const APP_VERSION = '1.37.0-labo.9';
+
+// Adresse de contact des familles (page de confidentialité, demandes de suppression des données)
+export const CONTACT_EMAIL = 'contact@pandiflow.com';
 
 // Labo (branche labo-boucles, publiée à part) : les Pandi des cartes au repos rejouent une boucle
 // enregistrée au lieu de recalculer la 3D (js/mascot/boucles.js). ?boucles=0 les coupe sur cet appareil

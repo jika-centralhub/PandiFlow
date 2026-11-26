@@ -874,7 +874,11 @@ export const potItems = () => ITEMS.filter((i) => i.pot);
 export const isGarageSlot = (slot) => slot in GARAGE_SLOTS;
 // Rayon de la boutique où se range un objet (les kippas et le talit katan vont au rayon Judaïsme)
 export const rayonOf = (item) => item?.rayon || item?.slot;
+// Contenu religieux d'un objet : tout le rayon Judaïsme, et les objets marqués religion (costume de rabbin)
+export const religionOfItem = (item) => (rayonOf(item) === 'judaica' ? 'juif' : item?.religion || null);
 // Boutique adaptée au sexe de l'enfant : certains objets ne sont proposés qu'aux garçons (only),
 // d'autres sont mis en avant (star). Sans sexe précisé, tout est proposé, rien n'est mis en avant.
-export const offeredTo = (item, sex) => !item.only || !sex || item.only === sex;
+// Les objets religieux ne sont proposés qu'aux familles qui ont choisi ces contenus (religion, voir
+// domain.religionOf : null = aucun).
+export const offeredTo = (item, sex, religion = null) => (!item.only || !sex || item.only === sex) && (!religionOfItem(item) || religionOfItem(item) === religion);
 export const starredFor = (item, sex) => Boolean(sex) && (item.star === sex || item.only === sex);

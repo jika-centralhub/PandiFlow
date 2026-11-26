@@ -15,6 +15,12 @@ export function setSoftSound(on) {
 
 function audio() {
   if (!getState().prefs.sound) return null;
+  return audioContext();
+}
+
+// Le contexte audio de l'app, même son coupé : l'oreille de Pandi (js/lib/micro.js) s'en sert pour
+// mesurer le bruit, sans rien jouer
+export function audioContext() {
   if (!ctx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
@@ -23,9 +29,15 @@ function audio() {
     master.gain.value = soft ? LEVEL.soft : LEVEL.normal;
     master.connect(ctx.destination);
   }
-  if (ctx.state === 'suspended') ctx.resume();
+  if (ctx.state !== 'running') ctx.resume?.().catch(() => {});
   return ctx;
 }
+
+// Jusqu'à quand l'app joue un son (performance.now(), en ms) : pendant ce temps, l'oreille de Pandi
+// n'écoute pas (sinon il s'entendrait lui-même)
+let playingUntil = 0;
+const playing = (ms) => (playingUntil = Math.max(playingUntil, performance.now() + ms));
+export const appSoundUntil = () => playingUntil;
 
 // Les navigateurs exigent un geste de l'utilisateur avant de jouer du son
 export function unlockAudio() {
@@ -64,6 +76,7 @@ function speak(text, onEnd) {
   const voice = synth.getVoices().find((v) => v.lang?.toLowerCase().startsWith('fr'));
   if (voice) u.voice = voice;
   if (onEnd) u.onend = onEnd;
+  playing(text.length * 90 + 500); // à peu près le temps de la phrase
   synth.speak(u);
   return true;
 }
@@ -103,6 +116,7 @@ function playVoice(a, nom, text, onEnd) {
       line.src = a.createBufferSource();
       line.src.buffer = buffer;
       line.src.connect(voiceBus);
+      playing(buffer.duration * 1000 + 100);
       line.src.onended = () => {
         if (line.stopped) return;
         if (speaking === line) speaking = null;
@@ -130,6 +144,7 @@ export function stopSaying() {
 function tone(freq, { at = 0, dur = 0.15, type = 'sine', vol = 0.4, slide = 0, attack = 0.005, dest = null } = {}) {
   const a = audio();
   if (!a) return;
+  playing((at + dur) * 1000 + 100);
   const t = a.currentTime + at;
   const osc = a.createOscillator();
   const g = a.createGain();
@@ -148,6 +163,7 @@ function tone(freq, { at = 0, dur = 0.15, type = 'sine', vol = 0.4, slide = 0, a
 function noise({ at = 0, dur = 0.3, vol = 0.2, freq = 1200, q = 1, attack = 0, filter = 'bandpass', to = 0, dest = null } = {}) {
   const a = audio();
   if (!a) return;
+  playing((at + dur) * 1000 + 100);
   const t = a.currentTime + at;
   const buffer = a.createBuffer(1, Math.floor(a.sampleRate * dur), a.sampleRate);
   const data = buffer.getChannelData(0);

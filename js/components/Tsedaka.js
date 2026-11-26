@@ -1,5 +1,7 @@
 // La tsedaka : l'enfant met des pandi dans sa boîte de tsedaka et choisit l'association parmi celles
 // des parents ; les parents versent l'équivalent en euros (taux réglable) et le notent ici.
+// Sans contenus juifs (Réglages → Contenus religieux), c'est la boîte à dons : mêmes règles, mots de tous
+// les jours (giftWords) et un cœur à la place de « צדקה ».
 //   - TsedakaPanel : l'onglet de l'enfant (boîte, montant, association, badges de mitsva)
 //   - TsedakaParent : la section de l'espace parent (à verser, taux, associations, historique)
 import { html, useRef, useState } from '../vendor/preact-htm.js';
@@ -7,7 +9,7 @@ import { useStore, toast } from '../lib/store.js';
 import * as actions from '../lib/actions.js';
 import {
   balance, accord, tsedakaGiven, tsedakaDue, tsedakaPaidTotals, tsedakaBadges, tsedakaEuros, tsedakaRate, formatEuros,
-  mergeSettings, activeChildren, TSEDAKA_LATER,
+  mergeSettings, activeChildren, TSEDAKA_LATER, giftWords, religionOf,
 } from '../domain.js';
 import { Coin } from './Coin.js';
 import { Modal, NumberInput } from './ui.js';
@@ -16,8 +18,9 @@ import { sfx } from '../lib/sounds.js';
 
 const AMOUNTS = [1, 5, 10, 20, 50];
 
-// La boîte de tsedaka (pouchké) : bleue et blanche, avec sa fente ; elle saute quand on y met des pièces
-export function TsedakaBox({ boxRef, size = 'md' }) {
+// La boîte de tsedaka (pouchké) : bleue et blanche, avec sa fente ; elle saute quand on y met des pièces.
+// hebrew : « צדקה » écrit dessus (contenus juifs), sinon un cœur
+export function TsedakaBox({ boxRef, size = 'md', hebrew = true }) {
   return html`<div class=${`tz-box ${size}`} ref=${boxRef}>
     <svg viewBox="0 0 120 130" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
@@ -29,7 +32,9 @@ export function TsedakaBox({ boxRef, size = 'md' }) {
       <ellipse cx="60" cy="34" rx="44" ry="12" fill="url(#tz-top)" stroke="#12307A" stroke-width="2" />
       <rect x="42" y="30" width="36" height="7" rx="3.5" fill="#0D2160" />
       <path d="M18 58 L102 58 M18 100 L102 100" stroke="#fff" stroke-width="5" opacity=".9" />
-      <text x="60" y="88" text-anchor="middle" font-size="19" font-weight="700" fill="#fff" direction="rtl" font-family="'Frank Ruhl Libre', 'David', 'Arial Hebrew', 'Noto Sans Hebrew', serif">צדקה</text>
+      ${hebrew
+        ? html`<text x="60" y="88" text-anchor="middle" font-size="19" font-weight="700" fill="#fff" direction="rtl" font-family="'Frank Ruhl Libre', 'David', 'Arial Hebrew', 'Noto Sans Hebrew', serif">צדקה</text>`
+        : html`<path d="M60 92 C52 85 45 80 45 73 C45 68 49 65 53 65 C56 65 58 67 60 70 C62 67 64 65 67 65 C71 65 75 68 75 73 C75 80 68 85 60 92 Z" fill="#fff" />`}
       <path d="M26 44 C24 60 24 90 26 110" stroke="#fff" stroke-width="4" opacity=".22" fill="none" stroke-linecap="round" />
     </svg>
   </div>`;
@@ -38,6 +43,8 @@ export function TsedakaBox({ boxRef, size = 'md' }) {
 export function TsedakaPanel({ child, counter, onGive }) {
   const s = useStore();
   const settings = mergeSettings(s.settings);
+  const words = giftWords(s.settings);
+  const hebrew = religionOf(s.settings) === 'juif';
   const bal = balance(child.id, s);
   const given = tsedakaGiven(child.id, s);
   const badges = tsedakaBadges(child, s);
@@ -69,16 +76,16 @@ export function TsedakaPanel({ child, counter, onGive }) {
 
   return html`<div class="tsedaka">
     <div class="tz-hero">
-      <${TsedakaBox} boxRef=${box} />
+      <${TsedakaBox} boxRef=${box} hebrew=${hebrew} />
       <div class="tz-hero-text">
-        <h3>Ma boîte de tsedaka</h3>
-        <p>${given ? html`Tu as déjà donné <b>${given} pandi</b>. Quelle belle mitsva ! 💙` : 'Donne une partie de tes pandi : Papa et Maman les transforment en vrais euros pour une association.'}</p>
+        <h3>${words.box}</h3>
+        <p>${given ? html`Tu as déjà donné <b>${given} pandi</b>. ${words.bravo} 💙` : 'Donne une partie de tes pandi : Papa et Maman les transforment en vrais euros pour une association.'}</p>
       </div>
     </div>
 
     ${done
       ? html`<div class="tz-done">
-          <div class="tz-done-title">Mitsva ! 🎉</div>
+          <div class="tz-done-title">${words.done} 🎉</div>
           <p>Tu as donné <b>${done.amount} pandi</b>${done.assoc === TSEDAKA_LATER ? '' : html` à <b>${done.assoc}</b>`}.<br />Papa et Maman vont verser <b>${formatEuros(tsedakaEuros(done.amount, s.settings))}</b> pour toi.</p>
           ${done.badge && html`<div class="tz-new-badge"><span>${done.badge.icon}</span> Nouveau badge : <b>${done.badge.label}</b></div>`}
           <button class="btn btn-blue" onClick=${() => { sfx.tap(); setDone(null); }}>D'accord !</button>
@@ -101,14 +108,14 @@ export function TsedakaPanel({ child, counter, onGive }) {
             <p class="hint">= ${formatEuros(tsedakaEuros(value, s.settings))} versés par tes parents (${tsedakaRate(s.settings)} pandi = 1 €)</p>
           </div>`}
 
-    <h4>Mes badges de mitsva</h4>
+    <h4>${words.badges}</h4>
     <div class="tz-badges">${badges.map((b, i) => html`<div key=${b.min} class=${`tz-badge ${b.got ? 'got' : ''}`} style=${{ '--i': i }}>
       <span class="ico">${b.got ? b.icon : '🔒'}</span><b>${b.label}</b><em>${b.min} pandi</em>
     </div>`)}</div>
 
     ${confirm && html`<${Modal} onClose=${() => setConfirm(false)} style=${{ '--kid': child.color }}>
       <div class="tz-confirm">
-        <${TsedakaBox} size="sm" />
+        <${TsedakaBox} size="sm" hebrew=${hebrew} />
         <h2>Tu donnes ${value} pandi ?</h2>
         <p>${assoc === TSEDAKA_LATER ? 'Papa et Maman choisiront l’association.' : html`Pour <b>${assoc}</b>.`} Ils ne reviennent pas dans ta cagnotte : c'est un vrai cadeau, et tu en es ${accord(child, 'le héros', 'l’héroïne')} !</p>
         <div class="sheet-actions">
