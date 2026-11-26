@@ -6,7 +6,7 @@
 export const SUPABASE_URL = 'https://kyhhkhmwdostzdaksxzw.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable__E61F1zKiN431iU2AlKySQ_PZOsOtgi';
 
-export const APP_VERSION = '1.32.0-labo.5';
+export const APP_VERSION = '1.32.0-labo.6';
 
 // Labo (branche labo-boucles, publiée à part) : les Pandi des cartes au repos rejouent une boucle
 // enregistrée au lieu de recalculer la 3D (js/mascot/boucles.js). ?boucles=0 les coupe sur cet appareil
@@ -18,6 +18,20 @@ export const POSES = (() => {
     const m = /[?&]poses=([01])/.exec(location.search);
     if (m) localStorage.setItem('pandiflow-poses', m[1]);
     return localStorage.getItem('pandiflow-poses') !== '0';
+  } catch {
+    return true;
+  }
+})();
+
+// Labo : l'écran calme (26/11/2026). Le décor ne bouge plus (étoiles fixes, nuages arrêtés, lueurs fixes,
+// voir css/calme.css), le véhicule et le compagnon ne se baladent que de temps en temps, et l'écran se met
+// en veille au bout de 2 minutes sans qu'on le touche (js/lib/veille.js). ?calme=0 remet l'ancien écran
+// sur cet appareil pour comparer, ?calme=1 l'écran calme.
+export const CALME = (() => {
+  try {
+    const m = /[?&]calme=([01])/.exec(location.search);
+    if (m) localStorage.setItem('pandiflow-calme', m[1]);
+    return localStorage.getItem('pandiflow-calme') !== '0';
   } catch {
     return true;
   }

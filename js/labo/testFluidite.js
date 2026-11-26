@@ -9,6 +9,7 @@ import { navigate } from '../router.js';
 import { APP_VERSION } from '../config.js';
 import { forcePose } from '../components/PandiPose.js';
 import * as timers from '../lib/timers.js';
+import { holdVeille, forceVeille } from '../lib/veille.js';
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -34,6 +35,8 @@ const FIGE_PANDI = '.pp, .pp * { animation-play-state: paused !important; }';
 const STEPS = [
   { id: 'tout', label: 'Tout anime', s: 30, css: '' },
   { id: 'brossage', label: 'Brossage sur les 2 cartes', s: 30, css: '', pose: 'dents' },
+  // 3e version (écran calme, labo.6) : l'écran en veille, comme au bout de 2 minutes sans le toucher
+  { id: 'veille', label: 'Veille', s: 30, css: '', veille: true },
   { id: 'minuteur', label: 'Minuteur lancé', s: 40, css: '', pose: 'dents', timer: true },
   { id: 'minuteur_decor_fige', label: 'Minuteur, décor figé', s: 30, css: FIGE_DECOR, pose: 'dents', timer: true },
   { id: 'minuteur_pandi_fige', label: 'Minuteur, Pandi figé', s: 30, css: FIGE_PANDI, pose: 'dents', timer: true },
@@ -60,12 +63,14 @@ async function run() {
   window.addEventListener('pointerdown', onTap, true);
   const results = [];
   let timerKey = null;
+  holdVeille(true);
   for (let i = 0; i < STEPS.length; i++) {
     const s = STEPS[i];
     const STEP_S = s.s;
     forcePose(s.pose || null);
     if (s.timer && !timerKey) timerKey = await startTimer();
     style.textContent = s.css;
+    forceVeille(Boolean(s.veille));
     taps = 0;
     const gaps = [];
     let last = 0, t0 = performance.now(), measuring = false;
@@ -97,6 +102,8 @@ async function run() {
     });
   }
   style.remove();
+  forceVeille(false);
+  holdVeille(false);
   forcePose(null);
   if (timerKey) timers.removeTimer(timerKey);
   window.removeEventListener('pointerdown', onTap, true);
@@ -106,6 +113,7 @@ async function run() {
     dpr: devicePixelRatio, viewport: `${innerWidth}x${innerHeight}`,
     standalone: matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true,
     ua: navigator.userAgent,
+    calme: document.documentElement.classList.contains('calme'),
   };
   const sent = await send(results, extra);
   pill.remove();

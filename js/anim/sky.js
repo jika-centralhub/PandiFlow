@@ -1,5 +1,6 @@
 // Ciel du soir animé : étoiles qui scintillent (canvas), lune, nuages, collines et étoiles filantes.
 import { prefersReducedMotion, rand } from '../lib/util.js';
+import { CALME } from '../config.js';
 
 export function initSky(root) {
   root.innerHTML = '';
@@ -58,9 +59,10 @@ export function initSky(root) {
 
   function draw(t) {
     g.clearRect(0, 0, w, h);
-    const still = prefersReducedMotion();
+    // écran calme : les étoiles sont dessinées une fois, sans scintiller
+    const still = CALME || prefersReducedMotion();
     for (const s of stars) {
-      const a = still ? 0.8 : 0.45 + 0.55 * Math.abs(Math.sin(s.phase + (t / 1000) * s.speed));
+      const a = 0.45 + 0.55 * Math.abs(Math.sin(s.phase + (still ? 0 : (t / 1000) * s.speed)));
       g.fillStyle = `${s.hue}${a.toFixed(2)})`;
       g.beginPath();
       g.arc(s.x, s.y, s.r, 0, Math.PI * 2);
@@ -109,6 +111,7 @@ export function initSky(root) {
 
   window.addEventListener('resize', resize);
   resize();
+  if (CALME) return () => window.removeEventListener('resize', resize);
   raf = requestAnimationFrame(loop);
   return () => cancelAnimationFrame(raf);
 }

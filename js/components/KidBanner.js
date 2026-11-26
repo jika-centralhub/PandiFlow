@@ -3,7 +3,8 @@
 // qui ont leur image 3D). Seul transform est animé, sur des images HTML : le téléphone le fait sans
 // redessiner (voir css/routine.css). Trois couches : le bouton se balade, son .kh-act joue le geste au
 // toucher (le véhicule fonce, le compagnon saute, chacun avec son bruit), l'image respire ou rebondit.
-import { html } from '../vendor/preact-htm.js';
+import { html, useEffect, useState } from '../vendor/preact-htm.js';
+import { CALME } from '../config.js';
 import { getItem } from '../avatar/items.js';
 import { hasArt, artSrc } from '../avatar/art.js';
 import { garageSfx, sfx } from '../lib/sounds.js';
@@ -58,16 +59,32 @@ function play(e, frames, duration) {
   el.animate?.(frames, { duration, easing: 'ease-in-out' });
 }
 
+// Écran calme (CALME, js/config.js) : ils restent garés et ne font qu'une balade de temps en temps (une
+// toutes les 2 à 3 minutes, à tour de rôle d'un enfant à l'autre), le reste du temps rien ne bouge
+const WALK_MS = 32000;
+function useBalade(index, on) {
+  const [walk, setWalk] = useState(false);
+  useEffect(() => {
+    if (!on) return undefined;
+    let t = 0;
+    const rest = (ms) => { t = setTimeout(() => { setWalk(true); t = setTimeout(() => { setWalk(false); rest(120000 + Math.random() * 60000); }, WALK_MS); }, ms); };
+    rest(20000 + index * 45000);
+    return () => clearTimeout(t);
+  }, [index, on]);
+  return walk;
+}
+
 export function KidStuff({ child, index = 0 }) {
   const veh = getItem(child.equipped?.vehicle);
   const pet = getItem(child.equipped?.pet);
   const vImg = imgOf(veh);
   const pImg = imgOf(pet);
+  const walk = useBalade(index, CALME && Boolean(vImg || pImg));
   if (!vImg && !pImg) return null;
   const sky = veh?.zone === 'sky';
   // les deux colonnes ne bougent pas en même temps
   const delay = { '--d': `${-index * 1.3}s`, '--w': `${-index * 7}s` };
-  return html`<div class="kh-stuff" style=${delay}>
+  return html`<div class=${`kh-stuff ${walk ? 'balade' : ''}`} style=${delay}>
     ${vImg && html`<button class=${`kh-veh ${sky ? 'sky' : ''}`} aria-label=${veh.name}
       onClick=${(e) => { garageSfx[veh.sound]?.(); play(e, sky ? FLY : DRIVE, sky ? 2200 : 2400); }}>
       <span class="kh-act"><img src=${artSrc(vImg)} alt="" draggable="false" /></span>

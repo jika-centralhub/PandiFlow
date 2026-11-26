@@ -122,6 +122,13 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
     if (!morning) return;
     let raf = 0, prev = performance.now(), n = 0;
     const loop = (now) => {
+      // en images, la boucle s'arrête quand personne ne le chatouille (l'écran peut se reposer) ; rub() la relance
+      if (POSES && st.current.tickle === 0 && n > 12 && !st.current.waking) {
+        raf = 0;
+        if (rit.current) rit.current.style.opacity = '0';
+        box.current?.classList.remove('gigote');
+        return;
+      }
       raf = requestAnimationFrame(loop);
       const dt = Math.min(0.1, (now - prev) / 1000);
       prev = now;
@@ -144,7 +151,15 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
       }
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    st.current.relance = () => {
+      if (raf) return;
+      prev = performance.now();
+      raf = requestAnimationFrame(loop);
+    };
+    return () => {
+      cancelAnimationFrame(raf);
+      st.current.relance = null;
+    };
   }, [morning, ready]);
 
   // Le ventre de Pandi à l'écran (coordonnées de la page), ou null tant que la 3D n'est pas prête
@@ -168,6 +183,7 @@ export function Chambre({ mode, kids, onExit, onAwake, mot = null, onMotClose })
     const w = near ? 1 : FAR;
     s.progress += (tap ? 0.07 : d / H / RUB_TO_WAKE) * w;
     s.tickle = Math.min(1, s.tickle + (tap ? 0.55 : (d / H) * 4) * w);
+    s.relance?.();
     const now = performance.now();
     if (s.tickle > 0.15 && now - s.giggle > (tap ? 150 : 420)) {
       s.giggle = now;

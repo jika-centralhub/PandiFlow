@@ -1,0 +1,51 @@
+/* Labo : l'écran calme (26/11/2026, CALME dans js/config.js, classe html.calme).
+   Le téléphone chauffait même quand personne ne touchait l'écran : tant que quelque chose bouge, l'iPhone
+   garde l'affichage à plein régime. Ici, seul ce qui donne une information ou fait vivre Pandi et les
+   enfants bouge encore ; le décor est figé (les numéros sont ceux de la liste choisie avec Jacob). */
+
+/* 3. les nuages s'arrêtent là où ils sont (1 et 2, les étoiles fixes sans étoile filante : js/anim/sky.js) */
+html.calme .sky-cloud { animation-play-state: paused; }
+/* 4. le logo ne tourne plus */
+html.calme .brand .logo { animation: none; }
+/* 5 et 6. les bulles du coffre et du coin calme ne flottent plus, la lueur du coin calme est fixe */
+html.calme .tb-bubble { animation: none; }
+html.calme .calm-btn:not(.tb-bubble) { animation: none; box-shadow: inset 0 0 0 2px var(--line), 0 0 calc(var(--u) * 2.4) rgba(255, 210, 255, .45); }
+/* 7. le coffre d'équipe est immobile, sauf quand le palier est atteint */
+html.calme .team-chest:not(.done) { animation: fade-up .5s ease backwards; }
+html.calme .team-chest:not(.done) .tc-halo { animation: none; }
+/* 10. dans les bandeaux, les objets portés (flammes, hélice, cape, ailes…) sont figés ; l'avatar respire
+   toujours, et danse quand il est content (ils restent animés dans la boutique et le coin de l'enfant) */
+html.calme .kid-avatar.bust .avatar:not(.pose-cheer):not(.pose-dance) *:not(.av-char) { animation: none !important; }
+/* 11 et 12. le véhicule et le compagnon restent garés, et font une balade de temps en temps (KidBanner.js) */
+html.calme .kh-stuff .kh-veh, html.calme .kh-stuff .kh-pet, html.calme .kh-stuff img { animation: none; }
+html.calme .kh-stuff.balade .kh-veh { animation: kh-wander 30s ease-in-out 1; }
+html.calme .kh-stuff.balade .kh-pet { animation: kh-wander 21s ease-in-out 1; }
+html.calme .kh-stuff.balade .kh-veh img { animation: kh-bob 1.7s ease-in-out 18; }
+html.calme .kh-stuff.balade .kh-veh.sky img { animation: kh-hover 3.2s ease-in-out 9; }
+html.calme .kh-stuff.balade .kh-pet img { animation: kh-hop 3.6s ease-in-out 6; }
+/* 15. « Touche pour… » clignote une dizaine de secondes, puis reste allumé */
+html.calme .cr-hint, html.calme .gc-hint { animation-iteration-count: 4; }
+/* 16. la frise : la pastille du moment est agrandie, sans bouger ; les liserés ne pulsent plus */
+html.calme .cr-dot.on .cr-dot-ico { animation: none; }
+html.calme :is(.cr-dot.done, .cr-dot.pause, .cr-dot.gold, .cr-dot.timing)::after { animation: none; opacity: .9; }
+html.calme .cr-dot-spark { display: none; }
+/* 18 et 23. l'anneau du minuteur avance sans lueur qui pulse (on redessinait son ombre à chaque image) */
+html.calme .t-ring { animation: none !important; }
+/* 20. le petit coureur du départ trottine en se déplaçant, sans recalculer la page à chaque image */
+html.calme .d-runner { animation: d-run-calme .45s ease-in-out infinite alternate; }
+@keyframes d-run-calme { to { translate: 0 calc(var(--u) * -1); } }
+/* 21. la carte d'équipe à demander : une lueur fixe */
+html.calme .teamcard-bar.ask { animation: fade-up .5s ease both; box-shadow: inset 0 0 0 2px rgba(255, 210, 63, .9), 0 0 calc(var(--u) * 3) rgba(255, 210, 63, .4); }
+/* 24. la nuit : 6 étoiles, qui scintillent très lentement */
+html.calme .ns-stars i:nth-child(n + 7) { display: none; }
+html.calme .ns-stars i { animation-duration: 14s; }
+
+/* La veille (js/lib/veille.js) : 2 minutes sans toucher l'écran, tout s'arrête sauf le minuteur de la carte,
+   sous un voile sombre ; le premier toucher réveille l'écran */
+html.veille body *:not(.cr-card.timing):not(.cr-card.timing *), html.veille body *::before, html.veille body *::after { animation-play-state: paused !important; }
+html.veille body .cr-card.timing *::before, html.veille body .cr-card.timing *::after { animation-play-state: running !important; }
+html.veille body::after { content: ''; position: fixed; inset: 0; z-index: 9990; pointer-events: none; background: rgba(4, 3, 16, .5); animation: veille-in 2s ease both; }
+html.veille body::before { content: '💤 Touche l’écran pour réveiller Pandi'; position: fixed; left: 50%; bottom: max(calc(var(--u) * 4), env(safe-area-inset-bottom)); z-index: 9991;
+  transform: translateX(-50%); padding: calc(var(--u) * 1.4) calc(var(--u) * 4); border-radius: 999px; background: rgba(20, 16, 48, .8); color: #d9d4ff;
+  font: 600 calc(var(--u) * 3.6) Fredoka, system-ui, sans-serif; white-space: nowrap; pointer-events: none; animation: veille-in 2s ease both; }
+@keyframes veille-in { from { opacity: 0; } }
