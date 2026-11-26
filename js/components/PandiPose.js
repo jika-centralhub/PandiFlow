@@ -20,7 +20,16 @@ const HATS = { antennes: 'espace', chapeau_magicien: 'magicien', masque_plongee:
 // Les numéros de la 3D sans pose à eux
 const ALIAS = { coucou: 'idle', danse: 'bravo', reveil: 'lever', coucher: 'dodo', auLit: 'endormi', panique: 'idle', alarme: 'bravo', triste: 'calin' };
 
+// Le test de fluidité (js/labo/testFluidite.js) peut imposer une pose à tous les Pandi
+let forced = null;
+const listeners = new Set();
+export function forcePose(name) {
+  forced = name || null;
+  listeners.forEach((fn) => fn());
+}
+
 export function poseFor(act, ctx = {}) {
+  if (forced && catalog?.poses[forced]) return forced;
   if (act === 'habiller') return ctx.variant === 'pyjama' ? 'pyjama' : 'habiller';
   if (act === 'manger' && ctx.variant === 'cereales' && catalog?.poses.cereales) return 'cereales';
   if (catalog?.poses[act]) return act;
@@ -42,6 +51,12 @@ const FX = {
 
 export function PandiPose({ act = 'idle', ctx = {}, active = true, class: cls = '', label = 'Pandi le panda' }) {
   const [, setReady] = useState(Boolean(catalog));
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const fn = () => setTick((n) => n + 1);
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  }, []);
   useEffect(() => {
     if (!catalog) loadPoses().then(() => setReady(true)).catch((e) => console.warn('Pandi : poses indisponibles', e?.message));
   }, []);
