@@ -86,6 +86,7 @@ function useBalade(index, on) {
 
 // La façon de se déplacer : un animal marche, un vélo roule sans moteur, ce qui vole plane, ce qui flotte tangue
 export function kindOf(item, slot) {
+  if (item.id === 'hibou') return 'ciel'; // il vole, les ailes levées
   if (slot === 'pet' || item.act === 'gallop') return 'animal';
   if (item.zone === 'sky') return 'ciel';
   if (item.act === 'sail') return 'eau';
@@ -146,7 +147,7 @@ function Walk({ id, onReady }) {
 function Rover({ cls, label, src, id, kind, tour, wait, onTap }) {
   const [at, setAt] = useState(-1); // l'étape en cours (-1 : garé)
   const [walkReady, setWalkReady] = useState(false);
-  const walks = kind === 'animal' && MARCHE[id] && tour > 0;
+  const walks = (kind === 'animal' || kind === 'ciel') && MARCHE[id] && tour > 0;
   useEffect(() => {
     if (!tour) return undefined;
     const steps = STEPS[kind];
@@ -164,7 +165,7 @@ function Rover({ cls, label, src, id, kind, tour, wait, onTap }) {
   const loin = at >= 1 && at <= firstTurn;
   const droite = at >= firstTurn && at < steps.length - 1;
   const dur = at >= 0 ? steps[at][1] : 0;
-  return html`<button class=${`${cls} kr kr-${kind} kr-${name} ${loin ? 'loin' : ''} ${droite ? 'droite' : 'gauche'} ${walks && walkReady ? 'marche' : ''}`}
+  return html`<button class=${`${cls} kr kr-${kind} kr-${name} ${loin ? 'loin' : ''} ${droite ? 'droite' : 'gauche'} ${walks && walkReady ? `marche ${MARCHE[id][2] > 1 ? 'deux' : ''}` : ''}`}
     style=${{ '--dur': `${dur}ms` }} aria-label=${label} onClick=${onTap}>
     <span class="kr-dir"><span class="kh-act"><span class="kr-lean"><span class="kr-pas">
       <img class="kr-img" src=${src} alt="" draggable="false" /><${Parts} id=${id} src=${src} />
@@ -188,7 +189,7 @@ export function KidStuff({ child, index = 0 }) {
   if (CALME) {
     return html`<div class="kh-stuff">
       ${vImg && html`<${Rover} cls=${`kh-veh ${sky ? 'sky' : ''}`} label=${veh.name} src=${artSrc(vImg)} id=${vImg} kind=${kindOf(veh, 'vehicle')} tour=${tour} wait=${0} onTap=${tapVeh} />`}
-      ${pImg && html`<${Rover} cls="kh-pet" label=${pet.name} src=${artSrc(pImg)} id=${pImg} kind="animal" tour=${tour} wait=${vImg ? 2600 : 0} onTap=${tapPet} />`}
+      ${pImg && html`<${Rover} cls="kh-pet" label=${pet.name} src=${artSrc(pImg)} id=${pImg} kind=${kindOf(pet, 'pet')} tour=${tour} wait=${vImg ? 2600 : 0} onTap=${tapPet} />`}
     </div>`;
   }
   // les deux colonnes ne bougent pas en même temps
