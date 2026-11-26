@@ -57,22 +57,34 @@ export function CalmScene({ hero, ctx = {}, label = 'Pandi et son ami font l’e
   if (!c) return html`<div class="cs" role="img" aria-label=${label}></div>`;
   const v = dragonView(ctx, fired);
   const rest = v.state === 'fache';
-  const img = (name, cls = '') => html`<img class=${`cs-l cs-${name} ${cls}`} src=${`${BASE}${hero}/${name}.webp`} alt="" draggable="false" />`;
+  const src = (name) => `${BASE}${hero}/${name}.webp`;
+  const img = (name, cls = '') => html`<img class=${`cs-l cs-${name} ${cls}`} src=${src(name)} alt="" draggable="false" />`;
+  // un calque, ou son petit GIF s'il en a un (scene.json, gif) : ses images jouées en boucle, chacune à son tour
+  const anim = (name, cls = '') => {
+    const frames = c.gif?.[name];
+    if (!frames) return img(name, cls);
+    const d = frames[0][1];
+    const n = frames.length;
+    return html`<div class=${`cs-gif cs-${name} ${cls}`}>
+      ${frames.map(([f], i) => html`<img key=${i} class="cs-l" src=${src(f)} alt="" draggable="false"
+        style=${{ animation: `cs-gif${n} ${n * d}ms steps(1, end) ${-((n - i) % n) * d}ms infinite` }} />`)}
+    </div>`;
+  };
   // un seul état à l'écran : le nouveau apparaît en fondu par-dessus, l'ancien ne s'en va qu'une fois couvert
-  const state = (name) => img(name, `cs-etat ${v.state === name ? 'on' : ''}`);
+  const state = (name) => anim(name, `cs-etat ${v.state === name ? 'on' : ''}`);
   const [fx, fy] = c.feu;
   return html`<div class=${`cs cs-${hero} cs-${ctx.phase || 'ready'}`} role="img" aria-label=${label}>
     <div class="cs-cadre" style=${{ aspectRatio: `${c.frame[0]} / ${c.frame[1]}`, '--secs': `${ctx.secs || 3}s` }}>
       <div class="cs-souffle">
         <div class=${`cs-repos ${rest ? 'on' : ''} ${v.apaise ? 'apaise' : ''}`}>
-          ${img('fache')}
-          ${img('apaise', v.apaise ? 'on' : '')}
+          ${anim('fache')}
+          ${anim('apaise', v.apaise ? 'on' : '')}
           ${img('yeux', rest ? 'cs-cligne' : '')}
         </div>
         ${state('inspire')}
         ${state('souffle')}
         <div class=${`cs-feu-tout ${v.state === 'souffle' ? 'on' : ''}`} style=${{ transformOrigin: `${fx}% ${fy}%`, '--f': v.feuTaille.toFixed(2) }}>
-          <div class="cs-feu-vif" style=${{ transformOrigin: `${fx}% ${fy}%` }}>${img('feu')}</div>
+          <div class="cs-feu-vif" style=${{ transformOrigin: `${fx}% ${fy}%` }}>${anim('feu')}</div>
         </div>
         ${state('calme')}
       </div>

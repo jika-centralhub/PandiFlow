@@ -211,7 +211,14 @@
 .cs-l { position: absolute; inset: 0; width: 100%; height: 100%; display: block; -webkit-user-drag: none; user-select: none; }
 /* un seul état à l'écran (la scène de base, ou ils inspirent, ou il souffle, ou c'est fini) : le nouveau apparaît en
    fondu par-dessus, l'ancien reste en dessous le temps du fondu, puis disparaît (jamais de fond qui transparaît) */
-.cs-repos { position: absolute; inset: 0; }
+.cs-repos, .cs-gif, .cs-etat { position: absolute; inset: 0; }
+/* les petits GIF : chaque image de la boucle est visible à son tour (une sur n), en marches nettes */
+@keyframes cs-gif2 { 0% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes cs-gif3 { 0% { opacity: 1; } 33.334%, 100% { opacity: 0; } }
+@keyframes cs-gif4 { 0% { opacity: 1; } 25%, 100% { opacity: 0; } }
+.cs-gif .cs-l { opacity: 0; }
+/* hors de l'écran, les GIF s'arrêtent */
+.cs-etat:not(.on) .cs-gif .cs-l, .cs-etat:not(.on).cs-gif .cs-l, .cs-repos:not(.on) .cs-gif .cs-l, .cs-feu-tout:not(.on) .cs-gif .cs-l { animation-play-state: paused !important; }
 .cs-repos, .cs-etat { opacity: 0; z-index: 1; transition: opacity 0s linear .6s; }
 .cs-repos.on, .cs-etat.on { opacity: 1; z-index: 2; transition: opacity .55s ease; }
 /* sur la scène de base, le visage apaisé remplace peu à peu le visage fâché */
