@@ -6,7 +6,7 @@
 export const SUPABASE_URL = 'https://kyhhkhmwdostzdaksxzw.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable__E61F1zKiN431iU2AlKySQ_PZOsOtgi';
 
-export const APP_VERSION = '1.39.0';
+export const APP_VERSION = '1.39.0-labo.14';
 
 // Le labo (branche labo-boucles, publiée à part sur pandi-labo) et le site partagent le même code : le labo
 // se reconnaît à son numéro de version (« …-labo.N »). Ce qui n'y est encore qu'un essai (le dragon du coin
